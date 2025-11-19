@@ -1,0 +1,31 @@
+[gd_scene load_steps=3 format=3 uid="uid://g860ny7sdwxa"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rmp4q"]
+resource_local_to_scene = true
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 1, 0.8, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dqjxq"]
+resource_local_to_scene = true
+draw_center = false
+border_width_bottom = 1
+border_color = Color(0, 1, 0.8, 1)
+
+[node name="BlueScoreContainer" type="PanelContainer"]
+theme_override_styles/panel = SubResource("StyleBoxFlat_rmp4q")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Label" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_dqjxq")
+text = " Punkty niebieskich: 0 "
+
+[node name="Control" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
