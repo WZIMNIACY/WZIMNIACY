@@ -11,7 +11,6 @@ config_version=5
 [application]
 
 config/name="WZIMNIACY"
-run/main_scene="uid://dottn65ntydo4"
 config/features=PackedStringArray("4.5", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
