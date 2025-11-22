@@ -392,6 +392,7 @@ vertical_alignment = 1
 
 [node name="QuitButton" type="Button" parent="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_colors/font_hover_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
 theme_override_fonts/font = ExtResource("10_wjob3")
 theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = ExtResource("9_nqdth")
@@ -401,6 +402,7 @@ text = "Wyjdź z gry"
 
 [node name="PauseButton" type="Button" parent="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_colors/font_hover_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
 theme_override_fonts/font = ExtResource("10_wjob3")
 theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = ExtResource("9_nqdth")
@@ -410,6 +412,7 @@ text = "Pauza"
 
 [node name="SettingsButton" type="Button" parent="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_colors/font_hover_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
 theme_override_fonts/font = ExtResource("10_wjob3")
 theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = ExtResource("9_nqdth")
@@ -419,6 +422,7 @@ text = "Ustawienia"
 
 [node name="HelpButton" type="Button" parent="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_colors/font_hover_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
 theme_override_fonts/font = ExtResource("10_wjob3")
 theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = ExtResource("9_nqdth")
@@ -428,6 +432,7 @@ text = "Pomoc"
 
 [node name="ResumeButton" type="Button" parent="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_colors/font_hover_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
 theme_override_fonts/font = ExtResource("10_wjob3")
 theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = ExtResource("9_nqdth")
