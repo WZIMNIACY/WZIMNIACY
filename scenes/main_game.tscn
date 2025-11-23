@@ -383,6 +383,7 @@ theme_override_constants/separation = 10
 
 [node name="Label" type="Label" parent="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.8, 1)
 theme_override_fonts/font = ExtResource("9_o6v7o")
 theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBoxEmpty_8xp80")
