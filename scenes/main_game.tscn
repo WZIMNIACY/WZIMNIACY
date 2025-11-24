@@ -1,6 +1,6 @@
 [gd_scene load_steps=24 format=3 uid="uid://dottn65ntydo4"]
 
-[ext_resource type="Script" uid="uid://by1u2dn6vcku" path="res://scenes/main_game.gd" id="1_70vka"]
+[ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://themes/main_game.tres" id="1_s3esy"]
 [ext_resource type="PackedScene" uid="uid://vu4a6yutqy5e" path="res://scenes/components/main_game/blue_player_list.tscn" id="2_wi4c7"]
 [ext_resource type="PackedScene" uid="uid://r3ci44bvmc2j" path="res://scenes/components/main_game/red_player_list.tscn" id="3_wi4c7"]
@@ -86,7 +86,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_70vka")
+script = ExtResource("1_o6v7o")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
@@ -441,10 +441,10 @@ theme_override_styles/pressed = ExtResource("9_nqdth")
 theme_override_styles/hover = ExtResource("10_5cypo")
 text = "Resume"
 
-[connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="_on_menu_button_pressed"]
-[connection signal="button_down" from="MenuPanel/MenuBackgroundButton" to="." method="_on_menu_background_button_down"]
-[connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
-[connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/PauseButton" to="." method="_on_pause_button_pressed"]
-[connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
-[connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/HelpButton" to="." method="_on_help_button_pressed"]
-[connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/ResumeButton" to="." method="_on_resume_button_pressed"]
+[connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
+[connection signal="button_down" from="MenuPanel/MenuBackgroundButton" to="." method="OnMenuBackgroundButtonDown"]
+[connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/QuitButton" to="." method="OnQuitButtonPressed"]
+[connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/PauseButton" to="." method="OnPauseButtonPressed"]
+[connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/SettingsButton" to="." method="OnSettingsButtonPressed"]
+[connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/HelpButton" to="." method="OnHelpButtonPressed"]
+[connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/ResumeButton" to="." method="OnResumeButtonPressed"]
