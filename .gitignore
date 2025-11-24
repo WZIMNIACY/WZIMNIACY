@@ -17,4 +17,4 @@ data_*/
 mono_crash.*.json
 
 # Visual studio ignores
-.vs 
+.vs/
