@@ -1,0 +1,41 @@
+[gd_resource type="Theme" load_steps=6 format=3 uid="uid://dvuu7nso1icxm"]
+
+[ext_resource type="Texture2D" uid="uid://djtvvdvrip1rq" path="res://assets/textures/gradients/blue_team_player_list_bg_gradient.tres" id="1_qwkag"]
+[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="2_uxug5"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_72e8q"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+bg_color = Color(0, 1, 0.8, 1)
+draw_center = false
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 1, 0.8, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k0okq"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 1, 0.8, 1)
+draw_center = false
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 1, 0.8, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_qwkag"]
+texture = ExtResource("1_qwkag")
+
+[resource]
+default_font = ExtResource("2_uxug5")
+MainPanel/base_type = &"PanelContainer"
+MainPanel/styles/panel = SubResource("StyleBoxFlat_72e8q")
+SubPanel/base_type = &"PanelContainer"
+SubPanel/styles/panel = SubResource("StyleBoxFlat_k0okq")
+TeamList/base_type = &"PanelContainer"
+TeamList/styles/panel = SubResource("StyleBoxTexture_qwkag")

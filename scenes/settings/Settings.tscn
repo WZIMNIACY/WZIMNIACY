@@ -1,0 +1,217 @@
+[gd_scene load_steps=7 format=3 uid="uid://bfxpcutxox0tt"]
+
+[ext_resource type="Script" uid="uid://opxogrio063d" path="res://scenes/settings/Settings.cs" id="1_gaid6"]
+[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="2_fa6u7"]
+[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="3_6agbc"]
+[ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="3_oerk1"]
+[ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://assets/buttons/button_border2.tres" id="3_q5ip6"]
+[ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="4_gl5ki"]
+
+[node name="Settings" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gaid6")
+
+[node name="SettingsPanel" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+
+[node name="SettingsCenter" type="CenterContainer" parent="SettingsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VSettings" type="VBoxContainer" parent="SettingsPanel/SettingsCenter"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="SettingsLabel" type="Label" parent="SettingsPanel/SettingsCenter/VSettings"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.8, 1)
+theme_override_fonts/font = ExtResource("2_fa6u7")
+theme_override_font_sizes/font_size = 20
+text = "Ustawienia"
+horizontal_alignment = 1
+
+[node name="TabContainer" type="TabContainer" parent="SettingsPanel/SettingsCenter/VSettings"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("2_fa6u7")
+tab_alignment = 1
+current_tab = 0
+
+[node name="Dźwięk" type="VBoxContainer" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer"]
+layout_mode = 2
+alignment = 1
+metadata/_tab_index = 0
+
+[node name="LMaster" type="Label" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_6agbc")
+text = "Głośność Ogólna"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MasterSlider" type="HSlider" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
+layout_mode = 2
+mouse_default_cursor_shape = 10
+max_value = 1.0
+step = 0.01
+
+[node name="LMusic" type="Label" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_6agbc")
+text = "Głośność Muzyki"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MusicSlider" type="HSlider" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
+layout_mode = 2
+mouse_default_cursor_shape = 10
+max_value = 1.0
+step = 0.01
+
+[node name="LSFX" type="Label" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_6agbc")
+text = "Głóśność Efektów"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SFXSlider" type="HSlider" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
+layout_mode = 2
+mouse_default_cursor_shape = 10
+max_value = 1.0
+step = 0.01
+
+[node name="MuteCheckBox" type="CheckButton" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("3_6agbc")
+text = "Wycisz Wszystko"
+alignment = 1
+
+[node name="Video" type="VBoxContainer" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="LScreenOption" type="Label" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Video"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_6agbc")
+text = "Tryb okna"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScreenOption" type="OptionButton" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Video"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("3_6agbc")
+selected = 0
+item_count = 2
+popup/item_0/text = "W Oknie"
+popup/item_0/id = 0
+popup/item_1/text = "Pełny Ekran"
+popup/item_1/id = 1
+
+[node name="LResolution" type="Label" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Video"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_6agbc")
+text = " Tryb Rozdzielczości"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ResolutionOption" type="OptionButton" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Video"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("3_6agbc")
+selected = 0
+item_count = 4
+popup/item_0/text = "1920x1080"
+popup/item_0/id = 0
+popup/item_1/text = "1600x900"
+popup/item_1/id = 1
+popup/item_2/text = "1366x786"
+popup/item_2/id = 2
+popup/item_3/text = "1280x720"
+popup/item_3/id = 3
+
+[node name="LScaleUI" type="Label" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Video"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_6agbc")
+text = "Skala UI"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SliderUI" type="HSlider" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Video"]
+layout_mode = 2
+mouse_default_cursor_shape = 10
+max_value = 1.0
+step = 0.01
+
+[node name="SaveButton" type="Button" parent="SettingsPanel/SettingsCenter/VSettings"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_fa6u7")
+theme_override_styles/normal = ExtResource("3_oerk1")
+theme_override_styles/pressed = ExtResource("3_oerk1")
+theme_override_styles/hover = ExtResource("4_gl5ki")
+text = "Zapisz Zmiany"
+
+[node name="CornerAnchor" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Title" type="Label" parent="CornerAnchor"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 142.0
+offset_bottom = 46.0
+theme_override_colors/font_color = Color(0, 1, 0.8, 1)
+theme_override_fonts/font = ExtResource("2_fa6u7")
+theme_override_font_sizes/font_size = 24
+text = "Wzimniacy"
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+offset_right = 40.0
+grow_vertical = 0
+
+[node name="BackButton" type="Button" parent="Control"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -80.0
+offset_right = 130.0
+offset_bottom = -29.0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("2_fa6u7")
+theme_override_styles/normal = ExtResource("3_q5ip6")
+theme_override_styles/pressed = ExtResource("3_q5ip6")
+theme_override_styles/hover = ExtResource("4_gl5ki")
+theme_override_styles/focus = ExtResource("4_gl5ki")
+text = "← Menu"
