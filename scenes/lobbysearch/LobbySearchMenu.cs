@@ -1,4 +1,5 @@
 using Godot;
+using System;
 
 public partial class LobbySearchMenu : Node
 {
@@ -19,8 +20,6 @@ public partial class LobbySearchMenu : Node
 
     public override void _Ready()
     {
-        base._Ready();
-
         // Pobierz EOSManager z autoload
         eosManager = GetNode<EOSManager>("/root/EOSManager");
 
@@ -188,8 +187,6 @@ public partial class LobbySearchMenu : Node
 
     public override void _ExitTree()
     {
-        base._ExitTree();
-
         // Zatrzymaj i usuń timery
         if (animationTimer != null)
         {

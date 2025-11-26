@@ -2,14 +2,12 @@ using Godot;
 
 public partial class Intro : Control
 {
-    private VideoStreamPlayer videoPlayer;
+    private VideoStreamPlayer _videoPlayer;
 
     public override void _Ready()
     {
-        base._Ready();
-
-        videoPlayer = GetNode<VideoStreamPlayer>("VideoStreamPlayer");
-        videoPlayer.Finished += OnVideoFinished;
+        _videoPlayer = GetNode<VideoStreamPlayer>("VideoStreamPlayer");
+        _videoPlayer.Finished += OnVideoFinished;
 
         GD.Print("🎬 Playing intro video...");
     }
@@ -27,8 +25,6 @@ public partial class Intro : Control
 
     public override void _Input(InputEvent @event)
     {
-        base._Input(@event);
-
         // Allow skipping intro with Space, Enter, Escape or mouse click
         if (@event is InputEventKey keyEvent && keyEvent.Pressed)
         {

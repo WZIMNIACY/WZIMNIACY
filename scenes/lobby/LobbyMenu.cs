@@ -22,8 +22,6 @@ public partial class LobbyMenu : Control
 
     public override void _Ready()
     {
-        base._Ready();
-
         // Pobierz EOSManager z autoload
         eosManager = GetNode<EOSManager>("/root/EOSManager");
 
@@ -512,8 +510,6 @@ public partial class LobbyMenu : Control
 
     public override void _ExitTree()
     {
-        base._ExitTree();
-
         // Odłącz sygnały przy wyjściu
         if (eosManager != null)
         {

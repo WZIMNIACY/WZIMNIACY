@@ -97,8 +97,6 @@ public partial class EOSManager : Node
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		base._Ready();
-
 		GD.Print("=== Starting EOS Initialization ===");
 
 		// Wczytaj listę zwierzaków z pliku ^w^
@@ -482,8 +480,6 @@ public partial class EOSManager : Node
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-		base._Process(delta);
-
 		// Krok 4: Tick platformy - musi być wywoływany regularnie
 		if (platformInterface != null)
 		{
@@ -494,8 +490,6 @@ public partial class EOSManager : Node
 	// Cleanup przy zamykaniu
 	public override void _ExitTree()
 	{
-		base._ExitTree();
-
 		// Wyloguj użytkownika przed zamknięciem (jeśli używamy Auth)
 		if (authInterface != null && localEpicAccountId != null && localEpicAccountId.IsValid())
 		{

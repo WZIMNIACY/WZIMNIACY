@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Godot;
+using System;
+using System.Xml.Serialization;
 
 public partial class Settings : Control
 {
@@ -57,8 +59,6 @@ public partial class Settings : Control
 
     public override void _Ready()
     {
-        base._Ready();
-
         GD.Print("⚙️ Settings scene initializing...");
 
         backButton = GetNode<Button>("Control/BackButton");
@@ -73,7 +73,7 @@ public partial class Settings : Control
         resolutionOptionButton = GetNode<OptionButton>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Video/ResolutionOption");
         scaleUISlider = GetNode<HSlider>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Video/SliderUI");
 
-        VideoUIOptions();
+        _VideoUIOptions();
         LoadSettings();
         UpdateUI();
         GD.Print("✅ Settings ready");
@@ -122,7 +122,7 @@ public partial class Settings : Control
         GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
     }
 
-    private void VideoUIOptions()
+    private void _VideoUIOptions()
     {
         screenModeOptionButton.Clear();
         screenModeOptionButton.AddItem("Windowed", 0);
