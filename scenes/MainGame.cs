@@ -3,6 +3,10 @@ using Godot;
 public partial class MainGame : Control
 {
     [Export] Panel menuPanel;
+    [Export] public RightPanel gameRightPanel;
+    [Export] public CaptainInput gameInputPanel;
+
+    private bool _isBlueTurn = true;
 
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
@@ -10,6 +14,45 @@ public partial class MainGame : Control
         base._Ready();
         menuPanel = GetNode<Panel>("MenuPanel");
         menuPanel.Visible = false;
+
+        if (gameInputPanel != null)
+        {
+            gameInputPanel.HintGiven += OnCaptainHintReceived;
+            
+            // Запускаем игру! Первыми ходят Синие
+            StartCaptainPhase();
+        }
+        else
+        {
+            GD.PrintErr("Error");
+        }
+    }
+
+    private void StartCaptainPhase()
+    {
+        GD.Print($"Początek tury {(_isBlueTurn ? "BLUE" : "RED")}");
+        if(gameInputPanel != null)
+        {
+            gameInputPanel.SetupTurn(_isBlueTurn);
+        }
+    }
+
+    private void OnCaptainHintReceived(string word, int number)
+    {
+        GD.Print($"{word} [{number}]");
+        if (gameRightPanel != null)
+        {
+            gameRightPanel.UpdateHintDisplay(word, number, _isBlueTurn);
+        }
+    }
+
+    public void OnSkipTurnPressed()
+    {
+        GD.Print("Koniec tury");
+        if(gameRightPanel != null)
+            gameRightPanel.CommitToHistory();
+        _isBlueTurn = !_isBlueTurn;
+        StartCaptainPhase();
     }
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
