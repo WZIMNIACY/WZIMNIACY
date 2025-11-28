@@ -66,4 +66,4 @@ jobs:
         run: dotnet build WZIMNIACY.sln --configuration ExportRelease
 
       - name: Check code format
-        run: dotnet format style --verify-no-changes WZIMNIACY.sln
+        run: dotnet format style --verify-no-changes WZIMNIACY.sln --exclude Epic_EOS_SDK/**
