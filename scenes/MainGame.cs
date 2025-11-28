@@ -18,8 +18,6 @@ public partial class MainGame : Control
         if (gameInputPanel != null)
         {
             gameInputPanel.HintGiven += OnCaptainHintReceived;
-            
-            // Запускаем игру! Первыми ходят Синие
             StartCaptainPhase();
         }
         else
