@@ -6,7 +6,7 @@ public partial class MainGame : Control
     [Export] public RightPanel gameRightPanel;
     [Export] public CaptainInput gameInputPanel;
 
-    private bool _isBlueTurn = true;
+    private bool isBlueTurn = true;
 
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
@@ -28,10 +28,10 @@ public partial class MainGame : Control
 
     private void StartCaptainPhase()
     {
-        GD.Print($"Początek tury {(_isBlueTurn ? "BLUE" : "RED")}");
+        GD.Print($"Początek tury {(isBlueTurn ? "BLUE" : "RED")}");
         if(gameInputPanel != null)
         {
-            gameInputPanel.SetupTurn(_isBlueTurn);
+            gameInputPanel.SetupTurn(isBlueTurn);
         }
     }
 
@@ -40,7 +40,7 @@ public partial class MainGame : Control
         GD.Print($"{word} [{number}]");
         if (gameRightPanel != null)
         {
-            gameRightPanel.UpdateHintDisplay(word, number, _isBlueTurn);
+            gameRightPanel.UpdateHintDisplay(word, number, isBlueTurn);
         }
     }
 
@@ -49,7 +49,7 @@ public partial class MainGame : Control
         GD.Print("Koniec tury");
         if(gameRightPanel != null)
             gameRightPanel.CommitToHistory();
-        _isBlueTurn = !_isBlueTurn;
+        isBlueTurn = !isBlueTurn;
         StartCaptainPhase();
     }
 
