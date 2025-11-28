@@ -1,0 +1,59 @@
+[gd_scene load_steps=4 format=3 uid="uid://bvi7du8wsmbn"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4bmrv"]
+resource_local_to_scene = true
+draw_center = false
+border_width_top = 1
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_4bmrv"]
+resource_local_to_scene = true
+
+[sub_resource type="Theme" id="Theme_8hbux"]
+resource_local_to_scene = true
+RichTextLabel/colors/default_color = Color(1, 1, 1, 1)
+
+[node name="PlayerList" type="PanelContainer"]
+offset_right = 210.0
+offset_bottom = 232.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="TopBorder" type="PanelContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_4bmrv")
+
+[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxTexture_4bmrv")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/PanelContainer"]
+layout_mode = 2
+theme = SubResource("Theme_8hbux")
+
+[node name="RichTextLabel" type="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Gracz1-b (ikonka)"
+fit_content = true
+
+[node name="RichTextLabel2" type="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Gracz1-b (ikonka)"
+fit_content = true
+
+[node name="RichTextLabel3" type="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Gracz3-b (ikonka)"
+fit_content = true
+
+[node name="RichTextLabel4" type="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Gracz4-b (ikonka)"
+fit_content = true
+
+[node name="RichTextLabel5" type="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Gracz5-b (ikonka) "
+fit_content = true

@@ -1,0 +1,30 @@
+[gd_scene load_steps=3 format=3 uid="uid://r3ci44bvmc2j"]
+
+[ext_resource type="PackedScene" uid="uid://bvi7du8wsmbn" path="res://assets/components/main_game/player_list_base.tscn" id="1_qkeot"]
+[ext_resource type="Texture2D" uid="uid://c6b1smrdynoo1" path="res://assets/textures/gradients/red_team_player_list_bg_gradient.tres" id="2_r34nm"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qkeot"]
+resource_local_to_scene = true
+draw_center = false
+border_width_top = 1
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_r34nm"]
+resource_local_to_scene = true
+texture = ExtResource("2_r34nm")
+modulate_color = Color(3.9735081, 1.6357956, 1.6357956, 1)
+
+[sub_resource type="Theme" id="Theme_cj86q"]
+resource_local_to_scene = true
+RichTextLabel/colors/default_color = Color(1, 1, 1, 1)
+
+[node name="PlayerList" instance=ExtResource("1_qkeot")]
+
+[node name="TopBorder" parent="VBoxContainer" index="0"]
+theme_override_styles/panel = SubResource("StyleBoxFlat_qkeot")
+
+[node name="PanelContainer" parent="VBoxContainer" index="1"]
+theme_override_styles/panel = SubResource("StyleBoxTexture_r34nm")
+
+[node name="VBoxContainer" parent="VBoxContainer/PanelContainer" index="0"]
+theme = SubResource("Theme_cj86q")

@@ -1,0 +1,494 @@
+[gd_scene load_steps=27 format=3 uid="uid://cqr5yj8x3kp2m"]
+
+[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="2_31whf"]
+[ext_resource type="StyleBox" uid="uid://dgkp41umsnv7g" path="res://assets/inputs/InputPlaceHolder.tres" id="2_qh262"]
+[ext_resource type="Script" uid="uid://ce1tsde0jdaka" path="res://scripts/ui/UiManager.cs" id="2_qmux8"]
+[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="3_1cd5g"]
+[ext_resource type="Script" uid="uid://cu2ikiortvp2o" path="res://scenes/lobby/LobbyMenu.cs" id="3_lobby"]
+[ext_resource type="StyleBox" uid="uid://col41obfm3t76" path="res://assets/buttons/ActionButtonsBorderHover.tres" id="4_31whf"]
+[ext_resource type="StyleBox" uid="uid://xp4ier1dij74" path="res://assets/buttons/ActionButtonsBorder.tres" id="5_qxwld"]
+[ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="5_vomky"]
+[ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://assets/buttons/button_border2.tres" id="7_qxwld"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_crh2a"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_l2d0o"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_qxwld"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_p6ldx"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_flr5y"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_cotl6"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ylp5r"]
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_3ljwv"]
+content_margin_top = 4.0
+content_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8p8jx"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qxwld"]
+bg_color = Color(0.08627451, 0.19607843, 0.21176471, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.21166292, 0.40992555, 0.43836, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0nt4m"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_h1efs"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_splsf"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p6ldx"]
+bg_color = Color(0.24313726, 0.02745098, 0.06666667, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.6377995, 0.13859424, 0.2298455, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_inc6d"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_c62po"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_66l4l"]
+
+[node name="Lobby" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_lobby")
+
+[node name="Panel" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+
+[node name="NicknamePanel" type="VBoxContainer" parent="Panel"]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -319.0
+offset_top = 20.0
+offset_right = -19.0
+offset_bottom = 113.0
+grow_horizontal = 0
+
+[node name="NicknameLabel" type="Label" parent="Panel/NicknamePanel"]
+layout_mode = 2
+text = "Twój nick:"
+
+[node name="NicknameEdit" type="LineEdit" parent="Panel/NicknamePanel"]
+layout_mode = 2
+placeholder_text = "Wpisz nick (opcjonalnie)"
+max_length = 20
+
+[node name="SetNicknameButton" type="Button" parent="Panel/NicknamePanel"]
+layout_mode = 2
+text = "Ustaw nick"
+
+[node name="CenterContainer" type="CenterContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LobbyMainContainer" type="VBoxContainer" parent="Panel/CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="LobbyLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.8, 1)
+theme_override_fonts/font = ExtResource("3_1cd5g")
+theme_override_font_sizes/font_size = 20
+text = "Ustawienia Lobby"
+horizontal_alignment = 1
+vertical_alignment = 1
+paragraph_separator = "\\"
+
+[node name="LobbyContentContainer" type="VBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="LobbyIDContainer" type="HBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer"]
+layout_direction = 2
+layout_mode = 2
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="Labels" type="VBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="LobbyID" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/Labels"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_31whf")
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxEmpty_crh2a")
+text = "LOBBY ID:"
+uppercase = true
+
+[node name="Password" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/Labels"]
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_31whf")
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxEmpty_l2d0o")
+text = "HASŁO:"
+uppercase = true
+
+[node name="InputHolders" type="VBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="LobbyIDInput" type="LineEdit" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/InputHolders"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_constants/outline_size = 0
+theme_override_constants/caret_width = 1
+theme_override_constants/minimum_character_width = 10
+theme_override_fonts/font = ExtResource("2_31whf")
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = ExtResource("2_qh262")
+theme_override_styles/read_only = ExtResource("2_qh262")
+alignment = 1
+max_length = 10
+editable = false
+keep_editing_on_text_submit = true
+
+[node name="PasswordInput" type="LineEdit" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/InputHolders"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_constants/outline_size = 0
+theme_override_constants/caret_width = 1
+theme_override_constants/minimum_character_width = 10
+theme_override_fonts/font = ExtResource("2_31whf")
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = ExtResource("2_qh262")
+theme_override_styles/read_only = ExtResource("2_qh262")
+placeholder_text = "WbaGCF"
+alignment = 1
+max_length = 10
+editable = false
+
+[node name="ActionButtons" type="VBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/ActionButtons"]
+layout_mode = 2
+theme_override_constants/separation = 22
+
+[node name="CopyIDButton" type="Button" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/ActionButtons/HBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("2_31whf")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("4_31whf")
+theme_override_styles/pressed = ExtResource("5_qxwld")
+theme_override_styles/hover = ExtResource("4_31whf")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_qxwld")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_p6ldx")
+text = "KOPIUJ"
+
+[node name="GenerateNewIDButton" type="Button" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/ActionButtons/HBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("2_31whf")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("4_31whf")
+theme_override_styles/pressed = ExtResource("5_qxwld")
+theme_override_styles/hover = ExtResource("4_31whf")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_qxwld")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_p6ldx")
+text = "NOWE"
+
+[node name="GeneratePass" type="Button" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/ActionButtons"]
+visible = false
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("2_31whf")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("4_31whf")
+theme_override_styles/pressed = ExtResource("4_31whf")
+theme_override_styles/hover = ExtResource("4_31whf")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_flr5y")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_cotl6")
+text = "NOWE"
+
+[node name="LobbySettingsContainer" type="VBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer"]
+layout_mode = 2
+
+[node name="LobbyStatus" type="HBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbySettingsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="StatusLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbySettingsContainer/LobbyStatus"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_1cd5g")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_ylp5r")
+text = "Status: "
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Status" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbySettingsContainer/LobbyStatus"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.67481464, 0.67481464, 0.6748146, 1)
+theme_override_fonts/font = ExtResource("2_31whf")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_3ljwv")
+text = "Oczekiwanie na hosta"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LobbyGameMode" type="HBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbySettingsContainer"]
+layout_mode = 2
+
+[node name="GameModeLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbySettingsContainer/LobbyGameMode"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_1cd5g")
+text = "Tryb gry:"
+
+[node name="GameModeList" type="OptionButton" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbySettingsContainer/LobbyGameMode"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("2_31whf")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_8p8jx")
+selected = 0
+fit_to_longest_item = false
+allow_reselect = true
+item_count = 2
+popup/item_0/text = "AI Master"
+popup/item_0/id = 0
+popup/item_1/text = "AI vs Human"
+popup/item_1/id = 1
+
+[node name="GameModeSelected" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbySettingsContainer/LobbyGameMode"]
+visible = false
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.67481464, 0.67481464, 0.6748146, 1)
+theme_override_fonts/font = ExtResource("2_31whf")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_3ljwv")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LobbyTeamsContainer" type="HBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="BlueTeamPanel" type="PanelContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer"]
+custom_minimum_size = Vector2(220, 150)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.0
+localize_numeral_system = false
+theme_override_styles/panel = SubResource("StyleBoxFlat_qxwld")
+
+[node name="BlueTeamContainer" type="VBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel"]
+layout_mode = 2
+alignment = 1
+
+[node name="BlueTeamLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_1cd5g")
+text = "Drużyna Niebieska"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BlueTeamsMembers" type="ItemList" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer"]
+custom_minimum_size = Vector2(140, 150)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/focus = SubResource("StyleBoxEmpty_0nt4m")
+theme_override_styles/selected = SubResource("StyleBoxEmpty_h1efs")
+
+[node name="BlueTeamJoinButton" type="Button" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("3_1cd5g")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_splsf")
+text = "DOŁĄCZ"
+
+[node name="RedTeamPanel" type="PanelContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+localize_numeral_system = false
+theme_override_styles/panel = SubResource("StyleBoxFlat_p6ldx")
+
+[node name="RedTeamContainer" type="VBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel"]
+layout_mode = 2
+alignment = 1
+
+[node name="RedTeamLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_1cd5g")
+text = "Drużyna Czerwona"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RedTeamMembers" type="ItemList" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer"]
+custom_minimum_size = Vector2(140, 80)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/focus = SubResource("StyleBoxEmpty_inc6d")
+theme_override_styles/selected = SubResource("StyleBoxEmpty_c62po")
+
+[node name="RedTeamJoinButton" type="Button" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("3_1cd5g")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_66l4l")
+text = "DOŁĄCZ"
+
+[node name="LobbyFuncButtonsContainer" type="HBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer"]
+custom_minimum_size = Vector2(460, 0)
+layout_mode = 2
+theme_override_constants/separation = 64
+alignment = 1
+
+[node name="LeaveLobby" type="Button" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyFuncButtonsContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_1cd5g")
+theme_override_styles/normal = ExtResource("7_qxwld")
+theme_override_styles/pressed = ExtResource("7_qxwld")
+theme_override_styles/hover = ExtResource("5_vomky")
+text = "Opuszczam lobby"
+
+[node name="StartGame" type="Button" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyFuncButtonsContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_1cd5g")
+theme_override_styles/normal = ExtResource("7_qxwld")
+theme_override_styles/pressed = ExtResource("7_qxwld")
+theme_override_styles/hover = ExtResource("5_vomky")
+text = "Rozpocznij grę"
+
+[node name="CreateLobby" type="Button" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 41.0
+offset_top = 19.0
+offset_right = -933.0
+offset_bottom = -453.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "create lobby"
+icon_alignment = 1
+expand_icon = true
+
+[node name="UIManager" type="Node" parent="."]
+script = ExtResource("2_qmux8")
+
+[node name="Control" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+offset_right = 40.0
+grow_vertical = 0
+
+[node name="BackButton" type="Button" parent="Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -40.0
+offset_right = 90.0
+offset_bottom = -29.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("3_1cd5g")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = ExtResource("7_qxwld")
+theme_override_styles/pressed = ExtResource("7_qxwld")
+theme_override_styles/hover = ExtResource("5_vomky")
+text = "← Menu"
+
+[node name="CornerAnchor" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Title" type="Label" parent="CornerAnchor"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 142.0
+offset_bottom = 46.0
+theme_override_colors/font_color = Color(0, 1, 0.8, 1)
+theme_override_fonts/font = ExtResource("3_1cd5g")
+theme_override_font_sizes/font_size = 24
+text = "Wzimniacy"
+
+[connection signal="pressed" from="CreateLobby" to="UIManager" method="OnCreateLobbyButtonPressed"]
