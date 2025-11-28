@@ -361,7 +361,7 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxTexture_ygxny")
 
-[node name="InputPanel" type="PanelContainer" parent="Panel" node_paths=PackedStringArray("WordInput", "NumberInput", "SendButton")]
+[node name="InputPanel" type="PanelContainer" parent="Panel" node_paths=PackedStringArray("wordInput", "numberInput", "sendButton")]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -373,9 +373,9 @@ offset_right = -331.0
 grow_horizontal = 2
 grow_vertical = 0
 script = ExtResource("10_sp04v")
-WordInput = NodePath("HBoxContainer/WordInput")
-NumberInput = NodePath("HBoxContainer/NumberInput")
-SendButton = NodePath("HBoxContainer/SendButton")
+wordInput = NodePath("HBoxContainer/WordInput")
+numberInput = NodePath("HBoxContainer/NumberInput")
+sendButton = NodePath("HBoxContainer/SendButton")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Panel/InputPanel"]
 layout_mode = 2

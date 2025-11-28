@@ -7,46 +7,46 @@ public partial class CaptainInput : Control
 {
 	[Signal]
 	public delegate void HintGivenEventHandler(string word, int number);
-		[Export] public LineEdit WordInput;
-		[Export] public SpinBox NumberInput;
-		[Export] public Button SendButton;
+		[Export] public LineEdit wordInput;
+		[Export] public SpinBox numberInput;
+		[Export] public Button sendButton;
 
-		private Color _blueTeamColor = new Color("5AD2C8FF");
-		private Color _redTeamColor = new Color("E65050FF");
+		private Color blueTeamColor = new Color("5AD2C8FF");
+		private Color redTeamColor = new Color("E65050FF");
     public override void _Ready()
     {
-        if(SendButton != null)
-			SendButton.Pressed += OnSendPressed;
-		if (WordInput != null)
-			WordInput.TextChanged += OnTextChanged;
+        if(sendButton != null)
+			sendButton.Pressed += OnSendPressed;
+		if (wordInput != null)
+			wordInput.TextChanged += OnTextChanged;
     }
 
 	private void OnTextChanged(string newText)
     {
-        WordInput.Modulate = new Color(1, 1, 1);
+        wordInput.Modulate = new Color(1, 1, 1);
     }
 
 	public void SetupTurn(bool isBlueTeam){
 		this.Visible = true;
 
-		if(WordInput != null){
-			WordInput.Text = "";
-			WordInput.Modulate = new Color(1, 1, 1);
-			WordInput.PlaceholderText = "Słowo:";
+		if(wordInput != null){
+			wordInput.Text = "";
+			wordInput.Modulate = new Color(1, 1, 1);
+			wordInput.PlaceholderText = "Słowo:";
 		}
-		if(NumberInput != null)
-			NumberInput.Value = 1;
+		if(numberInput != null)
+			numberInput.Value = 1;
 		
-		if(SendButton != null){
-			SendButton.Modulate = isBlueTeam ? _blueTeamColor : _redTeamColor;
+		if(sendButton != null){
+			sendButton.Modulate = isBlueTeam ? blueTeamColor : redTeamColor;
 		}
 	}
 
 	private void OnSendPressed(){
-		if(WordInput == null) return;
+		if(wordInput == null) return;
 		
-		string text = WordInput.Text.Trim();
-		int number = (int)NumberInput.Value;
+		string text = wordInput.Text.Trim();
+		int number = (int)numberInput.Value;
 
 		if (text.Contains(" "))
         {
@@ -64,6 +64,6 @@ public partial class CaptainInput : Control
 	private void ShowError(string message)
     {
         GD.Print($"Błąd: {message}");
-        WordInput.Modulate = new Color(1, 0.3f, 0.3f); 
+        wordInput.Modulate = new Color(1, 0.3f, 0.3f); 
     }
 }
