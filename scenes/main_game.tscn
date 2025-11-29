@@ -286,15 +286,15 @@ layout_mode = 2
 [node name="AgentCard25" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
 layout_mode = 2
 
-[node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("CurrentWordLabel", "HistoryList", "HistoryScroll")]
+[node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll")]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("1_s3esy")
 theme_type_variation = &"MainPanel"
 script = ExtResource("8_8xp80")
-CurrentWordLabel = NodePath("VRightPanel/PasswordContainer/HBoxContainer/CurentWordLabel")
-HistoryList = NodePath("VRightPanel/HintBoxContainer/HistoryScroll/HistoryList")
-HistoryScroll = NodePath("VRightPanel/HintBoxContainer/HistoryScroll")
+currentWordLabel = NodePath("VRightPanel/PasswordContainer/HBoxContainer/CurentWordLabel")
+historyList = NodePath("VRightPanel/HintBoxContainer/HistoryScroll/HistoryList")
+historyScroll = NodePath("VRightPanel/HintBoxContainer/HistoryScroll")
 
 [node name="VRightPanel" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel"]
 custom_minimum_size = Vector2(313.033, 0)
