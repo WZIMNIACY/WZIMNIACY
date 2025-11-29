@@ -1,8 +1,9 @@
-[gd_scene load_steps=24 format=3 uid="uid://dottn65ntydo4"]
+[gd_scene load_steps=25 format=3 uid="uid://dottn65ntydo4"]
 
 [ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://themes/main_game.tres" id="1_s3esy"]
 [ext_resource type="PackedScene" uid="uid://vu4a6yutqy5e" path="res://scenes/components/main_game/blue_player_list.tscn" id="2_wi4c7"]
+[ext_resource type="Script" uid="uid://du1b2600pj626" path="res://scripts/Mediator.cs" id="2_wjob3"]
 [ext_resource type="PackedScene" uid="uid://r3ci44bvmc2j" path="res://scenes/components/main_game/red_player_list.tscn" id="3_wi4c7"]
 [ext_resource type="PackedScene" uid="uid://ksk3oy5hhdku" path="res://scenes/components/main_game/blue_score_container.tscn" id="5_ipu61"]
 [ext_resource type="PackedScene" uid="uid://db8ggkdji87xs" path="res://scenes/components/main_game/red_score_container.tscn" id="5_ygxny"]
@@ -87,6 +88,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_o6v7o")
+
+[node name="Mediator" type="Node" parent="."]
+script = ExtResource("2_wjob3")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0

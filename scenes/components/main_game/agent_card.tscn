@@ -1,9 +1,17 @@
-[gd_scene load_steps=3 format=3 uid="uid://s7i54u0fg4ly"]
+[gd_scene load_steps=5 format=3 uid="uid://s7i54u0fg4ly"]
 
 [ext_resource type="Texture2D" uid="uid://csm6re7xw340e" path="res://assets/textures/UNID_agent_ph.png" id="1_hiodb"]
+[ext_resource type="Script" uid="uid://tuvx56uegyxd" path="res://scripts/SelectButton.cs" id="2_m8y6f"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hiodb"]
 font_size = 11
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7al6y"]
+bg_color = Color(3.898591e-06, 0.71998835, 0.33393955, 1)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
 
 [node name="PanelContainer" type="PanelContainer"]
 offset_right = 40.0
@@ -27,3 +35,19 @@ size_flags_vertical = 8
 text = "Pseudomin"
 label_settings = SubResource("LabelSettings_hiodb")
 horizontal_alignment = 1
+
+[node name="Control" type="Control" parent="." node_paths=PackedStringArray("selectButton")]
+layout_mode = 2
+script = ExtResource("2_m8y6f")
+selectButton = NodePath("SelectButton")
+
+[node name="SelectButton" type="Button" parent="Control"]
+visible = false
+layout_mode = 0
+offset_left = 5.0
+offset_top = 10.0
+offset_right = 23.0
+offset_bottom = 28.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_7al6y")
+
+[connection signal="pressed" from="Control/SelectButton" to="Control" method="_on_select_button_pressed"]
