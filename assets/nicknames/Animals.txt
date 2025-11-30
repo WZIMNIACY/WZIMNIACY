@@ -1,0 +1,298 @@
+F-14  
+Tomcat  
+F-14A  
+F-14B  
+F-14D  
+F-15  
+Eagle  
+F-15A  
+F-15C  
+F-15E  
+Strike Eagle  
+F-15EX  
+Eagle II  
+F-15SA  
+F-16  
+Fighting Falcon  
+Viper  
+F-16A  
+F-16C  
+F-16D  
+F-16I  
+Sufa  
+F-16V  
+F/A-18  
+Hornet  
+F/A-18C  
+F/A-18E  
+Super Hornet  
+F/A-18F  
+EA-18G  
+Growler  
+F-22  
+Raptor  
+F-35  
+Lightning II  
+F-35A  
+F-35B  
+F-35C  
+F-35I  
+Adir  
+F-4  
+Phantom II  
+F-4E  
+F-4G  
+Wild Weasel  
+RF-4C  
+A-10  
+Thunderbolt II  
+Warthog  
+A-10C  
+A-6  
+Intruder  
+EA-6B  
+Prowler  
+AV-8B  
+Harrier II  
+B-1  
+Lancer  
+B-1B  
+Bone  
+B-2  
+Spirit  
+B-52  
+Stratofortress  
+Buff  
+B-52H  
+B-21  
+Raider  
+C-130  
+Hercules  
+AC-130  
+Spectre  
+Spooky  
+Stinger II  
+Ghostrider  
+AC-130U  
+AC-130W  
+AC-130J  
+E-3  
+Sentry  
+E-8  
+JSTARS  
+P-3  
+Orion  
+P-8  
+Poseidon  
+F-117  
+Nighthawk  
+SR-71  
+Blackbird  
+U-2  
+Dragon Lady  
+RQ-4  
+Global Hawk  
+MQ-9  
+Reaper  
+MQ-4C  
+Triton  
+F-5  
+Tiger II  
+F-20  
+Tigershark  
+A-4  
+Skyhawk  
+A-7  
+Corsair II  
+F-86  
+Sabre  
+F-100  
+Super Sabre  
+F-104  
+Starfighter  
+F-105  
+Thunderchief  
+F-111  
+Aardvark  
+MiG-15  
+Fagot  
+MiG-17  
+Fresco  
+MiG-19  
+Farmer  
+MiG-21  
+Fishbed  
+MiG-23  
+Flogger  
+MiG-25  
+Foxbat  
+MiG-29  
+Fulcrum  
+MiG-31  
+Foxhound  
+MiG-35  
+Su-7  
+Fitter  
+Su-17  
+Su-22  
+Su-24  
+Fencer  
+Su-25  
+Frogfoot  
+Su-27  
+Flanker  
+Su-30  
+Su-33  
+Su-34  
+Fullback  
+Su-35  
+Su-57  
+Felon  
+Tu-95  
+Bear  
+Tu-22M  
+Backfire  
+Tu-160  
+Blackjack  
+Mirage 2000  
+Rafale  
+Typhoon  
+Gripen  
+Tornado  
+J-10  
+Vigorous Dragon  
+J-20  
+Mighty Dragon  
+JF-17  
+Thunder  
+FC-31  
+Gyrfalcon  
+AH-1  
+Cobra  
+SuperCobra  
+AH-1W  
+AH-1Z  
+Viper  
+AH-64  
+Apache  
+Longbow  
+AH-64D  
+AH-64E  
+Guardian  
+UH-60  
+Black Hawk  
+MH-60  
+Seahawk  
+HH-60  
+Pave Hawk  
+UH-1  
+Iroquois  
+Huey  
+UH-1N  
+UH-1Y  
+Venom  
+CH-47  
+Chinook  
+CH-53  
+Sea Stallion  
+Super Stallion  
+CH-53E  
+CH-53K  
+King Stallion  
+MV-22  
+Osprey  
+Mi-24  
+Hind  
+Mi-28  
+Havoc  
+Mi-35  
+Ka-50  
+Black Shark  
+Ka-52  
+Alligator  
+Mi-26  
+Halo  
+Mi-8  
+Hip  
+Mi-17  
+Mi-14  
+Haze  
+Ka-27  
+Helix  
+Ka-31  
+Z-9  
+Haitun  
+Z-20  
+Tiger  
+HAD  
+HAP  
+AW159  
+Wildcat  
+NH90  
+T129  
+ATAK  
+H145M  
+AS565  
+Panther  
+Lynx  
+Super Lynx  
+Sea King  
+Merlin  
+HM2  
+V-280  
+Valor  
+SB>1  
+Defiant  
+RAH-66  
+Comanche  
+Bayraktar TB2  
+Wing Loong II  
+C-17  
+Globemaster III  
+C-5  
+Galaxy  
+An-124  
+Condor  
+An-225  
+Mriya  
+KC-135  
+Stratotanker  
+KC-46  
+Pegasus  
+E-2  
+Hawkeye  
+T-6  
+Texan II  
+L-39  
+Albatros  
+Hawk  
+T2  
+T-50  
+Golden Eagle  
+Yak-130  
+Mitten  
+L-15  
+Falcon  
+P-51  
+Mustang  
+P-47  
+Thunderbolt  
+Spitfire  
+Bf 109  
+Zero  
+F4U  
+Corsair  
+B-17  
+Flying Fortress  
+B-29  
+Superfortress  
+Me 262  
+Schwalbe  
+SR-72  
+Darkstar  
+YF-23  
+Black Widow II  
+X-32  
+X-35  
+Tempest  
+NGAD
