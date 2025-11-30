@@ -1,5 +1,4 @@
 using Godot;
-using System;
 
 public partial class UiManager : Node
 {
@@ -9,6 +8,8 @@ public partial class UiManager : Node
 
 	public override void _Ready()
 	{
+		base._Ready();
+
 		EOSManager = ((EOSManager)GetNode("/root/EOSManager"));
 
 		// Pobierz referencję do przycisku Create Lobby (scena LobbyCreate)
@@ -104,6 +105,8 @@ public partial class UiManager : Node
 
 	public override void _ExitTree()
 	{
+		base._ExitTree();
+
 		if (EOSManager != null)
 		{
 			EOSManager.LobbyCreated -= OnLobbyCreated;

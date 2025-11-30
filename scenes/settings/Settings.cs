@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using Godot;
-using System;
-using System.Xml.Serialization;
 
 public partial class Settings : Control
 {
@@ -59,6 +57,8 @@ public partial class Settings : Control
 
     public override void _Ready()
     {
+        base._Ready();
+
         GD.Print("⚙️ Settings scene initializing...");
 
         backButton = GetNode<Button>("Control/BackButton");

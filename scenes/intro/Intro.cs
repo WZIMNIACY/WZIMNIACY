@@ -6,6 +6,8 @@ public partial class Intro : Control
 
     public override void _Ready()
     {
+        base._Ready();
+
         _videoPlayer = GetNode<VideoStreamPlayer>("VideoStreamPlayer");
         _videoPlayer.Finished += OnVideoFinished;
 
@@ -25,6 +27,8 @@ public partial class Intro : Control
 
     public override void _Input(InputEvent @event)
     {
+        base._Input(@event);
+
         // Allow skipping intro with Space, Enter, Escape or mouse click
         if (@event is InputEventKey keyEvent && keyEvent.Pressed)
         {
