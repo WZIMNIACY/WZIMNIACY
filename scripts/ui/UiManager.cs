@@ -2,7 +2,7 @@ using Godot;
 
 public partial class UiManager : Node
 {
-	private EOSManager EOSManager;
+	private EOSManager eosManager;
 	private CurrentLobbyPanel currentLobbyPanel;
 	private Button createLobbyButton;
 
@@ -10,7 +10,7 @@ public partial class UiManager : Node
 	{
 		base._Ready();
 
-		EOSManager = ((EOSManager)GetNode("/root/EOSManager"));
+		eosManager = ((EOSManager)GetNode("/root/EOSManager"));
 
 		// Pobierz referencję do przycisku Create Lobby (scena LobbyCreate)
 		var parent = GetParent();
@@ -18,33 +18,7 @@ public partial class UiManager : Node
 		{
 			createLobbyButton = control.GetNodeOrNull<Button>("CreateLobby");
 		}
-
-		// // NOWE: Zawsze twórz CurrentLobbyPanel (dla joiners też!) UwU
-		// CreateCurrentLobbyPanel();
-
-		// // Podłącz sygnały z EOSManager
-		// EOSManager.LobbyCreated += OnLobbyCreated;
-		// EOSManager.LobbyJoined += OnLobbyJoined;
-		// EOSManager.LobbyCreationFailed += OnLobbyCreationFailed;
 	}
-
-	//Zakomentowane, ponieważ CurrentLobbyPanel jest teraz tworzony w edytorze
-
-	// private void CreateCurrentLobbyPanel()
-	// {
-	// 	// Stwórz panel
-	// 	currentLobbyPanel = new CurrentLobbyPanel();
-	// 	currentLobbyPanel.Position = new Vector2(41, 167);
-	// 	currentLobbyPanel.Size = new Vector2(405, 258);
-
-	// 	// Dodaj do Control node (parent)
-	// 	var parent = GetParent();
-	// 	if (parent is Control control)
-	// 	{
-	// 		control.CallDeferred("add_child", currentLobbyPanel);
-	// 		GD.Print("✅ CurrentLobbyPanel created programmatically");
-	// 	}
-	// }
 
 	public void OnCreateLobbyButtonPressed()
 	{
@@ -55,19 +29,19 @@ public partial class UiManager : Node
 			createLobbyButton.Text = "Creating...";
 		}
 
-		EOSManager.CreateLobby("Moje Lobby", 4, true);
+		eosManager.CreateLobby("Moje Lobby", 4, true);
 	}
 
 	public void OnJoinLobbyButtonPressed()
 	{
 		// Wyszukaj lobby - lista zostanie zaktualizowana przez sygnał LobbyListUpdated
-		EOSManager.SearchLobbies();
+		eosManager.SearchLobbies();
 	}
 
 	// Nowa funkcja do dołączania po indeksie
 	public void JoinFirstLobby()
 	{
-		EOSManager.JoinLobbyByIndex(0); // Dołącz do pierwszego lobby z listy
+		eosManager.JoinLobbyByIndex(0); // Dołącz do pierwszego lobby z listy
 	}
 
 	// Callback gdy lobby zostało utworzone
@@ -107,11 +81,11 @@ public partial class UiManager : Node
 	{
 		base._ExitTree();
 
-		if (EOSManager != null)
+		if (eosManager != null)
 		{
-			EOSManager.LobbyCreated -= OnLobbyCreated;
-			EOSManager.LobbyJoined -= OnLobbyJoined;
-			EOSManager.LobbyCreationFailed -= OnLobbyCreationFailed;
+			eosManager.LobbyCreated -= OnLobbyCreated;
+			eosManager.LobbyJoined -= OnLobbyJoined;
+			eosManager.LobbyCreationFailed -= OnLobbyCreationFailed;
 		}
 	}
 }
