@@ -10,8 +10,10 @@ public enum Team
 public partial class MainGame : Control
 {
     [Export] Panel menuPanel;
-    [Export] Label pointsBlueLabel;
-    [Export] Label pointsRedLabel;
+    [Export] Label pointsLabelBlue;
+    [Export] Label pointsLabelRed;
+    [Export] ColorRect turnDiodeBlue;
+    [Export] ColorRect turnDiodeRed;
     public const bool IsHost = true; // temp value
     public int pointsBlue;
     public int pointsRed;
@@ -23,8 +25,10 @@ public partial class MainGame : Control
     {
         base._Ready();
         menuPanel = GetNode<Panel>("MenuPanel");
-        pointsBlueLabel = GetNode<Label>("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/BlueScoreContainer/VBoxContainer/Label");
-        pointsRedLabel = GetNode<Label>("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer/VBoxContainer/Label");
+        pointsLabelBlue = GetNode<Label>("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/BlueScoreContainer/VBoxContainer/Label");
+        pointsLabelRed = GetNode<Label>("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer/VBoxContainer/Label");
+        turnDiodeBlue = GetNode<ColorRect>("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/BlueScoreContainer/VBoxContainer/Control/ColorRect");
+        turnDiodeRed = GetNode<ColorRect>("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer/VBoxContainer/Control/ColorRect");
 
         // Hide menu panel at start
         menuPanel.Visible = false;
@@ -108,8 +112,8 @@ public partial class MainGame : Control
     {
         string textBlue = "Karty niebieskich: "; // temp value, czekam na lepsza propozycje od UI teamu
         string textRed = "Karty czerwonych: "; // same
-        pointsBlueLabel.Text = textBlue + pointsBlue.ToString();
-        pointsRedLabel.Text = textRed + pointsRed.ToString();
+        pointsLabelBlue.Text = textBlue + pointsBlue.ToString();
+        pointsLabelRed.Text = textRed + pointsRed.ToString();
     }
 
     public void RemovePointBlue()
@@ -142,14 +146,16 @@ public partial class MainGame : Control
     {
         GD.Print("Turn blue...");
         currentTurn = Team.Blue;
-        // color change
+        turnDiodeBlue.Visible = true;
+        turnDiodeRed.Visible = false;
     }
 
     public void SetTurnRed()
     {
         GD.Print("Turn red...");
         currentTurn = Team.Red;
-        // color change
+        turnDiodeBlue.Visible = false;
+        turnDiodeRed.Visible = true;
     }
 
     public void EndGame(Team winner)
