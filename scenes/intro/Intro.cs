@@ -2,14 +2,14 @@ using Godot;
 
 public partial class Intro : Control
 {
-    private VideoStreamPlayer _videoPlayer;
+    private VideoStreamPlayer videoPlayer;
 
     public override void _Ready()
     {
         base._Ready();
 
-        _videoPlayer = GetNode<VideoStreamPlayer>("VideoStreamPlayer");
-        _videoPlayer.Finished += OnVideoFinished;
+        videoPlayer = GetNode<VideoStreamPlayer>("VideoStreamPlayer");
+        videoPlayer.Finished += OnVideoFinished;
 
         GD.Print("🎬 Playing intro video...");
     }

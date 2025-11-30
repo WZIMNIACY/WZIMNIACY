@@ -73,7 +73,7 @@ public partial class Settings : Control
         resolutionOptionButton = GetNode<OptionButton>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Video/ResolutionOption");
         scaleUISlider = GetNode<HSlider>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Video/SliderUI");
 
-        _VideoUIOptions();
+        VideoUIOptions();
         LoadSettings();
         UpdateUI();
         GD.Print("✅ Settings ready");
@@ -122,7 +122,7 @@ public partial class Settings : Control
         GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
     }
 
-    private void _VideoUIOptions()
+    private void VideoUIOptions()
     {
         screenModeOptionButton.Clear();
         screenModeOptionButton.AddItem("Windowed", 0);
