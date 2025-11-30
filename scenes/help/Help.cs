@@ -1,5 +1,4 @@
 using Godot;
-using System;
 
 public partial class Help : Control
 {
@@ -7,6 +6,8 @@ public partial class Help : Control
 
     public override void _Ready()
     {
+        base._Ready();
+
         backButton = GetNode<Button>("Control/BackButton");
         if (backButton != null)
         {

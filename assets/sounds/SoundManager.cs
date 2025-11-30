@@ -1,5 +1,4 @@
 using Godot;
-using System;
 
 public partial class SoundManager : Node
 {
@@ -20,6 +19,8 @@ public partial class SoundManager : Node
 
 	public override void _Ready()
 	{
+		base._Ready();
+
 		GD.Print("🎵 Initializing SoundManager...");
 
 		// Załaduj streamy
@@ -119,6 +120,8 @@ public partial class SoundManager : Node
 
 	public override void _ExitTree()
 	{
+		base._ExitTree();
+
 		// Odłącz sygnały przy zamykaniu
 		GetTree().NodeAdded -= OnNodeAdded;
 	}

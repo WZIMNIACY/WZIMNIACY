@@ -1,5 +1,6 @@
 using Godot;
 using System;
+
 public partial class MainMenu : Node
 {
     private const string LobbyMenuString = "res://scenes/lobby/Lobby.tscn";
@@ -18,6 +19,8 @@ public partial class MainMenu : Node
 
     public override void _Ready()
     {
+        base._Ready();
+
         createButton = GetNode<Button>("Panel/MenuCenter/VMenu/CreateGame/CreateGameButton");
         Button joinButton = GetNode<Button>("Panel/MenuCenter/VMenu/JoinGame/JoinGameButton");
         Button quitButton = GetNode<Button>("Panel/MenuCenter/VMenu/Quit/QuitButton");
@@ -174,6 +177,8 @@ public partial class MainMenu : Node
 
     public override void _ExitTree()
     {
+        base._ExitTree();
+
         // Odłącz sygnał przy wyjściu
         if (eosManager != null)
         {
