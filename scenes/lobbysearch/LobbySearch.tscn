@@ -1,14 +1,15 @@
-[gd_scene load_steps=9 format=3 uid="uid://b8xk4j2p5n7qw"]
+[gd_scene load_steps=11 format=3 uid="uid://b8xk4j2p5n7qw"]
 
-[ext_resource type="Texture2D" uid="uid://devd1w5le54s5" path="res://icon.svg" id="1_a4kyt"]
-[ext_resource type="Script" uid="uid://ce1tsde0jdaka" path="res://scripts/ui/UiManager.cs" id="2_qmux8"]
-[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="3_6mxdh"]
-[ext_resource type="Script" uid="uid://bwqwua4dlauj" path="res://scripts/ui/LobbyListUI.cs" id="3_llh4u"]
-[ext_resource type="StyleBox" uid="uid://dgkp41umsnv7g" path="res://assets/inputs/InputPlaceHolder.tres" id="3_mm0ga"]
-[ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://assets/buttons/button_border2.tres" id="5_6mxdh"]
-[ext_resource type="Script" uid="uid://crimrqvlwfkpw" path="res://scenes/lobbysearch/LobbySearchMenu.cs" id="5_search"]
-[ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="7_ty5cw"]
-[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="8_ty5cw"]
+[ext_resource type="Texture2D" uid="uid://cdovhk1megx81" path="res://icon.svg" id="1_a4kyt"]
+[ext_resource type="Script" uid="uid://ce1tsde0jdaka" path="res://Scripts/UI/UiManager.cs" id="2_qmux8"]
+[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://Assets/Fonts/Space_Mono/SpaceMono-Regular.ttf" id="3_6mxdh"]
+[ext_resource type="Script" uid="uid://bwqwua4dlauj" path="res://Scripts/UI/LobbyListUI.cs" id="3_llh4u"]
+[ext_resource type="StyleBox" uid="uid://dgkp41umsnv7g" path="res://Assets/Inputs/InputPlaceHolder.tres" id="3_mm0ga"]
+[ext_resource type="Script" uid="uid://ds7fs15smja7h" path="res://Scripts/EOStestPlatform.gd" id="4_0hgl0"]
+[ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://Assets/Buttons/button_border2.tres" id="5_6mxdh"]
+[ext_resource type="Script" uid="uid://crimrqvlwfkpw" path="res://Scenes/LobbySearch/LobbySearchMenu.cs" id="5_search"]
+[ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://Assets/Buttons/button_hover.tres" id="7_ty5cw"]
+[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://Assets/Fonts/Space_Mono/SpaceMono-Bold.ttf" id="8_ty5cw"]
 
 [node name="LobbySearch" type="Control"]
 layout_mode = 3
@@ -93,6 +94,9 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("3_llh4u")
+
+[node name="EOSTestNode" type="Node" parent="."]
+script = ExtResource("4_0hgl0")
 
 [node name="CreateLobby3" type="Button" parent="."]
 visible = false

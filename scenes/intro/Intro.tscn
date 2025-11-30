@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://bq8xy5m3n4p1w"]
 
-[ext_resource type="Script" path="res://scenes/intro/Intro.cs" id="1_intro"]
-[ext_resource type="VideoStream" uid="uid://c8k2jv7n3m9p4" path="res://assets/intro.ogv" id="2_video"]
+[ext_resource type="Script" uid="uid://cytl3v23xsy8q" path="res://scenes/intro/Intro.cs" id="1_intro"]
+[ext_resource type="VideoStream" uid="uid://c8k2jv7n3nap4" path="res://assets/intro.ogv" id="2_video"]
 
 [node name="Intro" type="Control"]
 layout_mode = 3

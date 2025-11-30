@@ -1,14 +1,14 @@
 [gd_scene load_steps=27 format=3 uid="uid://cqr5yj8x3kp2m"]
 
-[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="2_31whf"]
-[ext_resource type="StyleBox" uid="uid://dgkp41umsnv7g" path="res://assets/inputs/InputPlaceHolder.tres" id="2_qh262"]
-[ext_resource type="Script" uid="uid://ce1tsde0jdaka" path="res://scripts/ui/UiManager.cs" id="2_qmux8"]
-[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="3_1cd5g"]
-[ext_resource type="Script" uid="uid://cu2ikiortvp2o" path="res://scenes/lobby/LobbyMenu.cs" id="3_lobby"]
-[ext_resource type="StyleBox" uid="uid://col41obfm3t76" path="res://assets/buttons/ActionButtonsBorderHover.tres" id="4_31whf"]
-[ext_resource type="StyleBox" uid="uid://xp4ier1dij74" path="res://assets/buttons/ActionButtonsBorder.tres" id="5_qxwld"]
-[ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="5_vomky"]
-[ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://assets/buttons/button_border2.tres" id="7_qxwld"]
+[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://Assets/Fonts/Space_Mono/SpaceMono-Regular.ttf" id="2_31whf"]
+[ext_resource type="StyleBox" uid="uid://dgkp41umsnv7g" path="res://Assets/Inputs/InputPlaceHolder.tres" id="2_qh262"]
+[ext_resource type="Script" uid="uid://ce1tsde0jdaka" path="res://Scripts/UI/UiManager.cs" id="2_qmux8"]
+[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://Assets/Fonts/Space_Mono/SpaceMono-Bold.ttf" id="3_1cd5g"]
+[ext_resource type="Script" uid="uid://cu2ikiortvp2o" path="res://Scenes/Lobby/LobbyMenu.cs" id="3_lobby"]
+[ext_resource type="StyleBox" uid="uid://col41obfm3t76" path="res://Assets/Buttons/ActionButtonsBorderHover.tres" id="4_31whf"]
+[ext_resource type="StyleBox" uid="uid://xp4ier1dij74" path="res://Assets/Buttons/ActionButtonsBorder.tres" id="5_qxwld"]
+[ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://Assets/Buttons/button_hover.tres" id="5_vomky"]
+[ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://Assets/Buttons/button_border2.tres" id="7_qxwld"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_crh2a"]
 content_margin_left = 4.0

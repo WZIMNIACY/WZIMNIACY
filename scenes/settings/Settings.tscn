@@ -1,11 +1,11 @@
 [gd_scene load_steps=7 format=3 uid="uid://bfxpcutxox0tt"]
 
-[ext_resource type="Script" uid="uid://opxogrio063d" path="res://scenes/settings/Settings.cs" id="1_gaid6"]
-[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="2_fa6u7"]
-[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="3_6agbc"]
-[ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="3_oerk1"]
-[ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://assets/buttons/button_border2.tres" id="3_q5ip6"]
-[ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="4_gl5ki"]
+[ext_resource type="Script" uid="uid://opxogrio063d" path="res://Scenes/Settings/Settings.cs" id="1_gaid6"]
+[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://Assets/Fonts/Space_Mono/SpaceMono-Bold.ttf" id="2_fa6u7"]
+[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://Assets/Fonts/Space_Mono/SpaceMono-Regular.ttf" id="3_6agbc"]
+[ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://Assets/Buttons/button_border.tres" id="3_oerk1"]
+[ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://Assets/Buttons/button_border2.tres" id="3_q5ip6"]
+[ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://Assets/Buttons/button_hover.tres" id="4_gl5ki"]
 
 [node name="Settings" type="Control"]
 layout_mode = 3
@@ -122,10 +122,10 @@ mouse_default_cursor_shape = 2
 theme_override_fonts/font = ExtResource("3_6agbc")
 selected = 0
 item_count = 2
-popup/item_0/text = "W Oknie"
-popup/item_0/id = 0
-popup/item_1/text = "Pełny Ekran"
-popup/item_1/id = 1
+popup/item_0/text = "Pełny Ekran"
+popup/item_0/id = 1
+popup/item_1/text = "W Oknie"
+popup/item_1/id = 0
 
 [node name="LResolution" type="Label" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Video"]
 layout_mode = 2

@@ -22,8 +22,6 @@ public partial class LobbyMenu : Control
 
     public override void _Ready()
     {
-        base._Ready();
-
         // Pobierz EOSManager z autoload
         eosManager = GetNode<EOSManager>("/root/EOSManager");
 
@@ -72,24 +70,11 @@ public partial class LobbyMenu : Control
             gameModeList.ItemSelected += OnSelectedGameModeChanged;
         }
 
-        if (startGameButton != null)
-        {
-            startGameButton.Pressed += OnStartGamePressed;
-        }
-
         // Pobierz listy drużyn
         blueTeamList = GetNode<ItemList>("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer/BlueTeamsMembers");
         redTeamList = GetNode<ItemList>("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer/RedTeamMembers");
 
-        // Podłącz obsługę prawego kliknięcia dla hosta! >:3
-        if (blueTeamList != null)
-        {
-            blueTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, blueTeamList);
-        }
-        if (redTeamList != null)
-        {
-            redTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, redTeamList);
-        }        // WAŻNE: Podłącz sygnał z EOSManager do aktualizacji drużyn
+        // WAŻNE: Podłącz sygnał z EOSManager do aktualizacji drużyn
         if (eosManager != null)
         {
             eosManager.LobbyMembersUpdated += OnLobbyMembersUpdated;
@@ -182,7 +167,6 @@ public partial class LobbyMenu : Control
             bool isOwner = (bool)member["isOwner"];
             bool isLocalPlayer = (bool)member["isLocalPlayer"];
             string team = member.ContainsKey("team") ? member["team"].ToString() : "";
-            string userId = member.ContainsKey("userId") ? member["userId"].ToString() : "";
 
             // Dodaj ikonę korony dla właściciela
             if (isOwner)
@@ -199,22 +183,12 @@ public partial class LobbyMenu : Control
             // Przypisz do odpowiedniej drużyny według atrybutu
             if (team == "Blue")
             {
-                int index = blueTeamList.AddItem(displayName);
-                blueTeamList.SetItemMetadata(index, new Godot.Collections.Dictionary
-                {
-                    { "userId", userId },
-                    { "isLocalPlayer", isLocalPlayer }
-                });
+                blueTeamList.AddItem(displayName);
                 GD.Print($"  ➕ Blue: {displayName}");
             }
             else if (team == "Red")
             {
-                int index = redTeamList.AddItem(displayName);
-                redTeamList.SetItemMetadata(index, new Godot.Collections.Dictionary
-                {
-                    { "userId", userId },
-                    { "isLocalPlayer", isLocalPlayer }
-                });
+                redTeamList.AddItem(displayName);
                 GD.Print($"  ➕ Red: {displayName}");
             }
             else
@@ -428,12 +402,6 @@ public partial class LobbyMenu : Control
         GD.Print($"✅ New lobby ID generated: {newCode}");
     }
 
-    private void OnStartGamePressed()
-    {
-        GD.Print("🎮 Starting game...");
-        GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");
-    }
-
     private void OnBackButtonPressed()
     {
         GD.Print("Returning to main menu...");
@@ -445,7 +413,7 @@ public partial class LobbyMenu : Control
             eosManager.LeaveLobby();
         }
 
-        GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
+        GetTree().ChangeSceneToFile("res://Scenes/MainMenu/main.tscn");
     }
 
     private void OnLeaveLobbyPressed()
@@ -459,7 +427,7 @@ public partial class LobbyMenu : Control
             eosManager.LeaveLobby();
         }
 
-        GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
+        GetTree().ChangeSceneToFile("res://Scenes/MainMenu/main.tscn");
     }
 
     private async void CreateLobbyWithRetry(int attempt = 0)
@@ -512,8 +480,6 @@ public partial class LobbyMenu : Control
 
     public override void _ExitTree()
     {
-        base._ExitTree();
-
         // Odłącz sygnały przy wyjściu
         if (eosManager != null)
         {
@@ -521,64 +487,5 @@ public partial class LobbyMenu : Control
             eosManager.CustomLobbyIdUpdated -= OnCustomLobbyIdUpdated;
             eosManager.GameModeUpdated -= OnGameModeUpdated;
         }
-    }
-
-    private void OnTeamListGuiInput(InputEvent @event, ItemList teamList)
-    {
-        // Tylko host może wyrzucać graczy! >:3
-        if (!eosManager.isLobbyOwner)
-        {
-            return;
-        }
-
-        if (@event is InputEventMouseButton mouseEvent)
-        {
-            if (mouseEvent.ButtonIndex == MouseButton.Right && mouseEvent.Pressed)
-            {
-                // Sprawdź czy kliknęliśmy na gracza
-                int clickedIndex = teamList.GetItemAtPosition(mouseEvent.Position);
-
-                if (clickedIndex >= 0)
-                {
-                    var metadata = teamList.GetItemMetadata(clickedIndex).AsGodotDictionary();
-
-                    if (metadata != null && metadata.ContainsKey("userId") && metadata.ContainsKey("isLocalPlayer"))
-                    {
-                        bool isLocalPlayer = (bool)metadata["isLocalPlayer"];
-
-                        // Nie możemy wyrzucić siebie!
-                        if (!isLocalPlayer)
-                        {
-                            string userId = metadata["userId"].ToString();
-                            string displayName = teamList.GetItemText(clickedIndex);
-
-                            GD.Print($"🖱️ Right-clicked on player: {displayName} ({userId})");
-                            ShowKickPopup(userId, displayName, mouseEvent.GlobalPosition);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void ShowKickPopup(string userId, string displayName, Vector2 globalPosition)
-    {
-        // Stwórz PopupMenu
-        var popup = new PopupMenu();
-        popup.AddItem($"👢 Wyrzuc {displayName}", 0);
-        popup.IndexPressed += (index) =>
-        {
-            if (index == 0)
-            {
-                GD.Print($"👢 Kicking player: {displayName}");
-                eosManager.KickPlayer(userId);
-            }
-            popup.QueueFree();
-        };
-
-        // Dodaj do drzewa i pokaż
-        AddChild(popup);
-        popup.Position = (Vector2I)globalPosition;
-        popup.Popup();
     }
 }

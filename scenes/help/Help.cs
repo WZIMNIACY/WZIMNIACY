@@ -1,4 +1,5 @@
 using Godot;
+using System;
 
 public partial class Help : Control
 {
@@ -6,8 +7,6 @@ public partial class Help : Control
 
     public override void _Ready()
     {
-        base._Ready();
-
         backButton = GetNode<Button>("Control/BackButton");
         if (backButton != null)
         {
@@ -18,6 +17,6 @@ public partial class Help : Control
     private void OnBackButtonPressed()
     {
         GD.Print("Returning to Main Menu...");
-        GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
+        GetTree().ChangeSceneToFile("res://Scenes/MainMenu/main.tscn");
     }
 }

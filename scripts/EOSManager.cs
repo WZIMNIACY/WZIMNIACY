@@ -87,8 +87,7 @@ public partial class EOSManager : Node
 	// Nickname ustawiony PRZED wejściem do lobby
 	private string pendingNickname = "";
 
-	// Lista zwierzaków wczytana z pliku >w<
-	private System.Collections.Generic.List<string> animalNames = new System.Collections.Generic.List<string>();    // Flaga blokująca tworzenie lobby
+	// Flaga blokująca tworzenie lobby
 	private bool isCreatingLobby = false;
 
 	// Timer do odświeżania lobby
@@ -97,12 +96,7 @@ public partial class EOSManager : Node
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		base._Ready();
-
 		GD.Print("=== Starting EOS Initialization ===");
-
-		// Wczytaj listę zwierzaków z pliku ^w^
-		LoadAnimalNames();
 
 		// Krok 1: Inicjalizacja SDK
 		var initializeOptions = new InitializeOptions()
@@ -161,14 +155,6 @@ public partial class EOSManager : Node
 
 		GD.Print("✅ EOS Platform Interface created successfully.");
 
-		// Pobierz Auth Interface
-		authInterface = platformInterface.GetAuthInterface();
-		if (authInterface == null)
-		{
-			GD.PrintErr("Failed to get Auth Interface!");
-			return;
-		}
-
 		// Pobierz Connect Interface (P2P, bez wymagania konta Epic)
 		connectInterface = platformInterface.GetConnectInterface();
 		if (connectInterface == null)
@@ -201,59 +187,18 @@ public partial class EOSManager : Node
 		{
 			if (data.ResultCode == Result.Success)
 			{
-				GD.Print("Successfully deleted existing DeviceId, DeviceId login will get a new one");
-				LoginWithDeviceId_P2P();
-			}
-			else if (data.ResultCode == Result.NotFound)
-			{
-				GD.Print("DeviceId for deletion was not found, DeviceId login will get a new one");
+				GD.Print("Successfully deleted existing DeviceId");
 				LoginWithDeviceId_P2P();
 			}
 			else
 			{
-				GD.PrintErr("Unexpected error while deleting existing DeviceId, DeviceId login will not be called," + " Result: " + (int)data.ResultCode + ":" + data.ResultCode);
+				GD.PrintErr("Error while deleting existing DeviceId, DeviceId login will not be called");
 			}
 		});
 
 		// Krok 4: Logowanie P2P (anonimowe, bez konta Epic)
+		LoginWithDeviceId_P2P();
 		// LoginWithDeviceId_P2P();
-
-		// Krok 4: Logowanie P2P (anonimowe, bez konta Epic)
-		// LoginWithDeviceId_P2P();
-	}
-
-	private void HandleKickedFromLobby()
-	{
-		GD.Print("🏠 Returning to main menu after being kicked...");
-
-		// Zatrzymaj timer odświeżania jeśli jeszcze działa
-		if (lobbyRefreshTimer != null && lobbyRefreshTimer.TimeLeft > 0)
-		{
-			lobbyRefreshTimer.Stop();
-			GD.Print("🛑 Lobby refresh timer stopped (kicked)");
-		}
-
-		// Wyczyść stan lobby tak jak przy normalnym wyjściu
-		currentLobbyId = null;
-		isLobbyOwner = false;
-		currentCustomLobbyId = string.Empty;
-		EmitSignal(SignalName.CustomLobbyIdUpdated, "");
-
-		currentGameMode = "AI Master";
-		EmitSignal(SignalName.GameModeUpdated, currentGameMode);
-
-		currentLobbyMembers.Clear();
-		isCreatingLobby = false;
-
-		// Poinformuj UI, że lobby zostało opuszczone
-		EmitSignal(SignalName.LobbyLeft);
-
-		// Na koniec wróć do menu głównego
-		if (GetTree() != null)
-		{
-			// Main menu scene is stored as main.tscn (not MainMenu.tscn)
-			GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
-		}
 	}
 
 	private void CreateLobbyRefreshTimer()
@@ -482,8 +427,6 @@ public partial class EOSManager : Node
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-		base._Process(delta);
-
 		// Krok 4: Tick platformy - musi być wywoływany regularnie
 		if (platformInterface != null)
 		{
@@ -494,8 +437,6 @@ public partial class EOSManager : Node
 	// Cleanup przy zamykaniu
 	public override void _ExitTree()
 	{
-		base._ExitTree();
-
 		// Wyloguj użytkownika przed zamknięciem (jeśli używamy Auth)
 		if (authInterface != null && localEpicAccountId != null && localEpicAccountId.IsValid())
 		{
@@ -547,79 +488,6 @@ public partial class EOSManager : Node
 	// ============================================
 	// NICKNAME MANAGEMENT
 	// ============================================
-
-	/// <summary>
-	/// Wczytuje listę zwierzaków z pliku Animals.txt
-	/// </summary>
-	private void LoadAnimalNames()
-	{
-		string filePath = "res://assets/nicknames/Animals_Old.txt";
-
-		if (!FileAccess.FileExists(filePath))
-		{
-			GD.PrintErr($"❌ Nie znaleziono pliku ze zwierzakami: {filePath}");
-			return;
-		}
-
-		using var file = FileAccess.Open(filePath, FileAccess.ModeFlags.Read);
-		if (file == null)
-		{
-			GD.PrintErr($"❌ Nie można otworzyć pliku: {filePath}");
-			return;
-		}
-
-		animalNames.Clear();
-		while (!file.EofReached())
-		{
-			string line = file.GetLine().Trim();
-			if (!string.IsNullOrEmpty(line))
-			{
-				animalNames.Add(line);
-			}
-		}
-
-		GD.Print($"🦊 Wczytano {animalNames.Count} zwierzaków z listy! OwO");
-	}
-
-	/// <summary>
-	/// Losuje unikalny nick zwierzaka (sprawdza duplikaty w lobby) ^w^
-	/// </summary>
-	private string GenerateUniqueAnimalNickname()
-	{
-		if (animalNames.Count == 0)
-		{
-			GD.PrintErr("❌ Brak listy zwierzaków! Używam fallback...");
-			return $"Animal_{GD.Randi() % 9999}";
-		}
-
-		// Pobierz listę już zajętych nicków
-		var usedNicknames = new System.Collections.Generic.HashSet<string>();
-		foreach (var member in currentLobbyMembers)
-		{
-			if (member.ContainsKey("displayName"))
-			{
-				usedNicknames.Add(member["displayName"].ToString());
-			}
-		}
-
-		// Próbuj wylosować unikalny nick (max 10 prób)
-		for (int attempt = 0; attempt < 10; attempt++)
-		{
-			string randomAnimal = animalNames[(int)(GD.Randi() % animalNames.Count)];
-
-			if (!usedNicknames.Contains(randomAnimal))
-			{
-				GD.Print($"🎲 Wylosowano zwierzaka: {randomAnimal} (próba {attempt + 1}) >w<");
-				return randomAnimal;
-			}
-		}
-
-		// Jeśli wszystkie próby się nie powiodły, dodaj losowy sufiks
-		string fallbackAnimal = animalNames[(int)(GD.Randi() % animalNames.Count)];
-		string uniqueNick = $"{fallbackAnimal}_{GD.Randi() % 99}";
-		GD.Print($"⚠️ Nie udało się wylosować unikalnego, używam: {uniqueNick}");
-		return uniqueNick;
-	}
 
 	/// <summary>
 	/// Ustawia nickname który będzie użyty przy dołączeniu/utworzeniu lobby
@@ -705,10 +573,6 @@ public partial class EOSManager : Node
 
 		// Zablokuj tworzenie lobby
 		isCreatingLobby = true;
-
-		// Automatycznie wygeneruj unikalny nick zwierzaka! ^w^
-		pendingNickname = GenerateUniqueAnimalNickname();
-		GD.Print($"🦊 Twój nick: {pendingNickname}");
 
 		var createLobbyOptions = new CreateLobbyOptions()
 		{
@@ -1192,10 +1056,6 @@ public partial class EOSManager : Node
 
 		GD.Print($"🚪 Joining lobby: {lobbyId}");
 
-		// Automatycznie wygeneruj unikalny nick zwierzaka! ^w^
-		pendingNickname = GenerateUniqueAnimalNickname();
-		GD.Print($"🦊 Twój nick: {pendingNickname}");
-
 		var joinLobbyOptions = new JoinLobbyOptions()
 		{
 			LobbyDetailsHandle = foundLobbyDetails[lobbyId],
@@ -1493,53 +1353,6 @@ public partial class EOSManager : Node
 		}
 	}
 
-	/// <summary>
-	/// Wyrzuca gracza z lobby (tylko host może to zrobić!) >:3
-	/// </summary>
-	public void KickPlayer(string targetUserId)
-	{
-		if (string.IsNullOrEmpty(currentLobbyId))
-		{
-			GD.PrintErr("❌ Cannot kick player: Not in any lobby!");
-			return;
-		}
-
-		if (!isLobbyOwner)
-		{
-			GD.PrintErr("❌ Cannot kick player: You are not the host!");
-			return;
-		}
-
-		if (targetUserId == localProductUserId.ToString())
-		{
-			GD.PrintErr("❌ Cannot kick yourself!");
-			return;
-		}
-
-		GD.Print($"👢 Kicking player: {targetUserId} from lobby {currentLobbyId}");
-
-		var kickMemberOptions = new KickMemberOptions()
-		{
-			LobbyId = currentLobbyId,
-			LocalUserId = localProductUserId,
-			TargetUserId = ProductUserId.FromString(targetUserId)
-		};
-
-		lobbyInterface.KickMember(ref kickMemberOptions, null, OnKickMemberComplete);
-	}
-
-	private void OnKickMemberComplete(ref KickMemberCallbackInfo data)
-	{
-		if (data.ResultCode == Result.Success)
-		{
-			GD.Print($"✅ Successfully kicked player from lobby: {data.LobbyId}");
-		}
-		else
-		{
-			GD.PrintErr($"❌ Failed to kick player: {data.ResultCode}");
-		}
-	}
-
 	// ============================================
 	// NASŁUCHIWANIE NA ZMIANY W LOBBY
 	// ============================================
@@ -1597,30 +1410,15 @@ public partial class EOSManager : Node
 	{
 		GD.Print($"🔔 Lobby member status changed in: {data.LobbyId}, User: {data.TargetUserId}, Status: {data.CurrentStatus}");
 
-		// NAJPIERW sprawdź czy to MY zostaliśmy wyrzuceni (zanim sprawdzimy currentLobbyId!)
-		if (data.CurrentStatus == LobbyMemberStatus.Kicked &&
-			data.TargetUserId.ToString() == localProductUserId.ToString())
+		// Jeśli to nasze lobby
+		if (currentLobbyId == data.LobbyId.ToString())
 		{
-			GD.Print($"  👢 You have been KICKED from the lobby!");
-			CallDeferred(nameof(HandleKickedFromLobby));
-			return; // Ignoruj wszystkie dalsze eventy
-		}
-
-		// Jeśli to nasze lobby (i nie zostaliśmy wyrzuceni)
-		if (!string.IsNullOrEmpty(currentLobbyId) && currentLobbyId == data.LobbyId.ToString())
-		{
-			string userId = data.TargetUserId.ToString();
-
-			// Obsługa KICKED - ktoś INNY został wyrzucony
-			if (data.CurrentStatus == LobbyMemberStatus.Kicked)
-			{
-				GD.Print($"  👢 Member KICKED: {userId.Substring(Math.Max(0, userId.Length - 8))}");
-			}
-
-			// Odśwież LobbyDetails handle (tylko jeśli nie zostaliśmy wyrzuceni)
+			// Odśwież LobbyDetails handle
 			CacheCurrentLobbyDetailsHandle("member_status");
 
-			// JOINED, LEFT lub KICKED - odśwież całą listę członków
+			string userId = data.TargetUserId.ToString();
+
+			// JOINED lub LEFT - odśwież całą listę członków
 			if (data.CurrentStatus == LobbyMemberStatus.Joined)
 			{
 				GD.Print($"  ➕ Member JOINED: {userId.Substring(Math.Max(0, userId.Length - 8))}");
@@ -1632,9 +1430,9 @@ public partial class EOSManager : Node
 					EmitSignal(SignalName.CurrentLobbyInfoUpdated, currentLobbyId, currentLobbyMembers.Count, 4, isLobbyOwner);
 				};
 			}
-			else if (data.CurrentStatus == LobbyMemberStatus.Left || data.CurrentStatus == LobbyMemberStatus.Kicked)
+			else if (data.CurrentStatus == LobbyMemberStatus.Left)
 			{
-				GD.Print($"  ➖ Member LEFT/KICKED: {userId.Substring(Math.Max(0, userId.Length - 8))}");
+				GD.Print($"  ➖ Member LEFT: {userId.Substring(Math.Max(0, userId.Length - 8))}");
 
 				// Małe opóźnienie na synchronizację EOS
 				GetTree().CreateTimer(0.5).Timeout += () =>

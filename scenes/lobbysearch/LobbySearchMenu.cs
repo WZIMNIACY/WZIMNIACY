@@ -1,8 +1,9 @@
 using Godot;
+using System;
 
-public partial class LobbySearchMenu : Node
+public partial class LobbySearchMenu : Control
 {
-    private const string LobbyScenePath = "res://scenes/lobby/Lobby.tscn";
+    private const string LobbyScenePath = "res://Scenes/Lobby/Lobby.tscn";
     private EOSManager eosManager;
     private Button backButton;
     private LineEdit searchInput;
@@ -19,8 +20,6 @@ public partial class LobbySearchMenu : Node
 
     public override void _Ready()
     {
-        base._Ready();
-
         // Pobierz EOSManager z autoload
         eosManager = GetNode<EOSManager>("/root/EOSManager");
 
@@ -66,7 +65,7 @@ public partial class LobbySearchMenu : Node
     private void OnBackButtonPressed()
     {
         GD.Print("Returning to main menu...");
-        GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
+        GetTree().ChangeSceneToFile("res://Scenes/MainMenu/main.tscn");
     }
 
     private void OnJoinButtonPressed()
@@ -188,8 +187,6 @@ public partial class LobbySearchMenu : Node
 
     public override void _ExitTree()
     {
-        base._ExitTree();
-
         // Zatrzymaj i usuń timery
         if (animationTimer != null)
         {
