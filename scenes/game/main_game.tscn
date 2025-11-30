@@ -1,6 +1,6 @@
 [gd_scene load_steps=26 format=3 uid="uid://dottn65ntydo4"]
 
-[ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/MainGame.cs" id="1_o6v7o"]
+[ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://themes/main_game.tres" id="1_s3esy"]
 [ext_resource type="PackedScene" uid="uid://vu4a6yutqy5e" path="res://scenes/components/main_game/blue_player_list.tscn" id="2_wi4c7"]
 [ext_resource type="PackedScene" uid="uid://r3ci44bvmc2j" path="res://scenes/components/main_game/red_player_list.tscn" id="3_wi4c7"]
@@ -8,12 +8,12 @@
 [ext_resource type="PackedScene" uid="uid://db8ggkdji87xs" path="res://scenes/components/main_game/red_score_container.tscn" id="5_ygxny"]
 [ext_resource type="PackedScene" uid="uid://s7i54u0fg4ly" path="res://scenes/components/main_game/agent_card.tscn" id="6_ygxny"]
 [ext_resource type="Texture2D" uid="uid://bjri1j0tawip8" path="res://assets/textures/gradients/game_skip_turn_button_gradient.tres" id="7_wi4c7"]
-[ext_resource type="Script" uid="uid://dsswor3dmxdlv" path="res://scenes/components/main_game/scripts/RightPanel.cs" id="8_8xp80"]
+[ext_resource type="Script" uid="uid://dsswor3dmxdlv" path="res://scenes/game/scripts/RightPanel.cs" id="8_cn0rj"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="9_nqdth"]
-[ext_resource type="FontFile" uid="uid://upku0pfbglaj" path="res://assets/fonts/SpaceMono-Bold.ttf" id="9_o6v7o"]
+[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="9_o6v7o"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="10_5cypo"]
-[ext_resource type="Script" uid="uid://bhdawio8cc0ed" path="res://scenes/components/main_game/scripts/CaptainInput.cs" id="10_sp04v"]
-[ext_resource type="FontFile" uid="uid://ft02k118uomq" path="res://assets/fonts/SpaceMono-Regular.ttf" id="10_wjob3"]
+[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="10_wjob3"]
+[ext_resource type="Script" uid="uid://bhdawio8cc0ed" path="res://scenes/game/scripts/CaptainInput.cs" id="10_xgagw"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -291,8 +291,8 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("1_s3esy")
 theme_type_variation = &"MainPanel"
-script = ExtResource("8_8xp80")
-currentWordLabel = NodePath("VRightPanel/PasswordContainer/HBoxContainer/CurentWordLabel")
+script = ExtResource("8_cn0rj")
+currentWordLabel = NodePath("VRightPanel/PasswordContainer/MarginContainer/HBoxContainer/CurentWordLabel")
 historyList = NodePath("VRightPanel/HintBoxContainer/HistoryScroll/MarginContainer/HistoryList")
 historyScroll = NodePath("VRightPanel/HintBoxContainer/HistoryScroll")
 
@@ -305,15 +305,20 @@ layout_mode = 2
 theme = ExtResource("1_s3esy")
 theme_type_variation = &"SubPanel"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_right = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Label" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer/HBoxContainer"]
+[node name="Label" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
 text = "Aktualne hasło:"
 
-[node name="CurentWordLabel" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer/HBoxContainer"]
+[node name="CurentWordLabel" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer/MarginContainer/HBoxContainer"]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -325,7 +330,11 @@ size_flags_vertical = 3
 theme = ExtResource("1_s3esy")
 theme_type_variation = &"SubPanel"
 
-[node name="Label" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+
+[node name="Label" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer/MarginContainer"]
 layout_mode = 2
 text = "Historia:"
 
@@ -338,10 +347,10 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 15
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 15
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 5
 
 [node name="HistoryList" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer/HistoryScroll/MarginContainer"]
 layout_mode = 2
@@ -376,12 +385,13 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 243.0
+offset_left = 242.0
 offset_top = -35.0
 offset_right = -331.0
+offset_bottom = -4.0
 grow_horizontal = 2
 grow_vertical = 0
-script = ExtResource("10_sp04v")
+script = ExtResource("10_xgagw")
 wordInput = NodePath("HBoxContainer/WordInput")
 numberInput = NodePath("HBoxContainer/NumberInput")
 sendButton = NodePath("HBoxContainer/SendButton")
@@ -402,7 +412,7 @@ max_value = 25.0
 value = 1.0
 
 [node name="SendButton" type="Button" parent="Panel/InputPanel/HBoxContainer"]
-custom_minimum_size = Vector2(205, 0)
+custom_minimum_size = Vector2(185, 0)
 layout_mode = 2
 text = "Wysłać
 "

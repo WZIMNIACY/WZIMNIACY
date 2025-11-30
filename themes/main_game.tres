@@ -1,7 +1,7 @@
 [gd_resource type="Theme" load_steps=6 format=3 uid="uid://dvuu7nso1icxm"]
 
 [ext_resource type="Texture2D" uid="uid://djtvvdvrip1rq" path="res://assets/textures/gradients/blue_team_player_list_bg_gradient.tres" id="1_qwkag"]
-[ext_resource type="FontFile" uid="uid://ft02k118uomq" path="res://assets/fonts/SpaceMono-Regular.ttf" id="2_uxug5"]
+[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="2_uxug5"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_72e8q"]
 content_margin_left = 2.0
