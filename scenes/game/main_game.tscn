@@ -293,7 +293,7 @@ theme = ExtResource("1_s3esy")
 theme_type_variation = &"MainPanel"
 script = ExtResource("8_8xp80")
 currentWordLabel = NodePath("VRightPanel/PasswordContainer/HBoxContainer/CurentWordLabel")
-historyList = NodePath("VRightPanel/HintBoxContainer/HistoryScroll/HistoryList")
+historyList = NodePath("VRightPanel/HintBoxContainer/HistoryScroll/MarginContainer/HistoryList")
 historyScroll = NodePath("VRightPanel/HintBoxContainer/HistoryScroll")
 
 [node name="VRightPanel" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel"]
@@ -334,7 +334,16 @@ layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="HistoryList" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer/HistoryScroll"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer/HistoryScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="HistoryList" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer/HistoryScroll/MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
