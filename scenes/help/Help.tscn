@@ -41,22 +41,49 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0, 1, 0.8, 1)
 theme_override_fonts/font = ExtResource("2_joa0n")
 theme_override_font_sizes/font_size = 20
-text = "Zasady gry"
+text = "Zasady Gry"
 horizontal_alignment = 1
 
-[node name="RulesPanel" type="Panel" parent="HelpPanel/HelpCenter/VHelp"]
-custom_minimum_size = Vector2(500, 400)
+[node name="RulesPanel" type="ScrollContainer" parent="HelpPanel/HelpCenter/VHelp"]
+custom_minimum_size = Vector2(500, 200)
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="GameRules" type="RichTextLabel" parent="HelpPanel/HelpCenter/VHelp/RulesPanel"]
 clip_contents = false
-layout_mode = 0
-offset_right = 287.0
-offset_bottom = 162.0
+custom_minimum_size = Vector2(500, 200)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 text = "1. Znajdź lobby lub stwórz własne.
 2. Zaproś znajomych używając kodu pokoju.
 3. Rozpocznij grę, gdy wszyscy będą gotowi.
-4. ..."
+4. ...
+5
+6
+7
+8
+9
+10
+
+
+312
+312
+3
+123
+123
+12
+31
+23
+123
+123
+123
+123
+12
+31
+23
+123
+123"
 
 [node name="CornerAnchor" type="Control" parent="."]
 anchors_preset = 0
