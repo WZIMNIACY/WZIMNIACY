@@ -1,20 +1,20 @@
 using Godot;
-using System;
-using System.Runtime.CompilerServices;
-using System.Linq;
 
 public partial class CaptainInput : Control
 {
 	[Signal]
 	public delegate void HintGivenEventHandler(string word, int number);
-		[Export] public LineEdit wordInput;
-		[Export] public SpinBox numberInput;
-		[Export] public Button sendButton;
+	[Export] public LineEdit wordInput;
+	[Export] public SpinBox numberInput;
+	[Export] public Button sendButton;
 
-		private Color blueTeamColor = new Color("5AD2C8FF");
-		private Color redTeamColor = new Color("E65050FF");
+	private Color blueTeamColor = new Color("5AD2C8FF");
+	private Color redTeamColor = new Color("E65050FF");
+
     public override void _Ready()
     {
+		base._Ready();
+		
         if(sendButton != null)
 			sendButton.Pressed += OnSendPressed;
 		if (wordInput != null)
@@ -26,23 +26,26 @@ public partial class CaptainInput : Control
         wordInput.Modulate = new Color(1, 1, 1);
     }
 
-	public void SetupTurn(bool isBlueTeam){
+	public void SetupTurn(bool isBlueTeam)
+	{
 		this.Visible = true;
 
-		if(wordInput != null){
+		if(wordInput != null)
+		{
 			wordInput.Text = "";
 			wordInput.Modulate = new Color(1, 1, 1);
 			wordInput.PlaceholderText = "Słowo:";
 		}
 		if(numberInput != null)
 			numberInput.Value = 1;
-		
-		if(sendButton != null){
+		if(sendButton != null)
+		{
 			sendButton.Modulate = isBlueTeam ? blueTeamColor : redTeamColor;
 		}
 	}
 
-	private void OnSendPressed(){
+	private void OnSendPressed()
+	{
 		if(wordInput == null) return;
 		
 		string text = wordInput.Text.Trim();
@@ -54,7 +57,8 @@ public partial class CaptainInput : Control
             return;
         }
 
-		if(!string.IsNullOrEmpty(text)){
+		if(!string.IsNullOrEmpty(text))
+		{
 			EmitSignal(SignalName.HintGiven, text, number);
 			
 			this.Visible = false;

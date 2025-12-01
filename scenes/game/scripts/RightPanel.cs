@@ -1,6 +1,4 @@
 using Godot;
-using System;
-using System.Runtime.CompilerServices;
 
 public partial class RightPanel : Node
 {
@@ -11,8 +9,10 @@ public partial class RightPanel : Node
 	private Color blueTeamColor = new Color("5AD2C8FF");
 	private Color redTeamColor = new Color("E65050FF");
 
-	public void CommitToHistory(){
-		if(currentWordLabel != null && currentWordLabel.Text != "" && currentWordLabel.Text != "-"){
+	public void CommitToHistory()
+    {
+		if(currentWordLabel != null && currentWordLabel.Text != "" && currentWordLabel.Text != "-")
+        {
             AddToHistory(currentWordLabel.Text, currentWordLabel.Modulate);
             
             currentWordLabel.Text = "-";
@@ -20,10 +20,12 @@ public partial class RightPanel : Node
         }
 	}
 
-	public void UpdateHintDisplay(string word, int count, bool isBlueTeam){
+	public void UpdateHintDisplay(string word, int count, bool isBlueTeam)
+    {
 		CommitToHistory();
 
-		if(currentWordLabel != null){
+		if(currentWordLabel != null)
+        {
 			currentWordLabel.Text = $"{word} ({count})";
             currentWordLabel.Modulate = isBlueTeam ? blueTeamColor : redTeamColor;
             currentWordLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
