@@ -348,10 +348,21 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_qxwld")
 layout_mode = 2
 alignment = 1
 
-[node name="BlueTeamLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer"]
+[node name="BlueTeamHeaderContainer" type="HBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="BlueTeamLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer/BlueTeamHeaderContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_1cd5g")
 text = "Drużyna Niebieska"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BlueTeamCount" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer/BlueTeamHeaderContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_1cd5g")
+text = "0/5"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -380,10 +391,21 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_p6ldx")
 layout_mode = 2
 alignment = 1
 
-[node name="RedTeamLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer"]
+[node name="RedTeamHeaderContainer" type="HBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="RedTeamLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer/RedTeamHeaderContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_1cd5g")
 text = "Drużyna Czerwona"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RedTeamCount" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer/RedTeamHeaderContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_1cd5g")
+text = "0/5"
 horizontal_alignment = 1
 vertical_alignment = 1
 
