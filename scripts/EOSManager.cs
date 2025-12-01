@@ -84,6 +84,10 @@ public partial class EOSManager : Node
 	// Aktualna lista członków lobby (cache)
 	private Godot.Collections.Array<Godot.Collections.Dictionary> currentLobbyMembers = new Godot.Collections.Array<Godot.Collections.Dictionary>();
 
+	// Prefiks atrybutu lobby służącego do wymuszania drużyn przez hosta
+	private const string ForceTeamAttributePrefix = "ForceTeam_";
+	private System.Collections.Generic.Dictionary<string, string> forcedTeamAssignments = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
 	// Nickname ustawiony PRZED wejściem do lobby
 	private string pendingNickname = "";
 
@@ -224,7 +228,30 @@ public partial class EOSManager : Node
 
 	private void HandleKickedFromLobby()
 	{
-		GD.Print("🏠 Returning to main menu after being kicked...");
+		GD.Print("🚪 Player was kicked from lobby - cleaning up and returning to main menu...");
+
+		// Pokaż popup z informacją o wyrzuceniu
+		if (GetTree() != null && GetTree().Root != null)
+		{
+			var popup = new AcceptDialog();
+			popup.DialogText = "Zostałeś wyrzucony przez hosta!";
+			popup.Title = "Wyrzucony";
+			popup.OkButtonText = "OK";
+
+			// Zamknij popup i wróć do menu po kliknięciu OK
+			popup.Confirmed += () =>
+			{
+				popup.QueueFree();
+				if (GetTree() != null)
+				{
+					GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
+				}
+			};
+
+			// Dodaj do root i wyświetl
+			GetTree().Root.AddChild(popup);
+			popup.PopupCentered();
+		}
 
 		// Zatrzymaj timer odświeżania jeśli jeszcze działa
 		if (lobbyRefreshTimer != null && lobbyRefreshTimer.TimeLeft > 0)
@@ -233,27 +260,32 @@ public partial class EOSManager : Node
 			GD.Print("🛑 Lobby refresh timer stopped (kicked)");
 		}
 
-		// Wyczyść stan lobby tak jak przy normalnym wyjściu
+		// NIE wywołujemy LeaveLobby() - serwer EOS już zamknął połączenie websocket
+		// Bezpośrednio czyścimy lokalny stan (tak jak robi OnLeaveLobbyComplete)
+
+		// Wyczyść obecne lobby
 		currentLobbyId = null;
 		isLobbyOwner = false;
-		currentCustomLobbyId = string.Empty;
+
+		// Wyczyść CustomLobbyId
+		currentCustomLobbyId = "";
 		EmitSignal(SignalName.CustomLobbyIdUpdated, "");
 
+		// Wyczyść GameMode
 		currentGameMode = "AI Master";
 		EmitSignal(SignalName.GameModeUpdated, currentGameMode);
 
+		// Wyczyść cache członków
 		currentLobbyMembers.Clear();
+
+		// Wyczyść flagę tworzenia
 		isCreatingLobby = false;
 
-		// Poinformuj UI, że lobby zostało opuszczone
-		EmitSignal(SignalName.LobbyLeft);
+		// Wyczyść wymuszone przypisania drużyn
+		forcedTeamAssignments.Clear();
 
-		// Na koniec wróć do menu głównego
-		if (GetTree() != null)
-		{
-			// Main menu scene is stored as main.tscn (not MainMenu.tscn)
-			GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
-		}
+		// Wyślij sygnał do UI
+		EmitSignal(SignalName.LobbyLeft);
 	}
 
 	private void CreateLobbyRefreshTimer()
@@ -869,7 +901,7 @@ public partial class EOSManager : Node
 			currentLobbyMembers = tempMembersList;
 
 			EmitSignal(SignalName.LobbyMembersUpdated, tempMembersList);
-			GD.Print($"👥 Sent initial member list (1 member - you)"); // Możesz teraz ustawić atrybuty lobby (nazwa, mapa, tryb gry itp.)													
+			GD.Print($"👥 Sent initial member list (1 member - you)"); // Możesz teraz ustawić atrybuty lobby (nazwa, mapa, tryb gry itp.)
 		}
 		else
 		{
@@ -1252,7 +1284,7 @@ public partial class EOSManager : Node
 						AutoAssignMyTeam();
 
 						// KROK 5: Odczekaj na propagację atrybutów, potem pobierz członków ponownie
-						GetTree().CreateTimer(0.6).Timeout += () =>
+						GetTree().CreateTimer(1.0).Timeout += () =>
 						{
 							GD.Print("🔄 [STEP 4/5] Refreshing members with team assignments...");
 							GetLobbyMembers();
@@ -1368,7 +1400,7 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		// ⚠️ NIE nadpisuj handle jeśli już działa! 
+		// ⚠️ NIE nadpisuj handle jeśli już działa!
 		// Handle z WebSocket (member_update) ma pełne dane, a ten z search może być pusty
 		if (!foundLobbyDetails.ContainsKey(currentLobbyId))
 		{
@@ -1483,6 +1515,7 @@ public partial class EOSManager : Node
 			// Wyczyść cache członków
 			currentLobbyMembers.Clear();            // Wyczyść flagę tworzenia (na wszelki wypadek)
 			isCreatingLobby = false;
+			forcedTeamAssignments.Clear();
 
 			// Wyślij sygnał do UI
 			EmitSignal(SignalName.LobbyLeft);
@@ -1533,6 +1566,16 @@ public partial class EOSManager : Node
 		if (data.ResultCode == Result.Success)
 		{
 			GD.Print($"✅ Successfully kicked player from lobby: {data.LobbyId}");
+
+			// Odśwież cache i listę członków po kicku
+			GetTree().CreateTimer(0.3).Timeout += () =>
+			{
+				CacheCurrentLobbyDetailsHandle("after_kick");
+				GetTree().CreateTimer(0.1).Timeout += () =>
+				{
+					GetLobbyMembers();
+				};
+			};
 		}
 		else
 		{
@@ -1572,7 +1615,14 @@ public partial class EOSManager : Node
 		// Jeśli to nasze lobby, odśwież info
 		if (currentLobbyId == data.LobbyId.ToString())
 		{
+			CacheCurrentLobbyDetailsHandle("lobby_update");
 			RefreshCurrentLobbyInfo();
+
+			// Sprawdź i zastosuj wymuszone przypisania drużyn (dla nie-hostów)
+			if (!isLobbyOwner)
+			{
+				ApplyForcedTeamAssignments();
+			}
 		}
 	}
 
@@ -1587,7 +1637,7 @@ public partial class EOSManager : Node
 		CacheCurrentLobbyDetailsHandle("member_update");
 
 		// Małe opóźnienie na synchronizację EOS
-		GetTree().CreateTimer(0.5).Timeout += () =>
+		GetTree().CreateTimer(0.2).Timeout += () =>
 		{
 			GetLobbyMembers();
 		};
@@ -1626,10 +1676,10 @@ public partial class EOSManager : Node
 				GD.Print($"  ➕ Member JOINED: {userId.Substring(Math.Max(0, userId.Length - 8))}");
 
 				// Małe opóźnienie na synchronizację EOS
-				GetTree().CreateTimer(0.5).Timeout += () =>
+				GetTree().CreateTimer(0.3).Timeout += () =>
 				{
 					GetLobbyMembers();
-					EmitSignal(SignalName.CurrentLobbyInfoUpdated, currentLobbyId, currentLobbyMembers.Count, 4, isLobbyOwner);
+					EmitSignal(SignalName.CurrentLobbyInfoUpdated, currentLobbyId, currentLobbyMembers.Count, 10, isLobbyOwner);
 				};
 			}
 			else if (data.CurrentStatus == LobbyMemberStatus.Left || data.CurrentStatus == LobbyMemberStatus.Kicked)
@@ -1637,10 +1687,10 @@ public partial class EOSManager : Node
 				GD.Print($"  ➖ Member LEFT/KICKED: {userId.Substring(Math.Max(0, userId.Length - 8))}");
 
 				// Małe opóźnienie na synchronizację EOS
-				GetTree().CreateTimer(0.5).Timeout += () =>
+				GetTree().CreateTimer(0.3).Timeout += () =>
 				{
 					GetLobbyMembers();
-					EmitSignal(SignalName.CurrentLobbyInfoUpdated, currentLobbyId, currentLobbyMembers.Count, 4, isLobbyOwner);
+					EmitSignal(SignalName.CurrentLobbyInfoUpdated, currentLobbyId, currentLobbyMembers.Count, 10, isLobbyOwner);
 				};
 			}
 		}
@@ -1770,6 +1820,7 @@ public partial class EOSManager : Node
 
 		bool customIdFound = false;
 		bool gameModeFound = false;
+		forcedTeamAssignments.Clear();
 
 		// Iteruj po wszystkich atrybutach lobby
 		for (uint i = 0; i < attributeCount; i++)
@@ -1808,11 +1859,14 @@ public partial class EOSManager : Node
 					}
 					gameModeFound = true;
 				}
-
-				// Jeśli znaleźliśmy oba, możemy przerwać pętlę
-				if (customIdFound && gameModeFound)
+				else if (keyStr != null && keyStr.StartsWith(ForceTeamAttributePrefix, StringComparison.OrdinalIgnoreCase))
 				{
-					break;
+					string targetUserId = keyStr.Substring(ForceTeamAttributePrefix.Length);
+					if (!string.IsNullOrEmpty(targetUserId) && !string.IsNullOrEmpty(valueStr))
+					{
+						GD.Print($"🎯 Found ForceTeam request: {targetUserId.Substring(Math.Max(0, targetUserId.Length - 8))} → {valueStr}");
+						forcedTeamAssignments[targetUserId] = valueStr;
+					}
 				}
 			}
 		}
@@ -1830,6 +1884,8 @@ public partial class EOSManager : Node
 			EmitSignal(SignalName.GameModeUpdated, currentGameMode);
 			GD.Print("⚠️ GameMode not found, using default: AI Master");
 		}
+
+		ApplyForcedTeamAssignments();
 	}
 
 	/// <summary>
@@ -1946,6 +2002,68 @@ public partial class EOSManager : Node
 		});
 	}
 
+	private void RemoveLobbyAttribute(string key)
+	{
+		if (string.IsNullOrEmpty(currentLobbyId))
+		{
+			GD.PrintErr("❌ Cannot remove lobby attribute: Not in any lobby!");
+			return;
+		}
+
+		if (localProductUserId == null || !localProductUserId.IsValid())
+		{
+			GD.PrintErr("❌ Cannot remove lobby attribute: User not logged in!");
+			return;
+		}
+
+		var modifyOptions = new UpdateLobbyModificationOptions()
+		{
+			LobbyId = currentLobbyId,
+			LocalUserId = localProductUserId
+		};
+
+		Result result = lobbyInterface.UpdateLobbyModification(ref modifyOptions, out LobbyModification lobbyModification);
+
+		if (result != Result.Success || lobbyModification == null)
+		{
+			GD.PrintErr($"❌ Failed to create lobby modification (remove attr): {result}");
+			return;
+		}
+
+		var removeOptions = new LobbyModificationRemoveAttributeOptions()
+		{
+			Key = key
+		};
+
+		result = lobbyModification.RemoveAttribute(ref removeOptions);
+
+		if (result != Result.Success)
+		{
+			GD.PrintErr($"❌ Failed to remove lobby attribute '{key}': {result}");
+			lobbyModification.Release();
+			return;
+		}
+
+		var updateOptions = new UpdateLobbyOptions()
+		{
+			LobbyModificationHandle = lobbyModification
+		};
+
+		lobbyInterface.UpdateLobby(ref updateOptions, null, (ref UpdateLobbyCallbackInfo data) =>
+		{
+			if (data.ResultCode == Result.Success)
+			{
+				GD.Print($"🗑️ Lobby attribute '{key}' removed");
+			}
+			else
+			{
+				GD.PrintErr($"❌ Failed to finalize removal of lobby attribute '{key}': {data.ResultCode}");
+			}
+
+			lobbyModification.Release();
+		});
+	}
+
 	/// <summary>
 	/// Ustawia member attribute dla lokalnego gracza w obecnym lobby
 	/// </summary>
@@ -1981,7 +2099,6 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		// Dodaj member attribute
 		var attributeData = new AttributeData()
 		{
 			Key = key,
@@ -2003,7 +2120,6 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		// Wyślij modyfikację do EOS
 		var updateOptions = new UpdateLobbyOptions()
 		{
 			LobbyModificationHandle = lobbyModification
@@ -2014,6 +2130,16 @@ public partial class EOSManager : Node
 			if (data.ResultCode == Result.Success)
 			{
 				GD.Print($"✅ Member attribute '{key}' set successfully: '{value}'");
+
+				// Natychmiastowe odświeżenie lokalnego cache i listy członków
+				GetTree().CreateTimer(0.1).Timeout += () =>
+				{
+					CacheCurrentLobbyDetailsHandle("member_attr_set");
+					GetTree().CreateTimer(0.1).Timeout += () =>
+					{
+						GetLobbyMembers();
+					};
+				};
 			}
 			else
 			{
@@ -2022,6 +2148,136 @@ public partial class EOSManager : Node
 
 			lobbyModification.Release();
 		});
+	}
+
+	public void MovePlayerToTeam(string targetUserId, string teamName)
+	{
+		if (string.IsNullOrEmpty(currentLobbyId))
+		{
+			GD.PrintErr("❌ Cannot move player: Not in any lobby!");
+			return;
+		}
+
+		if (!isLobbyOwner)
+		{
+			GD.PrintErr("❌ Cannot move player: Only lobby owner can change other players' teams!");
+			return;
+		}
+
+		if (string.IsNullOrEmpty(targetUserId))
+		{
+			GD.PrintErr("❌ Cannot move player: Target userId is empty!");
+			return;
+		}
+
+		if (teamName != "Blue" && teamName != "Red")
+		{
+			GD.PrintErr($"❌ Cannot move player: Invalid team '{teamName}'");
+			return;
+		}
+
+		if (targetUserId == localProductUserId.ToString())
+		{
+			GD.Print("ℹ️ Host requested to move themselves, delegating to SetMyTeam");
+			SetMyTeam(teamName);
+			return;
+		}
+
+		GD.Print($"🔀 Host requesting player {targetUserId.Substring(Math.Max(0, targetUserId.Length - 8))} to join {teamName} team");
+		forcedTeamAssignments[targetUserId] = teamName;
+		SetLobbyAttribute($"{ForceTeamAttributePrefix}{targetUserId}", teamName);
+	}
+
+	private string GetTeamForUser(string userId)
+	{
+		foreach (var member in currentLobbyMembers)
+		{
+			if (member.ContainsKey("userId") && member["userId"].ToString() == userId)
+			{
+				return member.ContainsKey("team") ? member["team"].ToString() : "";
+			}
+		}
+
+		return "";
+	}
+
+	private void ApplyForcedTeamAssignments()
+	{
+		if (localProductUserId == null || !localProductUserId.IsValid())
+		{
+			return;
+		}
+
+		string localUserId = localProductUserId.ToString();
+		GD.Print($"🔍 Checking forced team assignments for {localUserId.Substring(Math.Max(0, localUserId.Length - 8))}");
+		GD.Print($"   Total forced assignments: {forcedTeamAssignments.Count}");
+
+		if (forcedTeamAssignments.TryGetValue(localUserId, out string forcedTeam) && !string.IsNullOrEmpty(forcedTeam))
+		{
+			string currentTeam = GetTeamForUser(localUserId);
+			GD.Print($"   Found force request: Current={currentTeam}, Forced={forcedTeam}");
+
+			if (!string.Equals(currentTeam, forcedTeam, StringComparison.OrdinalIgnoreCase))
+			{
+				GD.Print($"🎯 Host forced you to switch to {forcedTeam}, applying change...");
+				SetMemberAttribute("Team", forcedTeam);
+			}
+			else
+			{
+				GD.Print($"   ✅ Already on correct team, no change needed");
+			}
+		}
+		else
+		{
+			GD.Print($"   No forced team assignment for this player");
+		}
+
+		if (isLobbyOwner)
+		{
+			TryResolveForcedTeamRequests();
+		}
+	}
+
+	private void TryResolveForcedTeamRequests()
+	{
+		if (!isLobbyOwner || forcedTeamAssignments.Count == 0)
+		{
+			return;
+		}
+
+		var keysToClear = new System.Collections.Generic.List<string>();
+		foreach (var kvp in forcedTeamAssignments)
+		{
+			if (string.IsNullOrEmpty(kvp.Value))
+			{
+				keysToClear.Add(kvp.Key);
+				continue;
+			}
+
+			string actualTeam = GetTeamForUser(kvp.Key);
+			if (string.IsNullOrEmpty(actualTeam) || string.Equals(actualTeam, kvp.Value, StringComparison.OrdinalIgnoreCase))
+			{
+				keysToClear.Add(kvp.Key);
+			}
+		}
+
+		foreach (var userId in keysToClear)
+		{
+			ClearForcedTeamAttribute(userId);
+		}
+	}
+
+	private void ClearForcedTeamAttribute(string userId)
+	{
+		if (string.IsNullOrEmpty(userId))
+		{
+			return;
+		}
+
+		forcedTeamAssignments.Remove(userId);
+		string attributeKey = $"{ForceTeamAttributePrefix}{userId}";
+		GD.Print($"🧹 Clearing forced team attribute for {userId.Substring(Math.Max(0, userId.Length - 8))}");
+		RemoveLobbyAttribute(attributeKey);
 	}
 
 	/// <summary>
@@ -2219,6 +2475,8 @@ public partial class EOSManager : Node
 
 		// Aktualizuj licznik graczy
 		EmitSignal(SignalName.CurrentLobbyInfoUpdated, currentLobbyId, membersList.Count, 10, isLobbyOwner);
+
+		TryResolveForcedTeamRequests();
 	}   /// <summary>
 		/// Ustawia DisplayName dla lokalnego gracza jako MEMBER ATTRIBUTE
 		/// Player A ustawia swoje atrybuty → Player B je odczytuje → wyświetla nick A
@@ -2230,7 +2488,15 @@ public partial class EOSManager : Node
 		if (string.IsNullOrEmpty(currentLobbyId)) return;
 		if (localProductUserId == null || !localProductUserId.IsValid()) return;
 		// Pozwól na odświeżenie w określonych przypadkach (update/status/ensure/refresh) – czasem stary handle może nie mieć nowych atrybutów
-		bool allowRefresh = reason == "member_update" || reason == "member_status" || reason == "ensure_sync" || reason == "refresh_info" || reason == "status" || reason == "refresh_after_join";
+		bool allowRefresh = reason == "member_update"
+			|| reason == "member_status"
+			|| reason == "lobby_update"
+			|| reason == "ensure_sync"
+			|| reason == "refresh_info"
+			|| reason == "status"
+			|| reason == "member_attr_set"
+			|| reason == "after_kick"
+			|| reason == "refresh_after_join";
 		if (foundLobbyDetails.ContainsKey(currentLobbyId) && foundLobbyDetails[currentLobbyId] != null && !allowRefresh) return;
 		// Jeśli odświeżamy – zwolnij poprzedni handle aby uniknąć wycieków
 		if (allowRefresh && foundLobbyDetails.ContainsKey(currentLobbyId) && foundLobbyDetails[currentLobbyId] != null)
