@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://csm6re7xw340e"
-path="res://.godot/imported/UNID_agent_ph.png-3288fe11765eb09c5e704e5f62cf7b6e.ctex"
+uid="uid://c8ei6oqum8tx7"
+path="res://.godot/imported/karta.png-5fe0386efdcfa868db5d617a016c421f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/UNID_agent_ph.png"
-dest_files=["res://.godot/imported/UNID_agent_ph.png-3288fe11765eb09c5e704e5f62cf7b6e.ctex"]
+source_file="res://assets/textures/karta.png"
+dest_files=["res://.godot/imported/karta.png-5fe0386efdcfa868db5d617a016c421f.ctex"]
 
 [params]
 
