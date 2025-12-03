@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://dottn65ntydo4"]
+[gd_scene load_steps=27 format=3 uid="uid://dottn65ntydo4"]
 
 [ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://themes/main_game.tres" id="1_s3esy"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://db8ggkdji87xs" path="res://scenes/components/main_game/red_score_container.tscn" id="5_ygxny"]
 [ext_resource type="PackedScene" uid="uid://s7i54u0fg4ly" path="res://scenes/components/main_game/agent_card.tscn" id="6_ygxny"]
 [ext_resource type="Texture2D" uid="uid://bjri1j0tawip8" path="res://assets/textures/gradients/game_skip_turn_button_gradient.tres" id="7_wi4c7"]
+[ext_resource type="Script" uid="uid://dfwlyllthrjkc" path="res://scenes/game/scripts/CardMenager.cs" id="7_xgagw"]
 [ext_resource type="Script" uid="uid://dsswor3dmxdlv" path="res://scenes/game/scripts/RightPanel.cs" id="8_cn0rj"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="9_nqdth"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="9_o6v7o"]
@@ -210,6 +211,9 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/v_separation = 0
 columns = 5
+
+[node name="CardMenager" type="Node" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer"]
+script = ExtResource("7_xgagw")
 
 [node name="AgentCard" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
 layout_mode = 2
@@ -418,6 +422,7 @@ text = "Wysłać
 "
 
 [node name="MenuPanel" type="Panel" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
