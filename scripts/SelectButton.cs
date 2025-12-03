@@ -6,12 +6,13 @@ public partial class SelectButton : Control
 	private bool selected = false;
 	[Export]
 	private Button selectButton;
-	private Mediator mediator;
+	private CardMenager cardMenager;
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		mediator = GetNode<Mediator>("/root/Control/Mediator");
-		mediator.Connect(Mediator.SignalName.UnselectCards, new Callable(this, nameof(Unselect)));
+		var parent = GetParent().GetParent();
+		cardMenager = parent.GetNode<CardMenager>("CardMenager");
+		cardMenager.Connect(CardMenager.SignalName.UnselectCards, new Callable(this, nameof(Unselect)));
 		MouseFilter = MouseFilterEnum.Pass;
 		SetProcessInput(true);
 	}
@@ -40,7 +41,7 @@ public partial class SelectButton : Control
 		selectButton.Visible = selected;
 	}
 	
-	public void _on_select_button_pressed(){
-		mediator.Check();
+	public void OnSelectButtonPressed(){
+		cardMenager.Check();
 	}
 }
