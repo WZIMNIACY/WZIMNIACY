@@ -50,4 +50,4 @@ offset_right = 23.0
 offset_bottom = 28.0
 theme_override_styles/normal = SubResource("StyleBoxFlat_7al6y")
 
-[connection signal="pressed" from="Control/SelectButton" to="Control" method="_on_select_button_pressed"]
+[connection signal="pressed" from="Control/SelectButton" to="Control" method="OnSelectButtonPressed"]
