@@ -1,5 +1,4 @@
 using Godot;
-using System;
 
 public partial class AgentCardAnimation : PanelContainer
 {
@@ -15,6 +14,7 @@ public partial class AgentCardAnimation : PanelContainer
 
     public override void _Ready()
     {
+        base._Ready();
         CallDeferred(nameof(SetPivotCenter));
 
         MouseEntered += OnHoverEnter;
