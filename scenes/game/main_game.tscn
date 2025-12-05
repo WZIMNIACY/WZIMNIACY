@@ -79,7 +79,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control"]
+[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -87,6 +87,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_o6v7o")
+menuPanel = NodePath("MenuPanel")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
@@ -158,10 +159,12 @@ layout_mode = 2
 text = "Gracze:"
 
 [node name="BluePlayerList" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer" instance=ExtResource("2_wi4c7")]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="PlayerList" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer" instance=ExtResource("3_wi4c7")]
+[node name="RedPlayerList" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer" instance=ExtResource("3_wi4c7")]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -177,6 +180,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="BlueScoreContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar" instance=ExtResource("5_ipu61")]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_wi4c7")
@@ -197,6 +201,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="RedScoreContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar" instance=ExtResource("5_ygxny")]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_70vka")

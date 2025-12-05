@@ -9,16 +9,24 @@ public enum Team
 
 public partial class MainGame : Control
 {
-    [Export] Panel menuPanel;
-    [Export] Label pointsLabelBlue;
-    [Export] Label pointsLabelRed;
-    [Export] ColorRect turnDiodeBlue;
-    [Export] ColorRect turnDiodeRed;
-    [Export] PanelContainer teamListBlue;
-    [Export] PanelContainer teamListRed;
+    Panel menuPanel;
+    Label pointsLabelBlue;
+    Label pointsLabelRed;
+    ColorRect turnDiodeBlue;
+    ColorRect turnDiodeRed;
+    PanelContainer teamListBlue;
+    PanelContainer teamListRed;
     public const bool IsHost = true; // temp value
-    public int pointsBlue;
-    public int pointsRed;
+    private int pointsBlue;
+    public int PointsBlue
+    {
+        get => pointsBlue;
+    }
+    private int pointsRed;
+    public int PointsRed
+    {
+        get => pointsRed;
+    }
     Team startingTeam;
     Team currentTurn;
 
@@ -27,12 +35,12 @@ public partial class MainGame : Control
     {
         base._Ready();
         menuPanel = GetNode<Panel>("MenuPanel");
-        pointsLabelBlue = GetNode<Label>("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/BlueScoreContainer/VBoxContainer/Label");
-        pointsLabelRed = GetNode<Label>("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer/VBoxContainer/Label");
-        turnDiodeBlue = GetNode<ColorRect>("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/BlueScoreContainer/VBoxContainer/Control/ColorRect");
-        turnDiodeRed = GetNode<ColorRect>("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer/VBoxContainer/Control/ColorRect");
-        teamListBlue = GetNode<PanelContainer>("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer/BluePlayerList/VBoxContainer/PanelContainer");
-        teamListRed = GetNode<PanelContainer>("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer/PlayerList/VBoxContainer/PanelContainer");
+        pointsLabelBlue = GetNode<Label>("%BlueScoreContainer/VBoxContainer/Label");
+        pointsLabelRed = GetNode<Label>("%RedScoreContainer/VBoxContainer/Label");
+        turnDiodeBlue = GetNode<ColorRect>("%BlueScoreContainer/VBoxContainer/Control/ColorRect");
+        turnDiodeRed = GetNode<ColorRect>("%RedScoreContainer/VBoxContainer/Control/ColorRect");
+        teamListBlue = GetNode<PanelContainer>("%BluePlayerList/VBoxContainer/PanelContainer");
+        teamListRed = GetNode<PanelContainer>("%RedPlayerList/VBoxContainer/PanelContainer");
 
         // Hide menu panel at start
         menuPanel.Visible = false;
@@ -43,11 +51,11 @@ public partial class MainGame : Control
             // Choose starting team randomly
             startingTeam = (Team)Random.Shared.Next(0, 2);
 
-            // Send starting team to clients
+            // TODO: send starting team to clients
         }
         else
         {
-            // Wait to receive starting team from host
+            // TODO: wait to receive starting team from host
         }
 
         // Assing initianl points and turn
