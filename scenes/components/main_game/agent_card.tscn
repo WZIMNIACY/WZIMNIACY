@@ -1,13 +1,27 @@
-[gd_scene load_steps=3 format=3 uid="uid://s7i54u0fg4ly"]
+[gd_scene load_steps=5 format=3 uid="uid://s7i54u0fg4ly"]
 
-[ext_resource type="Texture2D" uid="uid://csm6re7xw340e" path="res://assets/textures/UNID_agent_ph.png" id="1_hiodb"]
+[ext_resource type="Texture2D" uid="uid://c8ei6oqum8tx7" path="res://assets/textures/karta.png" id="1_hiodb"]
+[ext_resource type="Script" uid="uid://bf1tk42tabie6" path="res://scenes/game/scripts/AgentCardAnimation.cs" id="1_m8y6f"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hiodb"]
 font_size = 11
+font_color = Color(0.0007269123, 0.00068415585, 0.0006720056, 1)
 
-[node name="PanelContainer" type="PanelContainer"]
-offset_right = 40.0
-offset_bottom = 40.0
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_m8y6f"]
+draw_center = false
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0, 1, 0.8, 1)
+border_blend = true
+
+[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer")]
+offset_right = 110.0
+offset_bottom = 110.0
+script = ExtResource("1_m8y6f")
+highlightBorder = NodePath("HighlightBorder")
+contentContainer = NodePath(".")
 
 [node name="AgentCard" type="TextureRect" parent="."]
 custom_minimum_size = Vector2(0, 110)
@@ -19,7 +33,7 @@ stretch_mode = 5
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
-theme_override_constants/margin_bottom = 9
+theme_override_constants/margin_bottom = 14
 
 [node name="Label" type="Label" parent="MarginContainer"]
 layout_mode = 2
@@ -27,3 +41,9 @@ size_flags_vertical = 8
 text = "Pseudomin"
 label_settings = SubResource("LabelSettings_hiodb")
 horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HighlightBorder" type="Panel" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_m8y6f")
