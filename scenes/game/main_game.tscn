@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3 uid="uid://dottn65ntydo4"]
+[gd_scene load_steps=26 format=3 uid="uid://dottn65ntydo4"]
 
 [ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://themes/main_game.tres" id="1_s3esy"]
@@ -8,10 +8,12 @@
 [ext_resource type="PackedScene" uid="uid://db8ggkdji87xs" path="res://scenes/components/main_game/red_score_container.tscn" id="5_ygxny"]
 [ext_resource type="PackedScene" uid="uid://s7i54u0fg4ly" path="res://scenes/components/main_game/agent_card.tscn" id="6_ygxny"]
 [ext_resource type="Texture2D" uid="uid://bjri1j0tawip8" path="res://assets/textures/gradients/game_skip_turn_button_gradient.tres" id="7_wi4c7"]
+[ext_resource type="Script" uid="uid://dsswor3dmxdlv" path="res://scenes/game/scripts/RightPanel.cs" id="8_cn0rj"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="9_nqdth"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="9_o6v7o"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="10_5cypo"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="10_wjob3"]
+[ext_resource type="Script" uid="uid://bhdawio8cc0ed" path="res://scenes/game/scripts/CaptainInput.cs" id="10_xgagw"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -79,7 +81,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed")]
+[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -92,6 +94,8 @@ scoreContainerBlue = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopB
 scoreContainerRed = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer")
 teamListBlue = NodePath("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer/BluePlayerList")
 teamListRed = NodePath("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer/RedPlayerList")
+gameRightPanel = NodePath("Panel/HBoxContainer/RightPanel")
+gameInputPanel = NodePath("Panel/InputPanel")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
@@ -287,11 +291,15 @@ layout_mode = 2
 [node name="AgentCard25" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
 layout_mode = 2
 
-[node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer"]
+[node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll")]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("1_s3esy")
 theme_type_variation = &"MainPanel"
+script = ExtResource("8_cn0rj")
+currentWordLabel = NodePath("VRightPanel/PasswordContainer/MarginContainer/HBoxContainer/CurentWordLabel")
+historyList = NodePath("VRightPanel/HintBoxContainer/HistoryScroll/MarginContainer/HistoryList")
+historyScroll = NodePath("VRightPanel/HintBoxContainer/HistoryScroll")
 
 [node name="VRightPanel" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel"]
 custom_minimum_size = Vector2(313.033, 0)
@@ -302,22 +310,56 @@ layout_mode = 2
 theme = ExtResource("1_s3esy")
 theme_type_variation = &"SubPanel"
 
-[node name="Label" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer"]
 layout_mode = 2
-text = "Aktualne hasło: Hasło"
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_right = 5
 
-[node name="HintBoxContainer" type="PanelContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel"]
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Aktualne hasło:"
+
+[node name="CurentWordLabel" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/PasswordContainer/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
+
+[node name="HintBoxContainer" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel"]
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("1_s3esy")
 theme_type_variation = &"SubPanel"
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer"]
 layout_mode = 2
+theme_override_constants/margin_left = 8
 
-[node name="Label" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer/MarginContainer"]
 layout_mode = 2
 text = "Historia:"
+
+[node name="HistoryScroll" type="ScrollContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer/HistoryScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 5
+
+[node name="HistoryList" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel/HintBoxContainer/HistoryScroll/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="SkipTurnContainer" type="MarginContainer" parent="Panel/HBoxContainer/RightPanel/VRightPanel"]
 layout_mode = 2
@@ -339,7 +381,46 @@ text = "Pomiń turę"
 
 [node name="Panel" type="Panel" parent="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxTexture_ygxny")
+
+[node name="InputPanel" type="PanelContainer" parent="Panel" node_paths=PackedStringArray("wordInput", "numberInput", "sendButton")]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 242.0
+offset_top = -35.0
+offset_right = -331.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("10_xgagw")
+wordInput = NodePath("HBoxContainer/WordInput")
+numberInput = NodePath("HBoxContainer/NumberInput")
+sendButton = NodePath("HBoxContainer/SendButton")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/InputPanel"]
+layout_mode = 2
+
+[node name="WordInput" type="LineEdit" parent="Panel/InputPanel/HBoxContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8745098, 0.8745098, 0.8745098, 1)
+placeholder_text = "Słowo:"
+
+[node name="NumberInput" type="SpinBox" parent="Panel/InputPanel/HBoxContainer"]
+layout_mode = 2
+min_value = 1.0
+max_value = 25.0
+value = 1.0
+
+[node name="SendButton" type="Button" parent="Panel/InputPanel/HBoxContainer"]
+custom_minimum_size = Vector2(185, 0)
+layout_mode = 2
+text = "Wysłać
+"
 
 [node name="MenuPanel" type="Panel" parent="."]
 visible = false
@@ -448,6 +529,7 @@ theme_override_styles/hover = ExtResource("10_5cypo")
 text = "Resume"
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
+[connection signal="pressed" from="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer/Button" to="." method="OnSkipTurnPressed"]
 [connection signal="button_down" from="MenuPanel/MenuBackgroundButton" to="." method="OnMenuBackgroundButtonDown"]
 [connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/QuitButton" to="." method="OnQuitButtonPressed"]
 [connection signal="pressed" from="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer/PauseButton" to="." method="OnPauseButtonPressed"]

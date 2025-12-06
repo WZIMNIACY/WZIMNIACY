@@ -14,6 +14,8 @@ public partial class MainGame : Control
     [Export] ScoreContainer scoreContainerRed;
     [Export] PlayerListContainer teamListBlue;
     [Export] PlayerListContainer teamListRed;
+    [Export] public RightPanel gameRightPanel;
+    [Export] public CaptainInput gameInputPanel;
     public const bool IsHost = true; // temp value
     private int pointsBlue;
     public int PointsBlue
@@ -65,6 +67,43 @@ public partial class MainGame : Control
             SetTurnRed();
         }
         UpdatePointsDisplay();
+
+        if (gameInputPanel != null)
+        {
+            gameInputPanel.HintGiven += OnCaptainHintReceived;
+            StartCaptainPhase();
+        }
+        else
+        {
+            GD.PrintErr("Error");
+        }
+    }
+
+    private void StartCaptainPhase()
+    {
+        GD.Print($"Początek tury {(currentTurn == Team.Blue ? "BLUE" : "RED")}");
+        if(gameInputPanel != null)
+        {
+            gameInputPanel.SetupTurn(currentTurn == Team.Blue);
+        }
+    }
+
+    private void OnCaptainHintReceived(string word, int number)
+    {
+        GD.Print($"{word} [{number}]");
+        if (gameRightPanel != null)
+        {
+            gameRightPanel.UpdateHintDisplay(word, number, currentTurn == Team.Blue);
+        }
+    }
+
+    public void OnSkipTurnPressed()
+    {
+        GD.Print("Koniec tury");
+        if(gameRightPanel != null)
+            gameRightPanel.CommitToHistory();
+        TurnChange();
+        StartCaptainPhase();
     }
 
     // Called every frame. 'delta' is the elapsed time since the previous frame.
