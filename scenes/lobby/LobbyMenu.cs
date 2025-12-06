@@ -10,6 +10,10 @@ public partial class LobbyMenu : Control
     private Button leaveLobbyButton;
     private ItemList blueTeamList;
     private ItemList redTeamList;
+    private Button blueTeamJoinButton;
+    private Button redTeamJoinButton;
+    private Label blueTeamCountLabel;
+    private Label redTeamCountLabel;
     private LineEdit lobbyIdInput;
     private Button copyIdButton;
     private Button generateNewIdButton;
@@ -80,6 +84,26 @@ public partial class LobbyMenu : Control
         // Pobierz listy drużyn
         blueTeamList = GetNode<ItemList>("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer/BlueTeamsMembers");
         redTeamList = GetNode<ItemList>("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer/RedTeamMembers");
+        blueTeamJoinButton = GetNode<Button>("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer/BlueTeamJoinButton");
+        redTeamJoinButton = GetNode<Button>("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer/RedTeamJoinButton");
+
+        // Pobierz labele liczników drużyn
+        blueTeamCountLabel = GetNode<Label>("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer/BlueTeamHeaderContainer/BlueTeamCount");
+        redTeamCountLabel = GetNode<Label>("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer/RedTeamHeaderContainer/RedTeamCount");
+
+        // Pobierz przyciski do dołączania do drużyn
+        blueTeamJoinButton = GetNode<Button>("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer/BlueTeamJoinButton");
+        redTeamJoinButton = GetNode<Button>("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer/RedTeamJoinButton");
+
+        // Podłącz przyciski drużyn
+        if (blueTeamJoinButton != null)
+        {
+            blueTeamJoinButton.Pressed += OnJoinBlueTeamPressed;
+        }
+        if (redTeamJoinButton != null)
+        {
+            redTeamJoinButton.Pressed += OnJoinRedTeamPressed;
+        }
 
         // Podłącz obsługę prawego kliknięcia dla hosta! >:3
         if (blueTeamList != null)
@@ -89,7 +113,19 @@ public partial class LobbyMenu : Control
         if (redTeamList != null)
         {
             redTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, redTeamList);
-        }        // WAŻNE: Podłącz sygnał z EOSManager do aktualizacji drużyn
+        }
+
+        if (blueTeamJoinButton != null)
+        {
+            blueTeamJoinButton.Pressed += OnBlueTeamJoinButtonPressed;
+        }
+
+        if (redTeamJoinButton != null)
+        {
+            redTeamJoinButton.Pressed += OnRedTeamJoinButtonPressed;
+        }
+
+        // WAŻNE: Podłącz sygnał z EOSManager do aktualizacji drużyn
         if (eosManager != null)
         {
             eosManager.LobbyMembersUpdated += OnLobbyMembersUpdated;
@@ -130,6 +166,9 @@ public partial class LobbyMenu : Control
         {
             GD.PrintErr("⚠️ Entered lobby scene but not in any lobby!");
         }
+
+        // Domyślnie odblokuj przyciski dołączania zanim spłyną dane z EOS
+        UpdateTeamButtonsState("");
     }
 
     /// <summary>
@@ -175,6 +214,8 @@ public partial class LobbyMenu : Control
         blueTeamList.Clear();
         redTeamList.Clear();
 
+        string detectedLocalTeam = "";
+
         // Rozdziel graczy na drużyny WEDŁUG ATRYBUTU "team"
         foreach (var member in members)
         {
@@ -183,6 +224,11 @@ public partial class LobbyMenu : Control
             bool isLocalPlayer = (bool)member["isLocalPlayer"];
             string team = member.ContainsKey("team") ? member["team"].ToString() : "";
             string userId = member.ContainsKey("userId") ? member["userId"].ToString() : "";
+
+            if (isLocalPlayer)
+            {
+                detectedLocalTeam = string.IsNullOrEmpty(team) ? "" : team;
+            }
 
             // Dodaj ikonę korony dla właściciela
             if (isOwner)
@@ -203,7 +249,8 @@ public partial class LobbyMenu : Control
                 blueTeamList.SetItemMetadata(index, new Godot.Collections.Dictionary
                 {
                     { "userId", userId },
-                    { "isLocalPlayer", isLocalPlayer }
+                    { "isLocalPlayer", isLocalPlayer },
+                    { "team", team }
                 });
                 GD.Print($"  ➕ Blue: {displayName}");
             }
@@ -213,7 +260,8 @@ public partial class LobbyMenu : Control
                 redTeamList.SetItemMetadata(index, new Godot.Collections.Dictionary
                 {
                     { "userId", userId },
-                    { "isLocalPlayer", isLocalPlayer }
+                    { "isLocalPlayer", isLocalPlayer },
+                    { "team", team }
                 });
                 GD.Print($"  ➕ Red: {displayName}");
             }
@@ -226,8 +274,21 @@ public partial class LobbyMenu : Control
 
         GD.Print($"✅ Teams updated: Blue={blueTeamList.ItemCount}, Red={redTeamList.ItemCount}");
 
+        // Aktualizuj liczniki drużyn
+        if (blueTeamCountLabel != null)
+        {
+            blueTeamCountLabel.Text = $"{blueTeamList.ItemCount}/5";
+        }
+        if (redTeamCountLabel != null)
+        {
+            redTeamCountLabel.Text = $"{redTeamList.ItemCount}/5";
+        }
+
         // Zaktualizuj widoczność przycisków dla hosta/gracza
         UpdateUIVisibility();
+
+        // Odśwież stan przycisków drużynowych
+        UpdateTeamButtonsState(detectedLocalTeam);
     }
 
     /// <summary>
@@ -462,6 +523,24 @@ public partial class LobbyMenu : Control
         GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
     }
 
+    private void OnJoinBlueTeamPressed()
+    {
+        if (eosManager != null)
+        {
+            GD.Print("🔵 Joining Blue team...");
+            eosManager.SetMyTeam("Blue");
+        }
+    }
+
+    private void OnJoinRedTeamPressed()
+    {
+        if (eosManager != null)
+        {
+            GD.Print("🔴 Joining Red team...");
+            eosManager.SetMyTeam("Red");
+        }
+    }
+
     private async void CreateLobbyWithRetry(int attempt = 0)
     {
         // Sprawdź czy użytkownik jest już zalogowany
@@ -500,6 +579,7 @@ public partial class LobbyMenu : Control
         string lobbyIdCode = GenerateLobbyIDCode();
         currentLobbyCode = lobbyIdCode;
 
+
         // Wyświetl kod w UI
         if (lobbyIdInput != null)
         {
@@ -508,6 +588,57 @@ public partial class LobbyMenu : Control
 
         eosManager.CreateLobby(lobbyIdCode, 10, true);
         GD.Print("✅ EOS logged in, creating lobby. Lobby ID: " + lobbyIdCode);
+    }
+
+    private void OnBlueTeamJoinButtonPressed()
+    {
+        TryJoinTeam("Blue");
+    }
+
+    private void OnRedTeamJoinButtonPressed()
+    {
+        TryJoinTeam("Red");
+    }
+
+    private string currentLocalTeam = "";
+
+    private void TryJoinTeam(string teamName)
+    {
+        if (eosManager == null)
+        {
+            GD.PrintErr("❌ Cannot change team: EOSManager not available");
+            return;
+        }
+
+        if (teamName != "Blue" && teamName != "Red")
+        {
+            GD.PrintErr($"❌ Invalid team name requested: {teamName}");
+            return;
+        }
+
+        if (currentLocalTeam == teamName)
+        {
+            GD.Print($"ℹ️ Already in {teamName} team, ignoring join request");
+            return;
+        }
+
+        eosManager.SetMyTeam(teamName);
+        GD.Print($"🔁 Sending request to join {teamName} team");
+    }
+
+    private void UpdateTeamButtonsState(string localTeam)
+    {
+        currentLocalTeam = string.IsNullOrEmpty(localTeam) ? "" : localTeam;
+
+        if (blueTeamJoinButton != null)
+        {
+            blueTeamJoinButton.Disabled = currentLocalTeam == "Blue";
+        }
+
+        if (redTeamJoinButton != null)
+        {
+            redTeamJoinButton.Disabled = currentLocalTeam == "Red";
+        }
     }
 
     public override void _ExitTree()
@@ -520,6 +651,16 @@ public partial class LobbyMenu : Control
             eosManager.LobbyMembersUpdated -= OnLobbyMembersUpdated;
             eosManager.CustomLobbyIdUpdated -= OnCustomLobbyIdUpdated;
             eosManager.GameModeUpdated -= OnGameModeUpdated;
+        }
+
+        if (blueTeamJoinButton != null)
+        {
+            blueTeamJoinButton.Pressed -= OnBlueTeamJoinButtonPressed;
+        }
+
+        if (redTeamJoinButton != null)
+        {
+            redTeamJoinButton.Pressed -= OnRedTeamJoinButtonPressed;
         }
     }
 
@@ -551,9 +692,10 @@ public partial class LobbyMenu : Control
                         {
                             string userId = metadata["userId"].ToString();
                             string displayName = teamList.GetItemText(clickedIndex);
+                            string playerTeam = metadata.ContainsKey("team") ? metadata["team"].ToString() : "";
 
                             GD.Print($"🖱️ Right-clicked on player: {displayName} ({userId})");
-                            ShowKickPopup(userId, displayName, mouseEvent.GlobalPosition);
+                            ShowMemberActionsPopup(userId, displayName, playerTeam, mouseEvent.GlobalPosition);
                         }
                     }
                 }
@@ -561,24 +703,47 @@ public partial class LobbyMenu : Control
         }
     }
 
-    private void ShowKickPopup(string userId, string displayName, Vector2 globalPosition)
+    private void ShowMemberActionsPopup(string userId, string displayName, string currentTeam, Vector2 globalPosition)
     {
+        GD.Print($"📋 Creating popup menu for {displayName}");
+
         // Stwórz PopupMenu
         var popup = new PopupMenu();
-        popup.AddItem($"👢 Wyrzuc {displayName}", 0);
+        popup.AddItem("🔵 Przenieś do Niebieskich", 0);
+        popup.SetItemDisabled(0, currentTeam == "Blue");
+        popup.AddItem("🔴 Przenieś do Czerwonych", 1);
+        popup.SetItemDisabled(1, currentTeam == "Red");
+        popup.AddSeparator();
+        popup.AddItem($"👢 Wyrzuć {displayName}", 3);  // Index 3 (po separatorze który nie ma indeksu)
+
         popup.IndexPressed += (index) =>
         {
-            if (index == 0)
+            GD.Print($"📋 Popup menu item {index} pressed for {displayName}");
+
+            switch (index)
             {
-                GD.Print($"👢 Kicking player: {displayName}");
-                eosManager.KickPlayer(userId);
+                case 0:
+                    GD.Print($"🔁 Moving player {displayName} to Blue via popup");
+                    eosManager.MovePlayerToTeam(userId, "Blue");
+                    break;
+                case 1:
+                    GD.Print($"🔁 Moving player {displayName} to Red via popup");
+                    eosManager.MovePlayerToTeam(userId, "Red");
+                    break;
+                case 3:  // Kick - index po separatorze
+                    GD.Print($"👢 Kicking player: {displayName}");
+                    eosManager.KickPlayer(userId);
+                    break;
             }
+
             popup.QueueFree();
         };
 
         // Dodaj do drzewa i pokaż
-        AddChild(popup);
+        GetTree().Root.AddChild(popup);
         popup.Position = (Vector2I)globalPosition;
-        popup.Popup();
+        popup.PopupOnParent(new Rect2I(popup.Position, new Vector2I(1, 1)));
+
+        GD.Print($"📋 Popup shown at position {globalPosition}");
     }
 }

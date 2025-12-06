@@ -116,6 +116,7 @@ public partial class CurrentLobbyPanel : VBoxContainer
 			bool isOwner = (bool)memberData["isOwner"];
 			bool isLocalPlayer = (bool)memberData["isLocalPlayer"];
 			string userId = (string)memberData["userId"];
+			string team = memberData.ContainsKey("team") ? memberData["team"].ToString() : "";
 
 			GD.Print($"  📝 Creating member entry: {displayName}, isOwner={isOwner}, isLocal={isLocalPlayer}, weAreHost={weAreHost}");
 
@@ -124,6 +125,7 @@ public partial class CurrentLobbyPanel : VBoxContainer
 			memberContainer.CustomMinimumSize = new Vector2(0, 30); // Minimalna wysokość żeby był klikalny!
 			memberContainer.SetMeta("userId", userId);
 			memberContainer.SetMeta("isLocalPlayer", isLocalPlayer);
+			memberContainer.SetMeta("team", team);
 
 			// Dodaj padding
 			var marginContainer = new MarginContainer();
@@ -167,7 +169,7 @@ public partial class CurrentLobbyPanel : VBoxContainer
 			{
 				GD.Print($"    ✅ Adding right-click handler for {displayName}");
 				memberContainer.MouseFilter = Control.MouseFilterEnum.Stop; // Włącz detekcję myszy
-				memberContainer.GuiInput += (inputEvent) => OnMemberGuiInput(inputEvent, userId, displayName);
+				memberContainer.GuiInput += (inputEvent) => OnMemberGuiInput(inputEvent, userId, displayName, team);
 			}
 			else
 			{
@@ -178,7 +180,7 @@ public partial class CurrentLobbyPanel : VBoxContainer
 		}
 	}
 
-	private void OnMemberGuiInput(InputEvent @event, string userId, string displayName)
+	private void OnMemberGuiInput(InputEvent @event, string userId, string displayName, string currentTeam)
 	{
 		GD.Print($"⚙️ GUI Input received for {displayName}: {@event.GetType().Name}");
 
@@ -189,31 +191,48 @@ public partial class CurrentLobbyPanel : VBoxContainer
 			if (mouseEvent.ButtonIndex == MouseButton.Right && mouseEvent.Pressed)
 			{
 				GD.Print($"🖱️ Right-clicked on player: {displayName} ({userId})");
-				ShowKickPopup(userId, displayName, mouseEvent.GlobalPosition);
+				ShowMemberActionsPopup(userId, displayName, currentTeam, mouseEvent.GlobalPosition);
 			}
 		}
 	}
 
-	private void ShowKickPopup(string userId, string displayName, Vector2 position)
+	private void ShowMemberActionsPopup(string userId, string displayName, string currentTeam, Vector2 position)
 	{
 		// Stwórz PopupMenu
 		var popup = new PopupMenu();
-		popup.AddItem($"👢 Wyrzuc {displayName}", 0);
+		popup.AddItem("🔵 Przenieś do Niebieskich", 0);
+		popup.SetItemDisabled(0, currentTeam == "Blue");
+		popup.AddItem("🔴 Przenieś do Czerwonych", 1);
+		popup.SetItemDisabled(1, currentTeam == "Red");
+		popup.AddSeparator();
+		popup.AddItem($"👢 Wyrzuć {displayName}", 3);  // Index 3 (po separatorze który nie ma indeksu)
+
 		popup.IndexPressed += (index) =>
 		{
-			if (index == 0)
+			switch (index)
 			{
-				GD.Print($"👢 Kicking player: {displayName}");
-				eosManager.KickPlayer(userId);
+				case 0:
+					GD.Print($"🔁 Moving player {displayName} to Blue via panel popup");
+					eosManager.MovePlayerToTeam(userId, "Blue");
+					break;
+				case 1:
+					GD.Print($"🔁 Moving player {displayName} to Red via panel popup");
+					eosManager.MovePlayerToTeam(userId, "Red");
+					break;
+				case 3:  // Kick - index po separatorze
+					GD.Print($"👢 Kicking player: {displayName}");
+					eosManager.KickPlayer(userId);
+					break;
 			}
+
 			popup.QueueFree();
 		};
 
 		// Dodaj do drzewa i pokaż w miejscu kliknięcia
-		AddChild(popup);
+		GetTree().Root.AddChild(popup);
 		Vector2 mousePos = GetViewport().GetMousePosition();
 		popup.Position = (Vector2I)mousePos;
-		popup.Popup();
+		popup.PopupOnParent(new Rect2I(popup.Position, new Vector2I(1, 1)));
 	}
 
 	private void OnLeaveButtonPressed()
