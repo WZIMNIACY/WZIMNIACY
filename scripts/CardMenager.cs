@@ -1,13 +1,26 @@
 using Godot;
-using System;
-
-public partial class CardMenager : Node
+public partial class CardMenager : GridContainer
 {
-	[Signal]
-	public delegate void UnselectCardsEventHandler();
-
-	public void Check()
+	public override void _Ready()
 	{
-		EmitSignal(SignalName.UnselectCards);
+		base._Ready();
+    	foreach (var card in GetTree().GetNodesInGroup("cards"))
+		{
+			card.Connect("CardConfirmed", new Callable(this, nameof(OnCardConfirmed)));
+		}
+	}
+
+	private void OnCardConfirmed(AgentCard card)
+	{
+    	GD.Print("Karta kliknięta: " + card.Name);
+		HideAllCards();
+	}
+
+	private void HideAllCards()
+	{
+    	foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
+        {
+            card.Unselect();
+        }
 	}
 }
