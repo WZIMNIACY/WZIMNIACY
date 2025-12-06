@@ -1,7 +1,6 @@
-[gd_scene load_steps=6 format=3 uid="uid://vu4a6yutqy5e"]
+[gd_scene load_steps=7 format=3 uid="uid://vu4a6yutqy5e"]
 
 [ext_resource type="PackedScene" uid="uid://bvi7du8wsmbn" path="res://scenes/components/main_game/player_list_base.tscn" id="1_81wv3"]
-[ext_resource type="Texture2D" uid="uid://djtvvdvrip1rq" path="res://assets/textures/gradients/blue_team_player_list_bg_gradient.tres" id="2_2kagk"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uqkvx"]
 resource_local_to_scene = true
@@ -9,9 +8,16 @@ draw_center = false
 border_width_top = 1
 border_color = Color(0.3529412, 0.8235294, 0.78431374, 1)
 
+[sub_resource type="Gradient" id="Gradient_uqkvx"]
+colors = PackedColorArray(0.11764706, 0.27450982, 0.3137255, 0.34901962, 0.11764706, 0.27450982, 0.3137255, 0.14901961)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_yxn4h"]
+gradient = SubResource("Gradient_uqkvx")
+fill_to = Vector2(0, 1)
+
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_yxn4h"]
 resource_local_to_scene = true
-texture = ExtResource("2_2kagk")
+texture = SubResource("GradientTexture2D_yxn4h")
 
 [sub_resource type="Theme" id="Theme_cwxem"]
 resource_local_to_scene = true
