@@ -16,6 +16,7 @@ public partial class MainGame : Control
     [Export] PlayerListContainer teamListRed;
     [Export] public RightPanel gameRightPanel;
     [Export] public CaptainInput gameInputPanel;
+    [Export] Label turnLabel;
     public const bool IsHost = true; // temp value
     private int pointsBlue;
     public int PointsBlue
@@ -27,6 +28,7 @@ public partial class MainGame : Control
     {
         get => pointsRed;
     }
+    private int turnCounter = 1;
     Team startingTeam;
     Team currentTurn;
 
@@ -67,6 +69,7 @@ public partial class MainGame : Control
             SetTurnRed();
         }
         UpdatePointsDisplay();
+        UpdateTurnDisplay();
 
         if (gameInputPanel != null)
         {
@@ -158,6 +161,12 @@ public partial class MainGame : Control
         scoreContainerRed.ChangeScoreText(textRed + pointsRed.ToString());
     }
 
+    private void UpdateTurnDisplay()
+    {
+        string text = "Aktualna\ntura: ";
+        turnLabel.Text = text + turnCounter.ToString();
+    }
+
     public void RemovePointBlue()
     {
         GD.Print("Point removed from team blue...");
@@ -178,6 +187,8 @@ public partial class MainGame : Control
 
     public void TurnChange()
     {
+        turnCounter++;
+        UpdateTurnDisplay();
         if (currentTurn == Team.Blue)
             SetTurnRed();
         else
