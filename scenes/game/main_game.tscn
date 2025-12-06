@@ -16,7 +16,7 @@
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wi4c7"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vde2q"]
 resource_local_to_scene = true
 bg_color = Color(0.08627451, 0.19607843, 0.21176471, 1)
 border_width_left = 1
@@ -33,7 +33,7 @@ border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.047058824, 0.047058824, 0.047058824, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_70vka"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5cwfu"]
 resource_local_to_scene = true
 bg_color = Color(0.24313726, 0.02745098, 0.06666667, 1)
 border_width_left = 1
@@ -79,7 +79,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel")]
+[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -88,6 +88,10 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_o6v7o")
 menuPanel = NodePath("MenuPanel")
+scoreContainerBlue = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/BlueScoreContainer")
+scoreContainerRed = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer")
+teamListBlue = NodePath("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer/BluePlayerList")
+teamListRed = NodePath("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer/RedPlayerList")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
@@ -159,12 +163,10 @@ layout_mode = 2
 text = "Gracze:"
 
 [node name="BluePlayerList" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer" instance=ExtResource("2_wi4c7")]
-unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
 [node name="RedPlayerList" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer" instance=ExtResource("3_wi4c7")]
-unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -180,10 +182,9 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="BlueScoreContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar" instance=ExtResource("5_ipu61")]
-unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_wi4c7")
+theme_override_styles/panel = SubResource("StyleBoxFlat_vde2q")
 
 [node name="TurnCounterContainer" type="PanelContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar"]
 custom_minimum_size = Vector2(0, 70)
@@ -201,10 +202,9 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="RedScoreContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar" instance=ExtResource("5_ygxny")]
-unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_70vka")
+theme_override_styles/panel = SubResource("StyleBoxFlat_5cwfu")
 
 [node name="GridContainer" type="GridContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel"]
 layout_mode = 2
