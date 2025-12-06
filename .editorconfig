@@ -131,3 +131,5 @@ dotnet_naming_rule.fields_should_be_camel_case.severity = warning
 dotnet_naming_rule.parameters_should_be_camel_case.symbols = parameter
 dotnet_naming_rule.parameters_should_be_camel_case.style = camel_case
 dotnet_naming_rule.parameters_should_be_camel_case.severity = warning
+
+dotnet_diagnostic.IDE0005.severity = warning
