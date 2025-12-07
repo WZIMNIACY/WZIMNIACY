@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.ComponentModel;
 using System.Collections.Generic;
 using Epic.OnlineServices;
 using Epic.OnlineServices.Platform;
@@ -40,6 +41,23 @@ public partial class EOSManager : Node
 
 	[Signal]
 	public delegate void GameModeUpdatedEventHandler(string gameMode);
+	[Signal]
+	public delegate void AITypeUpdatedEventHandler(string aiType);
+
+	[Signal]
+	public delegate void CheckTeamsBalanceConditionsEventHandler();
+
+	[Signal]
+	public delegate void LobbyReadyStatusUpdatedEventHandler(bool isReady);
+
+	// Stałe konfiguracyjne
+	private const int MinNicknameLength = 2;
+	private const int MaxNicknameLength = 20;
+	private const int MaxNicknameGenerationAttempts = 10;
+	private const int UserIdDisplayLength = 8;
+	private const int RandomSuffixMax = 10000;
+	private const int NicknameRandomMax = 99;
+	private const int FallbackAnimalRandomMax = 9999;
 
 	// Dane produktu
 	private string productName = "WZIMniacy";
@@ -75,18 +93,23 @@ public partial class EOSManager : Node
 	public string currentLobbyId = null;
 	public bool isLobbyOwner = false;
 
-	// Custom Lobby ID (6-znakowy kod do wyszukiwania)
+	// Custom Lobby ID
 	public string currentCustomLobbyId = "";
 
-	// Current Game Mode (tryb gry)
-	public string currentGameMode = "AI Master";
+	// Current Game Mode (tryb gry) i AI Type
+	public GameMode currentGameMode = GameMode.AIMaster;
+	public AIType currentAIType = AIType.API;
 
 	// Aktualna lista członków lobby (cache)
 	private Godot.Collections.Array<Godot.Collections.Dictionary> currentLobbyMembers = new Godot.Collections.Array<Godot.Collections.Dictionary>();
 
 	// Prefiks atrybutu lobby służącego do wymuszania drużyn przez hosta
 	private const string ForceTeamAttributePrefix = "ForceTeam_";
-	private System.Collections.Generic.Dictionary<string, string> forcedTeamAssignments = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+	private System.Collections.Generic.Dictionary<string, Team> forcedTeamAssignments = new System.Collections.Generic.Dictionary<string, Team>(StringComparer.OrdinalIgnoreCase);
+
+	// Prefiks atrybutu lobby służącego do przechowywania poprzednich drużyn (przed przejściem do Universal)
+	private const string PreviousTeamAttributePrefix = "PreviousTeam_";
+	private System.Collections.Generic.Dictionary<string, Team> previousTeamAssignments = new System.Collections.Generic.Dictionary<string, Team>(StringComparer.OrdinalIgnoreCase);
 
 	// Nickname ustawiony PRZED wejściem do lobby
 	private string pendingNickname = "";
@@ -97,6 +120,58 @@ public partial class EOSManager : Node
 
 	// Timer do odświeżania lobby
 	private Timer lobbyRefreshTimer;
+
+	// Enum dla drużyn
+	public enum Team
+	{
+		[Description("None")]
+		None,
+		[Description("Blue")]
+		Blue,
+		[Description("Red")]
+		Red,
+		[Description("Universal")]
+		Universal
+	}
+
+	// Enum dla trybów gry
+	public enum GameMode
+	{
+		[Description("AI Master")]
+		AIMaster,
+		[Description("AI vs Human")]
+		AIvsHuman
+	}
+
+	// Enum dla typów AI
+	public enum AIType
+	{
+		[Description("API")]
+		API,
+		[Description("Local LLM")]
+		LocalLLM
+	}
+
+	// Metody do konwersji enum <-> string
+	public static string GetEnumDescription(System.Enum value)
+	{
+		var field = value.GetType().GetField(value.ToString());
+		var attribute = (DescriptionAttribute)System.Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute));
+		return attribute?.Description ?? value.ToString();
+	}
+
+	public static T ParseEnumFromDescription<T>(string description, T defaultValue) where T : System.Enum
+	{
+		foreach (var field in typeof(T).GetFields())
+		{
+			if (System.Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) is DescriptionAttribute attribute)
+			{
+				if (attribute.Description == description)
+					return (T)field.GetValue(null);
+			}
+		}
+		return defaultValue;
+	}
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -272,8 +347,12 @@ public partial class EOSManager : Node
 		EmitSignal(SignalName.CustomLobbyIdUpdated, "");
 
 		// Wyczyść GameMode
-		currentGameMode = "AI Master";
-		EmitSignal(SignalName.GameModeUpdated, currentGameMode);
+		currentGameMode = GameMode.AIMaster;
+		EmitSignal(SignalName.GameModeUpdated, GetEnumDescription(currentGameMode));
+
+		// Wyczyść AIType
+		currentAIType = AIType.API;
+		EmitSignal(SignalName.AITypeUpdated, GetEnumDescription(currentAIType));
 
 		// Wyczyść cache członków
 		currentLobbyMembers.Clear();
@@ -455,7 +534,7 @@ public partial class EOSManager : Node
 		string baseId = OS.GetUniqueId();
 
 		// Dodaj losowy suffix żeby każda instancja miała unikalny ID
-		int randomSuffix = (int)(GD.Randi() % 10000);
+		int randomSuffix = (int)(GD.Randi() % RandomSuffixMax);
 
 		return $"{computerName}_{userName}_{baseId}_{randomSuffix}";
 	}
@@ -621,7 +700,7 @@ public partial class EOSManager : Node
 		if (animalNames.Count == 0)
 		{
 			GD.PrintErr("❌ Brak listy zwierzaków! Używam fallback...");
-			return $"Animal_{GD.Randi() % 9999}";
+			return $"Animal_{GD.Randi() % FallbackAnimalRandomMax}";
 		}
 
 		// Pobierz listę już zajętych nicków
@@ -635,7 +714,7 @@ public partial class EOSManager : Node
 		}
 
 		// Próbuj wylosować unikalny nick (max 10 prób)
-		for (int attempt = 0; attempt < 10; attempt++)
+		for (int attempt = 0; attempt < MaxNicknameGenerationAttempts; attempt++)
 		{
 			string randomAnimal = animalNames[(int)(GD.Randi() % animalNames.Count)];
 
@@ -648,9 +727,20 @@ public partial class EOSManager : Node
 
 		// Jeśli wszystkie próby się nie powiodły, dodaj losowy sufiks
 		string fallbackAnimal = animalNames[(int)(GD.Randi() % animalNames.Count)];
-		string uniqueNick = $"{fallbackAnimal}_{GD.Randi() % 99}";
+		string uniqueNick = $"{fallbackAnimal}_{GD.Randi() % NicknameRandomMax}";
 		GD.Print($"⚠️ Nie udało się wylosować unikalnego, używam: {uniqueNick}");
 		return uniqueNick;
+	}
+
+	/// <summary>
+	/// Skraca userId do ostatnich N znaków dla czytelności logów
+	/// </summary>
+	private string GetShortUserId(string userId)
+	{
+		if (string.IsNullOrEmpty(userId)) return "null";
+		return userId.Length <= UserIdDisplayLength
+			? userId
+			: userId.Substring(Math.Max(0, userId.Length - UserIdDisplayLength));
 	}
 
 	/// <summary>
@@ -668,8 +758,8 @@ public partial class EOSManager : Node
 
 		// Sanitizacja
 		nickname = nickname.Trim();
-		if (nickname.Length < 2) nickname = nickname.PadRight(2, '_');
-		if (nickname.Length > 20) nickname = nickname.Substring(0, 20);
+		if (nickname.Length < MinNicknameLength) nickname = nickname.PadRight(MinNicknameLength, '_');
+		if (nickname.Length > MaxNicknameLength) nickname = nickname.Substring(0, MaxNicknameLength);
 
 		// Filtruj znaki (zostaw tylko litery, cyfry, _, -)
 		char[] filtered = Array.FindAll(nickname.ToCharArray(), c => char.IsLetterOrDigit(c) || c == '_' || c == '-');
@@ -701,7 +791,7 @@ public partial class EOSManager : Node
 	/// <summary>
 	/// Tworzy nowe lobby
 	/// </summary>
-	/// <param name="customLobbyId">6-znakowy kod lobby do wyszukiwania (np. "V5CGSP")</param>
+	/// <param name="customLobbyId"> kod lobby do wyszukiwania (np. "V5CGSP")</param>
 	/// <param name="maxPlayers">Maksymalna liczba graczy (2-64)</param>
 	/// <param name="isPublic">Czy lobby jest publiczne (można wyszukać)?</param>
 	public void CreateLobby(string customLobbyId, uint maxPlayers = 10, bool isPublic = true)
@@ -840,41 +930,48 @@ public partial class EOSManager : Node
 
 			EmitSignal(SignalName.CurrentLobbyInfoUpdated, currentLobbyId, 1, 10, true);
 
-			// Wyślij sygnał do UI
-			EmitSignal(SignalName.LobbyCreated, currentLobbyId);
-
 			// Ustaw nickname i drużynę jako member attributes
 			if (!string.IsNullOrEmpty(pendingNickname))
 			{
-				GetTree().CreateTimer(1.0).Timeout += () =>
-				{
-					SetMemberAttribute("Nickname", pendingNickname);
-					// Po ustawieniu nicka, ustaw drużynę
-					GetTree().CreateTimer(0.5).Timeout += () =>
-					{
-						GD.Print("🎲 Host auto-assigning to Blue team...");
-						SetMemberAttribute("Team", "Blue"); // Host zawsze Blue
+				GD.Print($"📝 Setting host nickname: {pendingNickname}");
+				SetMemberAttribute("Nickname", pendingNickname);
 
-						// Po ustawieniu drużyny, odśwież listę członków
-						GetTree().CreateTimer(1.0).Timeout += () =>
+				GetTree().CreateTimer(0.8).Timeout += () =>
+				{
+					GD.Print("🟡 Host assigning to Neutral team...");
+					SetMemberAttribute("Team", Team.None.ToString());
+
+					// Po ustawieniu nicku i drużyny, odśwież i DOPIERO zmień scenę
+					GetTree().CreateTimer(0.8).Timeout += () =>
+					{
+						GetLobbyMembers();
+
+						GetTree().CreateTimer(0.3).Timeout += () =>
 						{
-							GetLobbyMembers();
+							GD.Print("✅ Host setup complete, emitting LobbyCreated signal");
+							EmitSignal(SignalName.LobbyCreated, currentLobbyId);
 						};
 					};
 				};
 			}
 			else
 			{
-				// Bez nicka też ustaw drużynę
-				GetTree().CreateTimer(1.0).Timeout += () =>
+				// Bez nicku - ustaw tylko drużynę, potem zmień scenę
+				GetTree().CreateTimer(0.5).Timeout += () =>
 				{
-					GD.Print("🎲 Host auto-assigning to Blue team...");
-					SetMemberAttribute("Team", "Blue"); // Host zawsze Blue
+					GD.Print("🟡 Host assigning to Neutral team...");
+					SetMemberAttribute("Team", Team.None.ToString());
 
-					// Po ustawieniu drużyny, odśwież listę członków
-					GetTree().CreateTimer(1.0).Timeout += () =>
+					// Po ustawieniu drużyny, odśwież i zmień scenę
+					GetTree().CreateTimer(0.8).Timeout += () =>
 					{
 						GetLobbyMembers();
+
+						GetTree().CreateTimer(0.3).Timeout += () =>
+						{
+							GD.Print("✅ Host setup complete, emitting LobbyCreated signal");
+							EmitSignal(SignalName.LobbyCreated, currentLobbyId);
+						};
 					};
 				};
 			}
@@ -885,7 +982,7 @@ public partial class EOSManager : Node
 
 			string displayName = !string.IsNullOrEmpty(pendingNickname)
 			? pendingNickname
-			: $"Player_{localProductUserId.ToString().Substring(Math.Max(0, localProductUserId.ToString().Length - 8))}";
+			: $"Player_{GetShortUserId(localProductUserId.ToString())}";
 
 			var tempMemberData = new Godot.Collections.Dictionary
 			{
@@ -901,7 +998,7 @@ public partial class EOSManager : Node
 			currentLobbyMembers = tempMembersList;
 
 			EmitSignal(SignalName.LobbyMembersUpdated, tempMembersList);
-			GD.Print($"👥 Sent initial member list (1 member - you)"); // Możesz teraz ustawić atrybuty lobby (nazwa, mapa, tryb gry itp.)
+			GD.Print($"👥 Sent initial member list (1 member - you)");
 		}
 		else
 		{
@@ -1036,7 +1133,7 @@ public partial class EOSManager : Node
 	}
 
 	/// <summary>
-	/// Wyszukuje lobby po custom ID (6-znakowy kod)
+	/// Wyszukuje lobby po custom ID
 	/// </summary>
 	/// <param name="customLobbyId">Custom ID lobby do wyszukania (np. "V5CGSP")</param>
 	/// <param name="onComplete">Callback wywoływany po zakończeniu (success: bool, lobbyId: string)</param>
@@ -1271,20 +1368,42 @@ public partial class EOSManager : Node
 					// KROK 4: Ustaw nickname i przypisz drużynę (teraz mamy już listę członków)
 					GetTree().CreateTimer(0.3).Timeout += () =>
 					{
-						GD.Print("🔄 [STEP 3/5] Setting nickname and team...");
+						GD.Print("🔄 [STEP 3/5] Setting nickname first...");
 
 						// Najpierw ustaw nickname (jeśli został ustawiony)
 						if (!string.IsNullOrEmpty(pendingNickname))
 						{
 							GD.Print($"📝 Setting nickname: {pendingNickname}");
 							SetMemberAttribute("Nickname", pendingNickname);
+
+							// Odczekaj na propagację nicku, potem przypisz drużynę
+							GetTree().CreateTimer(0.5).Timeout += () =>
+							{
+								GD.Print("🔄 [STEP 3.5/5] Now assigning to neutral team...");
+								if (currentGameMode == GameMode.AIvsHuman)
+								{
+									AssignToUniversalTeam();
+								}
+								else
+								{
+									AssignToNeutralTeam();
+								}
+							};
+						}
+						else
+						{
+							if (currentGameMode == GameMode.AIvsHuman)
+							{
+								AssignToUniversalTeam();
+							}
+							else
+							{
+								AssignToNeutralTeam();
+							}
 						}
 
-						// Automatycznie przypisz się do drużyny (balansowanie)
-						AutoAssignMyTeam();
-
 						// KROK 5: Odczekaj na propagację atrybutów, potem pobierz członków ponownie
-						GetTree().CreateTimer(1.0).Timeout += () =>
+						GetTree().CreateTimer(1.5).Timeout += () =>
 						{
 							GD.Print("🔄 [STEP 4/5] Refreshing members with team assignments...");
 							GetLobbyMembers();
@@ -1509,8 +1628,12 @@ public partial class EOSManager : Node
 			EmitSignal(SignalName.CustomLobbyIdUpdated, "");
 
 			// Wyczyść GameMode
-			currentGameMode = "AI Master";
-			EmitSignal(SignalName.GameModeUpdated, currentGameMode);
+			currentGameMode = GameMode.AIMaster;
+			EmitSignal(SignalName.GameModeUpdated, GetEnumDescription(currentGameMode));
+
+			//Wyczyść AIType
+			currentAIType = AIType.API;
+			EmitSignal(SignalName.AITypeUpdated, GetEnumDescription(currentAIType));
 
 			// Wyczyść cache członków
 			currentLobbyMembers.Clear();            // Wyczyść flagę tworzenia (na wszelki wypadek)
@@ -1664,7 +1787,7 @@ public partial class EOSManager : Node
 			// Obsługa KICKED - ktoś INNY został wyrzucony
 			if (data.CurrentStatus == LobbyMemberStatus.Kicked)
 			{
-				GD.Print($"  👢 Member KICKED: {userId.Substring(Math.Max(0, userId.Length - 8))}");
+				GD.Print($"  👢 Member KICKED: {GetShortUserId(userId)}");
 			}
 
 			// Odśwież LobbyDetails handle (tylko jeśli nie zostaliśmy wyrzuceni)
@@ -1673,7 +1796,7 @@ public partial class EOSManager : Node
 			// JOINED, LEFT lub KICKED - odśwież całą listę członków
 			if (data.CurrentStatus == LobbyMemberStatus.Joined)
 			{
-				GD.Print($"  ➕ Member JOINED: {userId.Substring(Math.Max(0, userId.Length - 8))}");
+				GD.Print($"  ➕ Member JOINED: {GetShortUserId(userId)}");
 
 				// Małe opóźnienie na synchronizację EOS
 				GetTree().CreateTimer(0.3).Timeout += () =>
@@ -1684,7 +1807,7 @@ public partial class EOSManager : Node
 			}
 			else if (data.CurrentStatus == LobbyMemberStatus.Left || data.CurrentStatus == LobbyMemberStatus.Kicked)
 			{
-				GD.Print($"  ➖ Member LEFT/KICKED: {userId.Substring(Math.Max(0, userId.Length - 8))}");
+				GD.Print($"  ➖ Member LEFT/KICKED: {GetShortUserId(userId)}");
 
 				// Małe opóźnienie na synchronizację EOS
 				GetTree().CreateTimer(0.3).Timeout += () =>
@@ -1697,10 +1820,10 @@ public partial class EOSManager : Node
 	}
 
 	/// <summary>
-	/// Automatycznie przypisuje SIEBIE do drużyny (balansowanie)
+	/// Przypisuje nowego gracza do neutralnej drużyny (NeutralTeam)
 	/// Wywoływane przez gracza po dołączeniu do lobby
 	/// </summary>
-	public void AutoAssignMyTeam()
+	public void AssignToNeutralTeam()
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
@@ -1708,33 +1831,26 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		// Policz graczy w każdej drużynie (bez siebie)
-		int blueCount = 0;
-		int redCount = 0;
+		GD.Print($"🟡 Assigning new player to NeutralTeam (None)");
 
-		foreach (var member in currentLobbyMembers)
+		SetMemberAttribute("Team", Team.None.ToString());
+	}
+
+	/// <summary>
+	/// Przypisuje nowego gracza do uniwersalnej drużyny (UniversalTeam)
+	/// Wywoływane przez gracza po dołączeniu do lobby jeśli tryb gry to AIvsHuman
+	/// </summary>
+	public void AssignToUniversalTeam()
+	{
+		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			// Pomiń siebie w liczeniu
-			if (member.ContainsKey("isLocalPlayer") && (bool)member["isLocalPlayer"])
-			{
-				continue;
-			}
-
-			if (member.ContainsKey("team"))
-			{
-				string memberTeam = member["team"].ToString();
-				if (memberTeam == "Blue") blueCount++;
-				else if (memberTeam == "Red") redCount++;
-			}
+			GD.PrintErr("❌ Cannot assign team: Not in any lobby!");
+			return;
 		}
 
-		// Przypisz do drużyny z mniejszą liczbą graczy
-		string assignedTeam = blueCount <= redCount ? "Blue" : "Red";
+		GD.Print($"🟣 Assigning new player to UniversalTeam (Universal)");
 
-		GD.Print($"🎲 Auto-assigning myself to {assignedTeam} team (Blue: {blueCount}, Red: {redCount})");
-
-		// Ustaw atrybut Team dla siebie
-		SetMemberAttribute("Team", assignedTeam);
+		SetMemberAttribute("Team", Team.Universal.ToString());
 	}
 
 	/// <summary>
@@ -1743,16 +1859,27 @@ public partial class EOSManager : Node
 	/// </summary>
 	/// <param name="key">Klucz atrybutu</param>
 	/// <param name="value">Wartość atrybutu</param>
-	public void SetMyTeam(string teamName)
+	public void SetMyTeam(Team teamName)
 	{
-		if (teamName != "Blue" && teamName != "Red")
+		if (teamName != Team.Blue && teamName != Team.Red && teamName != Team.None && teamName != Team.Universal)
 		{
 			GD.PrintErr($"❌ Invalid team name: {teamName}");
 			return;
 		}
 
-		SetMemberAttribute("Team", teamName);
+		const int MaxPlayersPerTeam = 5;
+		if ((teamName == Team.Blue || teamName == Team.Red) && GetTeamPlayerCount(teamName) >= MaxPlayersPerTeam)
+		{
+			GD.PrintErr($"❌ Cannot join team {teamName}: Team is full ({MaxPlayersPerTeam}/{MaxPlayersPerTeam})");
+			return;
+		}
+
+		SetMemberAttribute("Team", teamName.ToString());
 		GD.Print($"✅ Set my team to: {teamName}");
+
+		//Sprawdzenie warunków dotyczących rozpoczęcia gry
+		EmitSignal(SignalName.CheckTeamsBalanceConditions);
+
 	}
 
 	/// <summary>
@@ -1806,7 +1933,7 @@ public partial class EOSManager : Node
 	}
 
 	/// <summary>
-	/// Odświeża atrybuty lobby (CustomLobbyId, GameMode) z EOS
+	/// Odświeża atrybuty lobby (CustomLobbyId, GameMode, AIType) z EOS
 	/// </summary>
 	private void RefreshLobbyAttributes(LobbyDetails lobbyDetails)
 	{
@@ -1820,6 +1947,7 @@ public partial class EOSManager : Node
 
 		bool customIdFound = false;
 		bool gameModeFound = false;
+		bool aiTypeFound = false;
 		forcedTeamAssignments.Clear();
 
 		// Iteruj po wszystkich atrybutach lobby
@@ -1848,24 +1976,74 @@ public partial class EOSManager : Node
 				}
 				else if (keyStr != null && keyStr.Equals("GameMode", StringComparison.OrdinalIgnoreCase))
 				{
-					string newGameMode = !string.IsNullOrEmpty(valueStr) ? valueStr : "AI Master";
+					string gameModeStr = !string.IsNullOrEmpty(valueStr) ? valueStr : "AI Master";
+					GameMode newGameMode = ParseEnumFromDescription<GameMode>(gameModeStr, GameMode.AIMaster);
 
 					// Tylko zaktualizuj jeśli się zmienił
 					if (currentGameMode != newGameMode)
 					{
 						currentGameMode = newGameMode;
-						GD.Print($"✅ GameMode refreshed: {currentGameMode}");
-						EmitSignal(SignalName.GameModeUpdated, currentGameMode);
+						GD.Print($"✅ GameMode refreshed: {GetEnumDescription(currentGameMode)}");
+						EmitSignal(SignalName.GameModeUpdated, GetEnumDescription(currentGameMode));
 					}
 					gameModeFound = true;
+				}
+				else if (keyStr != null && keyStr.Equals("AIType", StringComparison.OrdinalIgnoreCase))
+				{
+					string aiTypeStr = !string.IsNullOrEmpty(valueStr) ? valueStr : "API";
+					AIType newAIType = ParseEnumFromDescription<AIType>(aiTypeStr, AIType.API);
+
+					// Tylko zaktualizuj jeśli się zmienił
+					if (currentAIType != newAIType)
+					{
+						currentAIType = newAIType;
+						GD.Print($"✅ AIType refreshed: {GetEnumDescription(currentAIType)}");
+						EmitSignal(SignalName.AITypeUpdated, GetEnumDescription(currentAIType));
+					}
+					aiTypeFound = true;
+				}
+				else if (keyStr != null && keyStr.Equals("ReadyToStart", StringComparison.OrdinalIgnoreCase))
+				{
+					bool isReady = valueStr == "true";
+					GD.Print($"✅ ReadyToStart status received: {isReady}");
+					EmitSignal(SignalName.LobbyReadyStatusUpdated, isReady);
 				}
 				else if (keyStr != null && keyStr.StartsWith(ForceTeamAttributePrefix, StringComparison.OrdinalIgnoreCase))
 				{
 					string targetUserId = keyStr.Substring(ForceTeamAttributePrefix.Length);
+					if (!string.IsNullOrEmpty(targetUserId))
+					{
+						// Pusty valueStr oznacza Team.None
+						if (string.IsNullOrEmpty(valueStr))
+						{
+							GD.Print($"🎯 Found ForceTeam request: {GetShortUserId(targetUserId)} → None");
+							forcedTeamAssignments[targetUserId] = Team.None;
+						}
+						// Parsuj niepusty string na enum
+						else if (Enum.TryParse<Team>(valueStr, out Team parsedTeam))
+						{
+							GD.Print($"🎯 Found ForceTeam request: {GetShortUserId(targetUserId)} → {parsedTeam}");
+							forcedTeamAssignments[targetUserId] = parsedTeam;
+						}
+					}
+				}
+				else if (keyStr != null && keyStr.StartsWith(PreviousTeamAttributePrefix, StringComparison.OrdinalIgnoreCase))
+				{
+					string targetUserId = keyStr.Substring(PreviousTeamAttributePrefix.Length);
 					if (!string.IsNullOrEmpty(targetUserId) && !string.IsNullOrEmpty(valueStr))
 					{
-						GD.Print($"🎯 Found ForceTeam request: {targetUserId.Substring(Math.Max(0, targetUserId.Length - 8))} → {valueStr}");
-						forcedTeamAssignments[targetUserId] = valueStr;
+						// Parsuj string na enum
+						if (Enum.TryParse<Team>(valueStr, out Team parsedTeam))
+						{
+							GD.Print($"💾 Found PreviousTeam: {GetShortUserId(targetUserId)} → {parsedTeam}");
+							previousTeamAssignments[targetUserId] = parsedTeam;
+						}
+					}
+					else if (!string.IsNullOrEmpty(targetUserId) && string.IsNullOrEmpty(valueStr))
+					{
+						// Pusty valueStr oznacza usunięcie poprzedniej drużyny
+						previousTeamAssignments.Remove(targetUserId);
+						GD.Print($"🧹 Cleared PreviousTeam for {GetShortUserId(targetUserId)}");
 					}
 				}
 			}
@@ -1878,12 +2056,20 @@ public partial class EOSManager : Node
 		}
 
 		// Jeśli nie znaleziono GameMode, ustaw domyślny
-		if (!gameModeFound && currentGameMode != "AI Master")
+		if (!gameModeFound && currentGameMode != GameMode.AIMaster)
 		{
-			currentGameMode = "AI Master";
-			EmitSignal(SignalName.GameModeUpdated, currentGameMode);
+			currentGameMode = GameMode.AIMaster;
+			EmitSignal(SignalName.GameModeUpdated, GetEnumDescription(currentGameMode));
 			GD.Print("⚠️ GameMode not found, using default: AI Master");
 		}
+		// Jeśli nie znaleziono AIType, ustaw domyślny
+		if (!aiTypeFound && currentAIType != AIType.API)
+		{
+			currentAIType = AIType.API;
+			EmitSignal(SignalName.AITypeUpdated, GetEnumDescription(currentAIType));
+			GD.Print("⚠️ AIType not found, using default: API");
+		}
+
 
 		ApplyForcedTeamAssignments();
 	}
@@ -1912,12 +2098,90 @@ public partial class EOSManager : Node
 		GD.Print($"🆔 Setting CustomLobbyId to: {newCustomId}");
 	}
 
-	public void SetGameMode(string gameMode)
+	public void SetGameMode(GameMode gameMode)
 	{
-		SetLobbyAttribute("GameMode", gameMode);
 		currentGameMode = gameMode;
+		string gameModeStr = GetEnumDescription(gameMode);
+		SetLobbyAttribute("GameMode", gameModeStr);
 
-		GD.Print($"🎮 Setting GameMode to: {gameMode}");
+		GD.Print($"🎮 Setting GameMode to: {gameModeStr}");
+
+		EmitSignal(SignalName.GameModeUpdated, gameModeStr);
+	}
+
+	public void SetAIType(AIType aiType)
+	{
+		currentAIType = aiType;
+		string aiTypeStr = GetEnumDescription(aiType);
+		SetLobbyAttribute("AIType", aiTypeStr);
+		GD.Print($"🤖 Setting AIType to: {aiTypeStr}");
+
+		EmitSignal(SignalName.AITypeUpdated, aiTypeStr);
+	}
+
+	public void SetLobbyReadyStatus(bool isReady)
+	{
+		SetLobbyAttribute("ReadyToStart", isReady ? "true" : "false");
+		GD.Print($"✅ Setting ReadyToStart to: {isReady}");
+	}
+
+	/// <summary>
+	/// Zapisuje poprzednią drużynę gracza w atrybutach lobby (przed przeniesieniem do Universal)
+	/// </summary>
+	public void SavePlayerPreviousTeam(string userId, Team previousTeam)
+	{
+		if (string.IsNullOrEmpty(userId))
+		{
+			GD.PrintErr("❌ Cannot save previous team: userId is empty");
+			return;
+		}
+
+		string attributeKey = PreviousTeamAttributePrefix + userId;
+		SetLobbyAttribute(attributeKey, previousTeam.ToString());
+
+		// Cache lokalnie
+		previousTeamAssignments[userId] = previousTeam;
+
+		GD.Print($"💾 Saved previous team for {GetShortUserId(userId)}: {previousTeam}");
+	}
+
+	/// <summary>
+	/// Odczytuje poprzednią drużynę gracza z atrybutów lobby
+	/// </summary>
+	public Team GetPlayerPreviousTeam(string userId)
+	{
+		if (string.IsNullOrEmpty(userId))
+		{
+			GD.PrintErr("❌ Cannot get previous team: userId is empty");
+			return Team.None;
+		}
+
+		// Sprawdź cache
+		if (previousTeamAssignments.ContainsKey(userId))
+		{
+			return previousTeamAssignments[userId];
+		}
+
+		return Team.None;
+	}
+
+	/// <summary>
+	/// Czyści zapisaną poprzednią drużynę gracza
+	/// </summary>
+	public void ClearPlayerPreviousTeam(string userId)
+	{
+		if (string.IsNullOrEmpty(userId))
+		{
+			return;
+		}
+
+		string attributeKey = PreviousTeamAttributePrefix + userId;
+		SetLobbyAttribute(attributeKey, "");
+
+		// Usuń z cache
+		previousTeamAssignments.Remove(userId);
+
+		GD.Print($"🧹 Cleared previous team for {GetShortUserId(userId)}");
 	}
 
 	// ============================================
@@ -2150,7 +2414,7 @@ public partial class EOSManager : Node
 		});
 	}
 
-	public void MovePlayerToTeam(string targetUserId, string teamName)
+	public void MovePlayerToTeam(string targetUserId, Team teamName)
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
@@ -2170,9 +2434,16 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		if (teamName != "Blue" && teamName != "Red")
+		if (teamName != Team.Blue && teamName != Team.Red && teamName != Team.None && teamName != Team.Universal)
 		{
 			GD.PrintErr($"❌ Cannot move player: Invalid team '{teamName}'");
+			return;
+		}
+
+		const int MaxPlayersPerTeam = 5;
+		if ((teamName == Team.Blue || teamName == Team.Red) && GetTeamPlayerCount(teamName) >= MaxPlayersPerTeam)
+		{
+			GD.PrintErr($"❌ Cannot move player: Team {teamName} is full ({MaxPlayersPerTeam}/{MaxPlayersPerTeam})");
 			return;
 		}
 
@@ -2183,22 +2454,199 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		GD.Print($"🔀 Host requesting player {targetUserId.Substring(Math.Max(0, targetUserId.Length - 8))} to join {teamName} team");
+		GD.Print($"🔀 Host requesting player {GetShortUserId(targetUserId)} to join {teamName} team");
 		forcedTeamAssignments[targetUserId] = teamName;
-		SetLobbyAttribute($"{ForceTeamAttributePrefix}{targetUserId}", teamName);
+		SetLobbyAttribute($"{ForceTeamAttributePrefix}{targetUserId}", teamName.ToString());
 	}
 
-	private string GetTeamForUser(string userId)
+	/// <summary>
+	/// Przenosi wszystkich graczy z Blue/Red do Universal i zapisuje ich poprzednie drużyny
+	/// Wywoływane gdy host zmienia tryb gry na AI vs Human
+	/// </summary>
+	public void MoveAllPlayersToUniversal()
+	{
+		if (!isLobbyOwner)
+		{
+			GD.PrintErr("❌ Only host can move all players to Universal team");
+			return;
+		}
+
+		GD.Print("🔄 Moving all players to Universal team...");
+
+		int movedCount = 0;
+		foreach (var member in currentLobbyMembers)
+		{
+			if (!member.ContainsKey("userId") || !member.ContainsKey("team"))
+				continue;
+
+			string userId = member["userId"].ToString();
+			string teamStr = member["team"].ToString();
+			string displayName = member.ContainsKey("displayName") ? member["displayName"].ToString() : "Unknown";
+
+			// Jeśli team jest pusty, traktuj jako None
+			Team currentTeam = Team.None;
+			if (!string.IsNullOrEmpty(teamStr))
+			{
+				if (!Enum.TryParse<Team>(teamStr, out currentTeam))
+				{
+					currentTeam = Team.None;
+				}
+			}
+
+			// Przenieś tylko graczy z Blue, Red lub None (nie Universal)
+			if (currentTeam == Team.Blue || currentTeam == Team.Red || currentTeam == Team.None)
+			{
+				// Zapisz poprzednią drużynę
+				SavePlayerPreviousTeam(userId, currentTeam);
+
+				// Przenieś do Universal
+				forcedTeamAssignments[userId] = Team.Universal;
+				SetLobbyAttribute($"{ForceTeamAttributePrefix}{userId}", Team.Universal.ToString());
+
+				// Jeśli to host - ustaw też jego MEMBER attribute
+				bool isLocalPlayer = userId == localProductUserId.ToString();
+				if (isLocalPlayer)
+				{
+					SetMemberAttribute("Team", Team.Universal.ToString());
+					GD.Print($"✅ Host moved to Universal team");
+				}
+
+				movedCount++;
+			}
+		}
+
+		GD.Print($"✅ Moved {movedCount} players to Universal team");
+
+		// Odśwież listę członków, żeby UI zaktualizowało zespoły
+		GetLobbyMembers();
+	}
+
+	/// <summary>
+	/// Przywraca wszystkich graczy z Universal do ich poprzednich drużyn
+	/// Wywoływane gdy host zmienia tryb gry z AI vs Human na AI Master
+	/// </summary>
+	public void RestorePlayersFromUniversal()
+	{
+		if (!isLobbyOwner)
+		{
+			GD.PrintErr("❌ Only host can restore players from Universal team");
+			return;
+		}
+
+		GD.Print("🔄 Restoring players from Universal...");
+
+		int restoredCount = 0;
+		foreach (var member in currentLobbyMembers)
+		{
+			if (!member.ContainsKey("userId") || !member.ContainsKey("team"))
+				continue;
+
+			string userId = member["userId"].ToString();
+			string teamStr = member["team"].ToString();
+
+			// Jeśli team jest pusty, traktuj jako None
+			Team currentTeam = Team.None;
+			if (!string.IsNullOrEmpty(teamStr))
+			{
+				if (!Enum.TryParse<Team>(teamStr, out currentTeam))
+				{
+					currentTeam = Team.None;
+				}
+			}
+
+			// Przywróć tylko graczy z Universal
+			if (currentTeam == Team.Universal)
+			{
+				// Odczytaj poprzednią drużynę
+				Team previousTeam = GetPlayerPreviousTeam(userId);
+
+				// Jeśli nie ma zapisanej poprzedniej drużyny lub była None/Universal
+				if (previousTeam == Team.None || previousTeam == Team.Universal)
+				{
+					// Ustaw ForceTeam_ na None dla wszystkich graczy
+					forcedTeamAssignments[userId] = Team.None;
+					SetLobbyAttribute($"{ForceTeamAttributePrefix}{userId}", "");
+
+					// Dodatkowo dla hosta - ustaw MEMBER attribute bezpośrednio
+					bool isLocalPlayer = userId == localProductUserId.ToString();
+					if (isLocalPlayer)
+					{
+						SetMemberAttribute("Team", "");
+						GD.Print($"✅ Host restored to None team (ForceTeam_ set)");
+					}
+					else
+					{
+						GD.Print($"📋 Player {GetShortUserId(userId)} ForceTeam_ set to None");
+					}
+
+					ClearPlayerPreviousTeam(userId);
+					restoredCount++;
+					continue;
+				}
+
+				// Przenieś do poprzedniej drużyny (Blue lub Red)
+				forcedTeamAssignments[userId] = previousTeam;
+				SetLobbyAttribute($"{ForceTeamAttributePrefix}{userId}", previousTeam.ToString());
+
+				// Jeśli to host - ustaw też jego MEMBER attribute
+				bool isLocalPlayer2 = userId == localProductUserId.ToString();
+				if (isLocalPlayer2)
+				{
+					SetMemberAttribute("Team", previousTeam.ToString());
+					GD.Print($"✅ Host restored to {previousTeam} team");
+				}
+
+				// Wyczyść zapisaną poprzednią drużynę
+				ClearPlayerPreviousTeam(userId);
+
+				restoredCount++;
+			}
+		}
+		GD.Print($"✅ Restored {restoredCount} players from Universal team");
+
+		// Odśwież listę członków, żeby UI zaktualizowało zespoły
+		GetLobbyMembers();
+	}
+
+	private Team GetTeamForUser(string userId)
 	{
 		foreach (var member in currentLobbyMembers)
 		{
 			if (member.ContainsKey("userId") && member["userId"].ToString() == userId)
 			{
-				return member.ContainsKey("team") ? member["team"].ToString() : "";
+				if (member.ContainsKey("team"))
+				{
+					string teamStr = member["team"].ToString();
+					if (Enum.TryParse<Team>(teamStr, out Team parsedTeam))
+					{
+						return parsedTeam;
+					}
+				}
+				return Team.None;
 			}
 		}
 
-		return "";
+		return Team.None;
+	}
+
+	/// <summary>
+	/// Zlicza ile graczy jest w danej drużynie
+	/// </summary>
+	private int GetTeamPlayerCount(Team team)
+	{
+		int count = 0;
+		foreach (var member in currentLobbyMembers)
+		{
+			if (member.ContainsKey("userId") && member.ContainsKey("team"))
+			{
+				string teamStr = member["team"].ToString();
+				if (Enum.TryParse<Team>(teamStr, out Team memberTeam) && memberTeam == team)
+				{
+					count++;
+				}
+			}
+		}
+		return count;
 	}
 
 	private void ApplyForcedTeamAssignments()
@@ -2209,27 +2657,18 @@ public partial class EOSManager : Node
 		}
 
 		string localUserId = localProductUserId.ToString();
-		GD.Print($"🔍 Checking forced team assignments for {localUserId.Substring(Math.Max(0, localUserId.Length - 8))}");
-		GD.Print($"   Total forced assignments: {forcedTeamAssignments.Count}");
 
-		if (forcedTeamAssignments.TryGetValue(localUserId, out string forcedTeam) && !string.IsNullOrEmpty(forcedTeam))
+		if (forcedTeamAssignments.TryGetValue(localUserId, out Team forcedTeam))
 		{
-			string currentTeam = GetTeamForUser(localUserId);
-			GD.Print($"   Found force request: Current={currentTeam}, Forced={forcedTeam}");
+			Team currentTeam = GetTeamForUser(localUserId);
 
-			if (!string.Equals(currentTeam, forcedTeam, StringComparison.OrdinalIgnoreCase))
+			if (currentTeam != forcedTeam)
 			{
-				GD.Print($"🎯 Host forced you to switch to {forcedTeam}, applying change...");
-				SetMemberAttribute("Team", forcedTeam);
+				GD.Print($"🎯 Host forced you to switch to {forcedTeam}");
+				// Gdy forcedTeam == None, ustaw pusty string (nie "None")
+				string teamValue = (forcedTeam == Team.None) ? "" : forcedTeam.ToString();
+				SetMemberAttribute("Team", teamValue);
 			}
-			else
-			{
-				GD.Print($"   ✅ Already on correct team, no change needed");
-			}
-		}
-		else
-		{
-			GD.Print($"   No forced team assignment for this player");
 		}
 
 		if (isLobbyOwner)
@@ -2245,19 +2684,29 @@ public partial class EOSManager : Node
 			return;
 		}
 
+		// W trybie AI vs Human NIE czyścimy ForceTeam_ atrybutów!
+		// Te atrybuty są potrzebne przez cały czas, bo gracze mogą dołączać/odłączać się
+		// i muszą wiedzieć że są w Universal team
+		if (currentGameMode == GameMode.AIvsHuman)
+		{
+			return;
+		}
+
 		var keysToClear = new System.Collections.Generic.List<string>();
 		foreach (var kvp in forcedTeamAssignments)
 		{
-			if (string.IsNullOrEmpty(kvp.Value))
-			{
-				keysToClear.Add(kvp.Key);
-				continue;
-			}
+			string userId = kvp.Key;
+			Team forcedTeam = kvp.Value;
 
-			string actualTeam = GetTeamForUser(kvp.Key);
-			if (string.IsNullOrEmpty(actualTeam) || string.Equals(actualTeam, kvp.Value, StringComparison.OrdinalIgnoreCase))
+			// Pobierz aktualną drużynę z MEMBER attribute
+			Team actualTeam = GetTeamForUser(userId);
+
+			// Wyczyść jeśli gracz FAKTYCZNIE zmienił drużynę na wymuszoną
+			// Dla Team.None porównujemy bezpośrednio (actualTeam może być None)
+			if (actualTeam == forcedTeam)
 			{
-				keysToClear.Add(kvp.Key);
+				// Gracz jest już w wymuszanej drużynie, możemy wyczyścić
+				keysToClear.Add(userId);
 			}
 		}
 
@@ -2276,7 +2725,7 @@ public partial class EOSManager : Node
 
 		forcedTeamAssignments.Remove(userId);
 		string attributeKey = $"{ForceTeamAttributePrefix}{userId}";
-		GD.Print($"🧹 Clearing forced team attribute for {userId.Substring(Math.Max(0, userId.Length - 8))}");
+		GD.Print($"🧹 Clearing forced team attribute for {GetShortUserId(userId)}");
 		RemoveLobbyAttribute(attributeKey);
 	}
 
@@ -2336,15 +2785,11 @@ public partial class EOSManager : Node
 			var memberByIndexOptions = new LobbyDetailsGetMemberByIndexOptions() { MemberIndex = i };
 			ProductUserId memberUserId = lobbyDetails.GetMemberByIndex(ref memberByIndexOptions);
 
-			GD.Print($"  Member {i}: UserID={memberUserId}");
-
 			if (memberUserId != null && memberUserId.IsValid())
 			{
 				// Pobierz informacje o członku
 				var memberInfoOptions = new LobbyDetailsGetMemberAttributeCountOptions() { TargetUserId = memberUserId };
 				uint attributeCount = lobbyDetails.GetMemberAttributeCount(ref memberInfoOptions);
-
-				GD.Print($"    AttributeCount={attributeCount}");
 
 				// Pobierz Nickname i Team z atrybutów członka
 				string displayName = null;
@@ -2367,17 +2812,15 @@ public partial class EOSManager : Node
 						string keyStr = attribute.Value.Data.Value.Key;
 						string valueStr = attribute.Value.Data.Value.Value.AsUtf8;
 
-						GD.Print($"      Attribute: {keyStr} = {valueStr}");
-
 						// Pobierz Nickname
-						if (keyStr != null && keyStr.Equals("Nickname", System.StringComparison.OrdinalIgnoreCase))
+						if (keyStr != null && keyStr.Equals("Nickname", StringComparison.OrdinalIgnoreCase))
 						{
 							displayName = valueStr;
 							foundNickname = true;
 						}
 
 						// Pobierz Team
-						if (keyStr != null && keyStr.Equals("Team", System.StringComparison.OrdinalIgnoreCase))
+						if (keyStr != null && keyStr.Equals("Team", StringComparison.OrdinalIgnoreCase))
 						{
 							team = valueStr;
 						}
@@ -2388,8 +2831,7 @@ public partial class EOSManager : Node
 				if (!foundNickname)
 				{
 					string userId = memberUserId.ToString();
-					displayName = $"Player_{userId.Substring(Math.Max(0, userId.Length - 8))}";
-					GD.Print($"      No Nickname attribute, using fallback: {displayName}");
+					displayName = $"Player_{GetShortUserId(userId)}";
 				}
 
 				// Sprawdź czy to właściciel lobby
@@ -2400,6 +2842,21 @@ public partial class EOSManager : Node
 				// Sprawdź czy to lokalny gracz
 				bool isLocalPlayer = memberUserId.ToString() == localProductUserId.ToString();
 
+				// To zapobiega pokazywaniu graczy z fallback nickiem
+				if (!foundNickname && !isLocalPlayer)
+				{
+					continue;
+				}
+
+				// Sprawdź czy istnieje wymuszenie drużyny (ForceTeam_ to atrybut LOBBY, nie MEMBER)
+				string memberUserIdStr = memberUserId.ToString();
+
+				if (forcedTeamAssignments.ContainsKey(memberUserIdStr))
+				{
+					Team forcedTeam = forcedTeamAssignments[memberUserIdStr];
+					team = forcedTeam.ToString();
+				}
+
 				// Dodaj do listy
 				var memberData = new Godot.Collections.Dictionary
 				{
@@ -2407,16 +2864,10 @@ public partial class EOSManager : Node
 					{ "displayName", displayName },
 					{ "isOwner", isOwner },
 					{ "isLocalPlayer", isLocalPlayer },
-					{ "team", team } // "Blue", "Red", lub "" (nie przypisany)
+					{ "team", team }
 				};
 
 				membersList.Add(memberData);
-
-				GD.Print($"    ✅ Added: {displayName} (Owner: {isOwner}, Local: {isLocalPlayer}, Team: {(string.IsNullOrEmpty(team) ? "None" : team)})");
-			}
-			else
-			{
-				GD.PrintErr($"  [{i}] Invalid member UserID!");
 			}
 		}
 
