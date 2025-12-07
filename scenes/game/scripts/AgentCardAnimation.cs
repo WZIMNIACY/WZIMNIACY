@@ -5,12 +5,18 @@ public partial class AgentCardAnimation : PanelContainer
     [Export] public Control highlightBorder;
     [Export] public Control contentContainer;
     [Export] public Color darkColor = new Color(0.7f, 0.7f, 0.7f);
+    [Export] private CardMenager cardMenager;
+    [Export] private Label textLabel;
+    [Export] private TextureRect cardImage;
 
     private Vector2 hoverScale = new Vector2(1.05f, 1.05f); 
     private float duration = 0.1f; 
 
     private Vector2 normalScale = Vector2.One;
     private Tween tween;
+
+    private string type;
+    private bool isChecked = false;
 
     public override void _Ready()
     {
@@ -21,6 +27,11 @@ public partial class AgentCardAnimation : PanelContainer
         MouseExited += OnHoverExit;
     
         Resized += SetPivotCenter;
+
+        //GD.Print(cardMenager.GetCardName());
+        SetCardName(cardMenager.GetCardName());
+        type = cardMenager.GetCardType();
+        SetColor();
     }
 
     private void SetPivotCenter()
@@ -62,5 +73,21 @@ public partial class AgentCardAnimation : PanelContainer
             if (contentContainer != null)
                 tween.TweenProperty(contentContainer, "modulate", Colors.White, duration);
         }
+    }
+
+    private void SetCardName(string name){
+        textLabel.Text = name;
+    }
+
+    private void SetColor(){
+        if(type == "blue"){
+			cardImage.Modulate = new Color("4597ffff");
+		}
+		else if(type == "red"){
+			cardImage.Modulate = new Color("ff627bff");
+		}
+		else if(type == "assassin"){
+			cardImage.Modulate = new Color("767676aa");
+		}
     }
 }

@@ -16,12 +16,14 @@ border_width_bottom = 5
 border_color = Color(0, 1, 0.8, 1)
 border_blend = true
 
-[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer")]
+[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage")]
 offset_right = 110.0
 offset_bottom = 110.0
 script = ExtResource("1_m8y6f")
 highlightBorder = NodePath("HighlightBorder")
 contentContainer = NodePath(".")
+textLabel = NodePath("MarginContainer/Label")
+cardImage = NodePath("AgentCard")
 
 [node name="AgentCard" type="TextureRect" parent="."]
 custom_minimum_size = Vector2(0, 110)
