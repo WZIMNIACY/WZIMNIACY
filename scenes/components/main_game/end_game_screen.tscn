@@ -1,0 +1,502 @@
+[gd_scene load_steps=15 format=3 uid="uid://b6bdhq5ktk0vo"]
+
+[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="1_dhqnq"]
+[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="2_1pn18"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rbhey"]
+bg_color = Color(0.17254902, 0.17254902, 0.17254902, 1)
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+shadow_color = Color(0, 1, 0.8, 1)
+shadow_size = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wa12k"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_o2got"]
+bg_color = Color(0.13725491, 0.13725491, 0.13725491, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j0d6w"]
+bg_color = Color(0, 1, 0.8, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mrmc4"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5rgx2"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p75hm"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yql5a"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_r2rhv"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p2pcy"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nch28"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_n7jnn"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.14225578, 0.14225581, 0.14225575, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32915834, 0.32915843, 0.32915822, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[node name="EndGameScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.17254902, 0.17254902, 0.17254902, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="ColorRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="WindowPanel" type="PanelContainer" parent="ColorRect/CenterContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_rbhey")
+
+[node name="MarginContainer" type="MarginContainer" parent="ColorRect/CenterContainer/WindowPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="MainLayout" type="VBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.8, 1)
+theme_override_fonts/font = ExtResource("1_dhqnq")
+theme_override_font_sizes/font_size = 25
+text = "Koniec gry"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.63375676, 0.6337568, 0.63375676, 1)
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "Retro-future podsumowanie"
+
+[node name="ColumnsContainer" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="BlueColumn" type="VBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn"]
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/HBoxContainer"]
+custom_minimum_size = Vector2(15, 15)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.08627451, 0.19607843, 0.21176471, 1)
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "  Niebiescy"
+
+[node name="PanelContainer" type="PanelContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_wa12k")
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("2_1pn18")
+text = "Odnalezione (swoje)"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer/HBoxContainer2"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "6"
+
+[node name="ProgressBar" type="ProgressBar" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_o2got")
+theme_override_styles/fill = SubResource("StyleBoxFlat_j0d6w")
+value = 50.0
+show_percentage = false
+
+[node name="PanelContainer2" type="PanelContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_mrmc4")
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer2/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("2_1pn18")
+text = "Odnalezione (neutralne)"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer2/HBoxContainer3"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "1"
+
+[node name="ProgressBar2" type="ProgressBar" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_o2got")
+theme_override_styles/fill = SubResource("StyleBoxFlat_j0d6w")
+value = 50.0
+show_percentage = false
+
+[node name="PanelContainer3" type="PanelContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_5rgx2")
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer3"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer3/HBoxContainer4"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("2_1pn18")
+text = "Odnalezione (przeciwnika)"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer3/HBoxContainer4"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "0"
+
+[node name="ProgressBar3" type="ProgressBar" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_o2got")
+theme_override_styles/fill = SubResource("StyleBoxFlat_j0d6w")
+value = 50.0
+show_percentage = false
+
+[node name="PanelContainer4" type="PanelContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_p75hm")
+
+[node name="HBoxContainer5" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer4"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer4/HBoxContainer5"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("2_1pn18")
+text = "Najdłuższa seria poprawnych"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer4/HBoxContainer5"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "4"
+
+[node name="RedColumn" type="VBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn"]
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/HBoxContainer"]
+custom_minimum_size = Vector2(15, 15)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.24313726, 0.02745098, 0.06666667, 1)
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "  Czerwoni"
+
+[node name="PanelContainer" type="PanelContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_yql5a")
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("2_1pn18")
+text = "Odnalezione (swoje)"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer/HBoxContainer2"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "6"
+
+[node name="ProgressBar" type="ProgressBar" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_o2got")
+theme_override_styles/fill = SubResource("StyleBoxFlat_j0d6w")
+value = 50.0
+show_percentage = false
+
+[node name="PanelContainer2" type="PanelContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_r2rhv")
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer2/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("2_1pn18")
+text = "Odnalezione (neutralne)"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer2/HBoxContainer3"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "6"
+
+[node name="ProgressBar2" type="ProgressBar" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_o2got")
+theme_override_styles/fill = SubResource("StyleBoxFlat_j0d6w")
+value = 50.0
+show_percentage = false
+
+[node name="PanelContainer3" type="PanelContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_p2pcy")
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer3"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer3/HBoxContainer4"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("2_1pn18")
+text = "Odnalezione (przeciwnika)"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer3/HBoxContainer4"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "6"
+
+[node name="ProgressBar3" type="ProgressBar" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_o2got")
+theme_override_styles/fill = SubResource("StyleBoxFlat_j0d6w")
+value = 50.0
+show_percentage = false
+
+[node name="PanelContainer4" type="PanelContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_nch28")
+
+[node name="HBoxContainer5" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer4"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer4/HBoxContainer5"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("2_1pn18")
+text = "Najdłuższa seria poprawnych"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer4/HBoxContainer5"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "6"
+
+[node name="SummaryColumn" type="VBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/SummaryColumn"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/SummaryColumn/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "Szybki przegląd"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/SummaryColumn"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/SummaryColumn/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("2_1pn18")
+text = "Łącznie
+znaleziono:"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/SummaryColumn/HBoxContainer2"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "16"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/SummaryColumn"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/SummaryColumn/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("2_1pn18")
+text = "Najdłuższa seria:"
+
+[node name="Label2" type="Label" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/SummaryColumn/HBoxContainer3"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7490196, 0.7490196, 0.7490196, 1)
+theme_override_fonts/font = ExtResource("1_dhqnq")
+text = "4"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 2
+
+[node name="ReturnToMenu2" type="Button" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer2"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("1_dhqnq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_n7jnn")
+text = "Wróć do Lobby"
+
+[node name="ReturnToMenu" type="Button" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer2"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("1_dhqnq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_n7jnn")
+text = "Wróć do Menu"
