@@ -28,7 +28,6 @@ public partial class AgentCardAnimation : PanelContainer
     
         Resized += SetPivotCenter;
 
-        //GD.Print(cardMenager.GetCardName());
         SetCardName(cardMenager.GetCardName());
         type = cardMenager.GetCardType();
         SetColor();
