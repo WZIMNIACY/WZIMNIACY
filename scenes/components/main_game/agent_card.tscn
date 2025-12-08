@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://s7i54u0fg4ly"]
+[gd_scene load_steps=6 format=3 uid="uid://s7i54u0fg4ly"]
 
 [ext_resource type="Texture2D" uid="uid://csm6re7xw340e" path="res://assets/textures/UNID_agent_ph.png" id="1_hiodb"]
 [ext_resource type="Script" uid="uid://dnpp42xfo4hru" path="res://scripts/AgentCard.cs" id="1_m8y6f"]
@@ -8,6 +8,13 @@ font_size = 11
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7al6y"]
 bg_color = Color(3.898591e-06, 0.71998835, 0.33393955, 1)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_m8y6f"]
+bg_color = Color(0.07880259, 0.3825734, 0, 1)
 corner_radius_top_left = 100
 corner_radius_top_right = 100
 corner_radius_bottom_right = 100
@@ -50,5 +57,6 @@ offset_top = 10.0
 offset_right = 23.0
 offset_bottom = 28.0
 theme_override_styles/normal = SubResource("StyleBoxFlat_7al6y")
+theme_override_styles/hover = SubResource("StyleBoxFlat_m8y6f")
 
 [connection signal="pressed" from="Control/SelectButton" to="." method="OnSelectButtonPressed"]

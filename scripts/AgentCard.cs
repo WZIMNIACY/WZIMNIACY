@@ -1,14 +1,15 @@
 using Godot;
+
 public partial class AgentCard : PanelContainer
 {
 	private bool selected = false;
-	[Export]
-	private Button selectButton;
-	[Export]
-	private CardMenager cardMenager;
-	[Signal]
-	public delegate void CardConfirmedEventHandler(AgentCard card);
+	[Export] private Button selectButton;
+	[Export] private CardMenager cardMenager;
+	
+	[Signal] public delegate void CardConfirmedEventHandler(AgentCard card);
+	
 	// Called when the node enters the scene tree for the first time.
+	
 	public override void _Ready()
 	{
 		base._Ready();
@@ -21,6 +22,7 @@ public partial class AgentCard : PanelContainer
     {
         base._Process(delta);
     }
+	
 	public override void _GuiInput(InputEvent @event)
 	{
 		base._GuiInput(@event);
@@ -32,17 +34,20 @@ public partial class AgentCard : PanelContainer
 		}
 	}
 	
-	public void Unselect(){
+	public void Unselect()
+	{
 		selected = false;
 		selectButton.Visible = false;
 	}
 	
-	public void ToggleSelected(){
+	public void ToggleSelected()
+	{
 		selected = !selected;
 		selectButton.Visible = selected;
 	}
 	
-	public void OnSelectButtonPressed(){
+	public void OnSelectButtonPressed()
+	{
 		EmitSignal(SignalName.CardConfirmed, this);
 	}
 }

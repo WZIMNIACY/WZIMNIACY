@@ -1,4 +1,5 @@
 using Godot;
+
 public partial class CardMenager : GridContainer
 {
 	public override void _Ready()
