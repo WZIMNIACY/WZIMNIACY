@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://dottn65ntydo4"]
+[gd_scene load_steps=27 format=3 uid="uid://dottn65ntydo4"]
 
 [ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://themes/main_game.tres" id="1_s3esy"]
@@ -14,6 +14,7 @@
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="10_5cypo"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="10_wjob3"]
 [ext_resource type="Script" uid="uid://bhdawio8cc0ed" path="res://scenes/game/scripts/CaptainInput.cs" id="10_xgagw"]
+[ext_resource type="PackedScene" uid="uid://b6bdhq5ktk0vo" path="res://scenes/components/main_game/end_game_screen.tscn" id="15_xgagw"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -81,7 +82,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel")]
+[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "endGameScreen")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -97,6 +98,7 @@ teamListRed = NodePath("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListConta
 gameRightPanel = NodePath("Panel/HBoxContainer/RightPanel")
 gameInputPanel = NodePath("Panel/InputPanel")
 turnLabel = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/TurnCounterContainer/Label")
+endGameScreen = NodePath("EndGameScreen")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
@@ -528,6 +530,9 @@ theme_override_styles/normal = ExtResource("9_nqdth")
 theme_override_styles/pressed = ExtResource("9_nqdth")
 theme_override_styles/hover = ExtResource("10_5cypo")
 text = "Resume"
+
+[node name="EndGameScreen" parent="." instance=ExtResource("15_xgagw")]
+layout_mode = 1
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
 [connection signal="pressed" from="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer/Button" to="." method="OnSkipTurnPressed"]

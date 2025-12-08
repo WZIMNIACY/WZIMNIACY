@@ -1,5 +1,6 @@
-[gd_scene load_steps=15 format=3 uid="uid://b6bdhq5ktk0vo"]
+[gd_scene load_steps=16 format=3 uid="uid://b6bdhq5ktk0vo"]
 
+[ext_resource type="Script" uid="uid://dk1vmxb3k0j88" path="res://scenes/game/scripts/EndGameScreen.cs" id="1_1pn18"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="1_dhqnq"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="2_1pn18"]
 
@@ -130,13 +131,36 @@ corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
-[node name="EndGameScreen" type="Control"]
+[node name="EndGameScreen" type="Control" node_paths=PackedStringArray("winnerTitle", "subTitle", "blueVal1", "blueBar1", "blueVal2", "blueBar2", "blueVal3", "blueBar3", "blueVal4", "redVal1", "redBar1", "redVal2", "redBar2", "redVal3", "redBar3", "redVal4", "totalFoundLabel", "maxStreakLabel", "lobbyButton", "menuButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_1pn18")
+winnerTitle = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer/VBoxContainer/Label")
+subTitle = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer/VBoxContainer/Label2")
+blueVal1 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer/HBoxContainer2/Label2")
+blueBar1 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/ProgressBar")
+blueVal2 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer2/HBoxContainer3/Label2")
+blueBar2 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/ProgressBar2")
+blueVal3 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer3/HBoxContainer4/Label2")
+blueBar3 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/ProgressBar3")
+blueVal4 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/BlueColumn/PanelContainer4/HBoxContainer5/Label2")
+redVal1 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer/HBoxContainer2/Label2")
+redBar1 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/ProgressBar")
+redVal2 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer2/HBoxContainer3/Label2")
+redBar2 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/ProgressBar2")
+redVal3 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer3/HBoxContainer4/Label2")
+redBar3 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/ProgressBar3")
+redVal4 = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/RedColumn/PanelContainer4/HBoxContainer5/Label2")
+totalFoundLabel = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/SummaryColumn/HBoxContainer2/Label2")
+maxStreakLabel = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/ColumnsContainer/SummaryColumn/HBoxContainer3/Label2")
+lobbyButton = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer2/ReturnToLobby")
+menuButton = NodePath("ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer2/ReturnToMenu")
+lobbyScenePath = "uid://cqr5yj8x3kp2m"
+menuScenePath = "uid://c2yf84d4xmho2"
 
 [node name="ColorRect" type="ColorRect" parent="."]
 layout_mode = 1
@@ -145,7 +169,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.17254902, 0.17254902, 0.17254902, 1)
+color = Color(1, 1, 1, 0)
 
 [node name="CenterContainer" type="CenterContainer" parent="ColorRect"]
 layout_mode = 1
@@ -487,7 +511,7 @@ layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 2
 
-[node name="ReturnToMenu2" type="Button" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer2"]
+[node name="ReturnToLobby" type="Button" parent="ColorRect/CenterContainer/WindowPanel/MarginContainer/MainLayout/HBoxContainer2"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("1_dhqnq")
