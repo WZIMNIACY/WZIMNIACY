@@ -1,0 +1,129 @@
+[gd_scene load_steps=5 format=3 uid="uid://cu6vu1ayjqexh"]
+
+[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="2_joa0n"]
+[ext_resource type="Script" uid="uid://do7melntu2xr" path="res://scenes/help/Help.cs" id="2_vxrbp"]
+[ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://assets/buttons/button_border2.tres" id="3_yqd7e"]
+[ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="4_ah480"]
+
+[node name="HelpScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_vxrbp")
+
+[node name="HelpPanel" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+
+[node name="HelpCenter" type="CenterContainer" parent="HelpPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VHelp" type="VBoxContainer" parent="HelpPanel/HelpCenter"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="HelpLabel" type="Label" parent="HelpPanel/HelpCenter/VHelp"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.8, 1)
+theme_override_fonts/font = ExtResource("2_joa0n")
+theme_override_font_sizes/font_size = 20
+text = "Zasady Gry"
+horizontal_alignment = 1
+
+[node name="RulesPanel" type="ScrollContainer" parent="HelpPanel/HelpCenter/VHelp"]
+custom_minimum_size = Vector2(500, 200)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="GameRules" type="RichTextLabel" parent="HelpPanel/HelpCenter/VHelp/RulesPanel"]
+clip_contents = false
+custom_minimum_size = Vector2(500, 200)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "1. Znajdź lobby lub stwórz własne.
+2. Zaproś znajomych używając kodu pokoju.
+3. Rozpocznij grę, gdy wszyscy będą gotowi.
+4. ...
+5
+6
+7
+8
+9
+10
+
+
+312
+312
+3
+123
+123
+12
+31
+23
+123
+123
+123
+123
+12
+31
+23
+123
+123"
+
+[node name="CornerAnchor" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Title" type="Label" parent="CornerAnchor"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 142.0
+offset_bottom = 46.0
+theme_override_colors/font_color = Color(0, 1, 0.8, 1)
+theme_override_fonts/font = ExtResource("2_joa0n")
+theme_override_font_sizes/font_size = 24
+text = "Wzimniacy"
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+offset_right = 40.0
+grow_vertical = 0
+
+[node name="BackButton" type="Button" parent="Control"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -80.0
+offset_right = 130.0
+offset_bottom = -29.0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("2_joa0n")
+theme_override_styles/normal = ExtResource("3_yqd7e")
+theme_override_styles/pressed = ExtResource("3_yqd7e")
+theme_override_styles/hover = ExtResource("4_ah480")
+theme_override_styles/focus = ExtResource("4_ah480")
+text = "← Menu"

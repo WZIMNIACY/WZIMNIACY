@@ -1,0 +1,25 @@
+[gd_scene load_steps=2 format=3 uid="uid://ksk3oy5hhdku"]
+
+[ext_resource type="PackedScene" uid="uid://g860ny7sdwxa" path="res://assets/components/main_game/score_container.tscn" id="1_sip7s"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sip7s"]
+resource_local_to_scene = true
+bg_color = Color(0.08627451, 0.19607843, 0.21176471, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 1, 0.8, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_f1ayf"]
+resource_local_to_scene = true
+draw_center = false
+border_width_bottom = 1
+border_color = Color(0, 1, 0.8, 1)
+
+[node name="BlueScoreContainer" instance=ExtResource("1_sip7s")]
+theme_override_styles/panel = SubResource("StyleBoxFlat_sip7s")
+
+[node name="Label" parent="VBoxContainer" index="0"]
+theme_override_styles/normal = SubResource("StyleBoxFlat_f1ayf")
+text = "Punkty niebieskich: 0"

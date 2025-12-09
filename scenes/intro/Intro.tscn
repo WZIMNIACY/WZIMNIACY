@@ -1,0 +1,33 @@
+[gd_scene load_steps=3 format=3 uid="uid://bq8xy5m3n4p1w"]
+
+[ext_resource type="Script" path="res://scenes/intro/Intro.cs" id="1_intro"]
+[ext_resource type="VideoStream" uid="uid://c8k2jv7n3m9p4" path="res://assets/intro.ogv" id="2_video"]
+
+[node name="Intro" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_intro")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stream = ExtResource("2_video")
+autoplay = true
+expand = true
