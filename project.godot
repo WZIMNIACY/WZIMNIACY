@@ -32,7 +32,7 @@ HLeaderboards="*res://addons/epic-online-services-godot/heos/hleaderboards.gd"
 HLobbies="*res://addons/epic-online-services-godot/heos/hlobbies.gd"
 HP2P="*res://addons/epic-online-services-godot/heos/hp2p.gd"
 EOSManager="*res://scripts/EOSManager.cs"
-SettingManager="*res://scripts/SettingManager.cs"
+SettingsManager="*res://scripts/SettingsManager.cs"
 
 [dotnet]
 
