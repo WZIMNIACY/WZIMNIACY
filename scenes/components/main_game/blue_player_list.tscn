@@ -25,7 +25,7 @@ RichTextLabel/colors/default_color = Color(0.3529412, 0.8235294, 0.78431374, 1)
 
 [node name="PlayerList" node_paths=PackedStringArray("playerListVBox") instance=ExtResource("1_81wv3")]
 playerListVBox = NodePath("VBoxContainer/PanelContainer/VBoxContainer")
-Team = 1
+team = 1
 
 [node name="TopBorder" parent="VBoxContainer" index="0"]
 theme_override_styles/panel = SubResource("StyleBoxFlat_uqkvx")
