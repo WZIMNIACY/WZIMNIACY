@@ -9,10 +9,6 @@ public partial class SettingsManager : Node
 	private const string SAVE_PATH = "user://settings.cfg";
 	private const float MIN_DB = -80.0f;
 
-	// =============================
-	// KLASY DANYCH
-	// =============================
-
 	public class SoundSettings
 	{
 		public float MasterVolume { get; set; } = 1.0f;
@@ -39,6 +35,7 @@ public partial class SettingsManager : Node
 	private int _busIndexSfx;
 
 	// Lista dostępnych rozdzielczości
+	// UWAGA: Teraz będziemy do niej dodawać dynamicznie, więc readonly dotyczy tylko referencji
 	public readonly List<Vector2I> AvailableResolutions = new List<Vector2I>
 	{
 		new Vector2I(3840, 2160), new Vector2I(3440, 1440),
@@ -57,20 +54,75 @@ public partial class SettingsManager : Node
 		}
 
 		Instance = this;
+		
+		// WAŻNE: Manager musi działać zawsze, nawet gdy gra jest zapauzowana (Menu Pauzy)
+		ProcessMode = ProcessModeEnum.Always;
 
 		_busIndexMaster = AudioServer.GetBusIndex("Master");
 		_busIndexMusic  = AudioServer.GetBusIndex("Music");
 		_busIndexSfx    = AudioServer.GetBusIndex("SFX");
 
+		// 1. Najpierw wykrywamy rozdzielczość monitora
+		AddNativeResolution();
+
+		// 2. Ładujemy config
 		LoadConfig();
+		
+		// 3. Sprawdzamy czy załadowany indeks ma sens (bo lista mogła się zmienić)
+		ValidateResolutionIndex();
+
+		// 4. Aplikujemy wszystko
 		ApplyAllSettings();
 
 		GD.Print("✅ SettingsManager gotowy – config załadowany i zastosowany.");
 	}
 
-	// =============================
-	// ŁADOWANIE / ZAPIS
-	// =============================
+
+private void AddNativeResolution()
+{
+	// 1. Pobierz rozmiar ekranu gracza
+	Vector2I screenRes = DisplayServer.ScreenGetSize();
+
+	// 2. Jeśli nie ma jej na liście -> dodaj
+	if (!AvailableResolutions.Contains(screenRes))
+	{
+		AvailableResolutions.Add(screenRes);
+		GD.Print($"🖥️ Dodano natywną rozdzielczość gracza: {screenRes}");
+	}
+
+	// 3. SORTOWANIE
+	// Sortujemy malejąco (Największa -> Najmniejsza), żeby pasowało do Twojej listy.
+	AvailableResolutions.Sort((a, b) =>
+	{
+		// Najpierw porównaj szerokość (X)
+		// Używamy b.CompareTo(a), żeby sortować MALEJĄCO
+		int result = b.X.CompareTo(a.X);
+
+		// Jeśli szerokości są takie same (np. 1920x1080 i 1920x1200),
+		// to porównaj wysokość (Y)
+		if (result == 0)
+		{
+			return b.Y.CompareTo(a.Y);
+		}
+
+		return result;
+	});
+}
+
+	private void ValidateResolutionIndex()
+	{
+		// Zabezpieczenie: jeśli zapisany indeks jest większy niż długość listy
+		// (np. config miał index 10, a teraz mamy 8 opcji), resetujemy do bezpiecznej wartości.
+		if (Video.ResolutionIndex < 0 || Video.ResolutionIndex >= AvailableResolutions.Count)
+		{
+			GD.Print("⚠ Wykryto nieprawidłowy indeks rozdzielczości. Resetowanie do domyślnego.");
+			// Próbujemy znaleźć 1920x1080 jako bezpieczny start, lub bierzemy pierwszy z brzegu
+			int defaultIndex = AvailableResolutions.IndexOf(new Vector2I(1920, 1080));
+			if (defaultIndex == -1) defaultIndex = 0; // Jeśli nie ma FHD, weź największą
+			
+			Video.ResolutionIndex = defaultIndex;
+		}
+	}
 
 	public void LoadConfig()
 	{
@@ -118,9 +170,6 @@ public partial class SettingsManager : Node
 		GD.Print("💾 Ustawienia zapisane na dysku (SettingsManager).");
 	}
 
-	// =============================
-	// AUDIO – SETTERY + ZASTOSOWANIE
-	// =============================
 
 	public void SetMasterVolume(float linear)
 	{
@@ -157,10 +206,6 @@ public partial class SettingsManager : Node
 		AudioServer.SetBusVolumeDb(busIndex, db);
 	}
 
-	// =============================
-	// VIDEO – SETTERY + ZASTOSOWANIE
-	// =============================
-
 	public void SetDisplayMode(int mode)
 	{
 		Video.DisplayMode = mode;
@@ -169,8 +214,12 @@ public partial class SettingsManager : Node
 
 	public void SetResolutionIndex(int index)
 	{
-		Video.ResolutionIndex = index;
-		ApplyWindowMode();
+		// Zabezpieczenie przed wyjściem poza zakres przy klikaniu
+		if (index >= 0 && index < AvailableResolutions.Count)
+		{
+			Video.ResolutionIndex = index;
+			ApplyWindowMode();
+		}
 	}
 
 	public void SetUiScale(float scale)
@@ -187,13 +236,9 @@ public partial class SettingsManager : Node
 		);
 	}
 
-	// =============================
-	// ZASTOSOWANIE CAŁOŚCI
-	// =============================
 
 	public void ApplyAllSettings()
 	{
-		
 		// Audio
 		SetMasterVolume(Sound.MasterVolume);
 		SetMusicVolume(Sound.MusicVolume);

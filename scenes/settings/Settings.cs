@@ -163,6 +163,6 @@ public partial class Settings : Control
 	private void OnBackButtonPressed()
 	{
 		GD.Print("🔙 Powrót do menu...");
-		GetTree().ChangeSceneToFile("res://Scenes/MainMenu/main.tscn");
+		GetTree().ChangeSceneToFile("res://Scenes/Menu/main.tscn");
 	}
 }
