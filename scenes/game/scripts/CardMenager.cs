@@ -11,7 +11,7 @@ public partial class CardMenager : GridContainer
 		}
 	}
 
-	private void OnCardConfirmed(AgentCardAnimation card)
+	private void OnCardConfirmed(AgentCard card)
 	{
 		GD.Print("Karta kliknięta: " + card.Name);
 		HideAllCards();
@@ -19,7 +19,7 @@ public partial class CardMenager : GridContainer
 
 	private void HideAllCards()
 	{
-		foreach (AgentCardAnimation card in GetTree().GetNodesInGroup("cards"))
+		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
 		{
 			card.Unselect();
 		}

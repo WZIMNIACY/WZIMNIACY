@@ -1,6 +1,6 @@
 using Godot;
 
-public partial class AgentCardAnimation : PanelContainer
+public partial class AgentCard : PanelContainer
 {
 	[Export] public Control highlightBorder;
 	[Export] public Control contentContainer;
@@ -9,7 +9,7 @@ public partial class AgentCardAnimation : PanelContainer
 	[Export] private Button selectButton;
 	[Export] private CardMenager cardMenager;
 	
-	[Signal] public delegate void CardConfirmedEventHandler(AgentCardAnimation card);
+	[Signal] public delegate void CardConfirmedEventHandler(AgentCard card);
 
 	private Vector2 hoverScale = new Vector2(1.05f, 1.05f); 
 	private float duration = 0.1f; 

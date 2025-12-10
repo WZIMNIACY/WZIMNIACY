@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://s7i54u0fg4ly"]
 
 [ext_resource type="Texture2D" uid="uid://c8ei6oqum8tx7" path="res://assets/textures/karta.png" id="1_hiodb"]
-[ext_resource type="Script" uid="uid://bf1tk42tabie6" path="res://scenes/game/scripts/AgentCardAnimation.cs" id="1_m8y6f"]
+[ext_resource type="Script" uid="uid://bf1tk42tabie6" path="res://scenes/game/scripts/AgentCard.cs" id="1_m8y6f"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hiodb"]
 font_size = 11
