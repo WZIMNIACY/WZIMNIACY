@@ -17,7 +17,11 @@ modulate_color = Color(3.9735081, 1.6357956, 1.6357956, 1)
 
 [node name="PlayerList" node_paths=PackedStringArray("playerListVBox") instance=ExtResource("1_qkeot")]
 playerListVBox = NodePath("VBoxContainer/PanelContainer/VBoxContainer")
+<<<<<<< HEAD
 team = 2
+=======
+Team = 2
+>>>>>>> 4076424 (Wyswietlanie graczy na liscie)
 
 [node name="TopBorder" parent="VBoxContainer" index="0"]
 theme_override_styles/panel = SubResource("StyleBoxFlat_qkeot")
