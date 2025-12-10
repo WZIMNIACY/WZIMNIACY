@@ -23,7 +23,9 @@ texture = SubResource("GradientTexture2D_yxn4h")
 resource_local_to_scene = true
 RichTextLabel/colors/default_color = Color(0.3529412, 0.8235294, 0.78431374, 1)
 
-[node name="PlayerList" instance=ExtResource("1_81wv3")]
+[node name="PlayerList" node_paths=PackedStringArray("playerListVBox") instance=ExtResource("1_81wv3")]
+playerListVBox = NodePath("VBoxContainer/PanelContainer/VBoxContainer")
+Team = 1
 
 [node name="TopBorder" parent="VBoxContainer" index="0"]
 theme_override_styles/panel = SubResource("StyleBoxFlat_uqkvx")
@@ -33,3 +35,18 @@ theme_override_styles/panel = SubResource("StyleBoxTexture_yxn4h")
 
 [node name="VBoxContainer" parent="VBoxContainer/PanelContainer" index="0"]
 theme = SubResource("Theme_cwxem")
+
+[node name="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer" index="0"]
+text = ""
+
+[node name="RichTextLabel2" parent="VBoxContainer/PanelContainer/VBoxContainer" index="1"]
+text = ""
+
+[node name="RichTextLabel3" parent="VBoxContainer/PanelContainer/VBoxContainer" index="2"]
+text = ""
+
+[node name="RichTextLabel4" parent="VBoxContainer/PanelContainer/VBoxContainer" index="3"]
+text = ""
+
+[node name="RichTextLabel5" parent="VBoxContainer/PanelContainer/VBoxContainer" index="4"]
+text = ""
