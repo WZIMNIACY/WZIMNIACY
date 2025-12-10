@@ -5,7 +5,7 @@ public partial class PlayerListContainer : PanelContainer
 	private EOSManager eosManager;
 	
 	public enum PlayerTeam { None, Blue, Red }
-	[Export] public PlayerTeam Team;
+	[Export] public PlayerTeam team;
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
@@ -27,7 +27,7 @@ public partial class PlayerListContainer : PanelContainer
 	{
 		foreach (var member in eosManager.GetCurrentLobbyMembers())
 		{
-			if((member["team"].ToString() == Team.ToString()))
+			if((member["team"].ToString() == team.ToString()))
 			{
 				foreach (Node child in playerListVBox.GetChildren())
 				{
