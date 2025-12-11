@@ -3,192 +3,204 @@ using System;
 
 public partial class MainMenu : Node
 {
-    private const string LobbyMenuString = "res://scenes/lobby/Lobby.tscn";
-    private const string LobbySearchMenuString = "res://scenes/lobbysearch/LobbySearch.tscn";
-    private const string SettingsSceneString = "res://scenes/settings/Settings.tscn";
-    private const string HelpSceneString = "res://scenes/help/Help.tscn";
-    private EOSManager eosManager;
+	private const string LobbyMenuString = "res://scenes/lobby/Lobby.tscn";
+	private const string LobbySearchMenuString = "res://scenes/lobbysearch/LobbySearch.tscn";
+	private const string SettingsSceneString = "res://scenes/settings/Settings.tscn";
+	private const string HelpSceneString = "res://scenes/help/Help.tscn";
 
-    private Button createButton;
-    private Button settingsButton;
-    private Button helpButton;
-    private Timer animationTimer;
-    private int dotCount = 0;
-    private bool isCreatingLobby = false;
-    private const float CreateTimeout = 5.0f; // 5 sekund timeout
+	// --- ELEMENTY UI (Exportowane do Inspektora) ---
+	[ExportGroup("Menu Buttons")]
+	[Export] private Button _createButton;
+	[Export] private Button _joinButton;
+	[Export] private Button _settingsButton;
+	[Export] private Button _helpButton;
+	[Export] private Button _quitButton;
 
-    public override void _Ready()
-    {
-        base._Ready();
+	// --- MANAGERY ---
+	private EOSManager _eosManager;
 
-        createButton = GetNode<Button>("Panel/MenuCenter/VMenu/CreateGame/CreateGameButton");
-        Button joinButton = GetNode<Button>("Panel/MenuCenter/VMenu/JoinGame/JoinGameButton");
-        Button quitButton = GetNode<Button>("Panel/MenuCenter/VMenu/Quit/QuitButton");
-        settingsButton = GetNode<Button>("Panel/MenuCenter/VMenu/Settings/SettingsButton");
-        helpButton = GetNode<Button>("Panel/MenuCenter/VMenu/Help/HelpButton");
+	// --- ZMIENNE STANU ---
+	private Timer _animationTimer;
+	private int _dotCount = 0;
+	private bool _isCreatingLobby = false;
+	private const float CreateTimeout = 5.0f;
 
-        eosManager = GetNode<EOSManager>("/root/EOSManager");
+	public override void _Ready()
+	{
+		base._Ready();
 
-        createButton.Pressed += OnCreateGamePressed;
-        joinButton.Pressed += OnJoinGamePressed;
-        quitButton.Pressed += OnQuitPressed;
-        settingsButton.Pressed += OnSettingsPressed;
-        helpButton.Pressed += OnHelpPressed;
+		// 1. Sprawdź czy przyciski są przypisane w Inspektorze
+		if (!AreNodesAssigned())
+		{
+			GD.PrintErr("❌ MainMenu: Nie przypisano przycisków w Inspektorze!");
+			return;
+		}
 
-        // Podłącz sygnał LobbyCreated
-        if (eosManager != null)
-        {
-            eosManager.LobbyCreated += OnLobbyCreated;
-        }
-    }
+		// 2. Pobierz Managera (Autoload - tego nie eksportujemy, bo jest w /root)
+		_eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
 
-    private void OnCreateGamePressed()
-    {
-        if (isCreatingLobby) return; // Zapobiegnij wielokrotnemu klikaniu
+		// 3. Podłącz sygnały
+		_createButton.Pressed   += OnCreateGamePressed;
+		_joinButton.Pressed     += OnJoinGamePressed;
+		_quitButton.Pressed     += OnQuitPressed;
+		_settingsButton.Pressed += OnSettingsPressed;
+		_helpButton.Pressed     += OnHelpPressed;
 
-        GD.Print("Creating lobby in background...");
+		// Podłącz sygnał LobbyCreated
+		if (_eosManager != null)
+		{
+			_eosManager.LobbyCreated += OnLobbyCreated;
+		}
+		else
+		{
+			GD.PrintErr("⚠ MainMenu: Nie znaleziono EOSManager w /root/EOSManager");
+		}
+	}
 
-        //Opuść obecne lobby jeśli jesteś w jakimś
-        if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
-        {
-            GD.Print("🚪 Leaving lobby before creating a new one...");
-            eosManager.LeaveLobby();
-        }
+	// Metoda walidująca przypisania
+	private bool AreNodesAssigned()
+	{
+		return _createButton != null && 
+			   _joinButton != null && 
+			   _quitButton != null && 
+			   _settingsButton != null && 
+			   _helpButton != null;
+	}
 
-        // Rozpocznij animację przycisku
-        StartCreatingAnimation();
+	private void OnCreateGamePressed()
+	{
+		if (_isCreatingLobby) return;
 
-        // Utwórz lobby w tle
-        if (eosManager != null)
-        {
-            string lobbyId = GenerateLobbyIDCode();
-            eosManager.CreateLobby(lobbyId, 10, true);
-        }
-    }
+		GD.Print("Creating lobby in background...");
 
-    private void OnLobbyCreated(string lobbyId)
-    {
-        GD.Print($"✅ Lobby created: {lobbyId}, changing scene...");
+		if (_eosManager != null && !string.IsNullOrEmpty(_eosManager.currentLobbyId))
+		{
+			GD.Print("🚪 Leaving lobby before creating a new one...");
+			_eosManager.LeaveLobby();
+		}
 
-        // Zatrzymaj animację
-        StopCreatingAnimation();
+		StartCreatingAnimation();
 
-        // Poczekaj chwilę na ustawienie atrybutów (0.5s)
-        GetTree().CreateTimer(0.5).Timeout += () =>
-        {
-            // Przejdź do sceny lobby
-            GetTree().ChangeSceneToFile(LobbyMenuString);
-        };
-    }
+		if (_eosManager != null)
+		{
+			string lobbyId = GenerateLobbyIDCode();
+			_eosManager.CreateLobby(lobbyId, 10, true);
+		}
+	}
 
-    private void StartCreatingAnimation()
-    {
-        isCreatingLobby = true;
-        createButton.Disabled = true;
-        dotCount = 0;
+	private void OnLobbyCreated(string lobbyId)
+	{
+		GD.Print($"✅ Lobby created: {lobbyId}, changing scene...");
 
-        // Zapisz oryginalną wysokość przycisku
-        float originalHeight = createButton.Size.Y;
-        createButton.CustomMinimumSize = new Vector2(0, originalHeight);
+		StopCreatingAnimation();
 
-        // Utwórz timer dla animacji
-        animationTimer = new Timer();
-        animationTimer.WaitTime = 0.5;
-        animationTimer.Timeout += OnAnimationTimerTimeout;
-        AddChild(animationTimer);
-        animationTimer.Start();
+		GetTree().CreateTimer(0.5).Timeout += () =>
+		{
+			GetTree().ChangeSceneToFile(LobbyMenuString);
+		};
+	}
 
-        // Utwórz timer dla timeoutu
-        Timer timeoutTimer = new Timer();
-        timeoutTimer.WaitTime = CreateTimeout;
-        timeoutTimer.OneShot = true;
-        timeoutTimer.Timeout += () =>
-        {
-            GD.PrintErr("❌ Lobby creation timed out!");
-            StopCreatingAnimation();
-        };
-        AddChild(timeoutTimer);
-        timeoutTimer.Start();
+	private void StartCreatingAnimation()
+	{
+		_isCreatingLobby = true;
+		_createButton.Disabled = true;
+		_dotCount = 0;
 
-        createButton.Text = "Tworzenie";
-    }
+		float originalHeight = _createButton.Size.Y;
+		_createButton.CustomMinimumSize = new Vector2(0, originalHeight);
 
-    private void StopCreatingAnimation()
-    {
-        isCreatingLobby = false;
-        createButton.Disabled = false;
-        createButton.Text = "Utwórz grę";
+		_animationTimer = new Timer();
+		_animationTimer.WaitTime = 0.5;
+		_animationTimer.Timeout += OnAnimationTimerTimeout;
+		AddChild(_animationTimer);
+		_animationTimer.Start();
 
-        // Przywróć automatyczny rozmiar
-        createButton.CustomMinimumSize = new Vector2(0, 0);
+		Timer timeoutTimer = new Timer();
+		timeoutTimer.WaitTime = CreateTimeout;
+		timeoutTimer.OneShot = true;
+		timeoutTimer.Timeout += () =>
+		{
+			GD.PrintErr("❌ Lobby creation timed out!");
+			StopCreatingAnimation();
+		};
+		AddChild(timeoutTimer);
+		timeoutTimer.Start();
 
-        if (animationTimer != null)
-        {
-            animationTimer.Stop();
-            animationTimer.QueueFree();
-            animationTimer = null;
-        }
-    }
+		_createButton.Text = "Tworzenie";
+	}
 
-    private void OnAnimationTimerTimeout()
-    {
-        dotCount = (dotCount + 1) % 4; // 0, 1, 2, 3, potem znowu 0
-        string dots = new string('.', dotCount);
-        createButton.Text = "Tworzenie" + dots;
-    }
+	private void StopCreatingAnimation()
+	{
+		_isCreatingLobby = false;
+		_createButton.Disabled = false;
+		_createButton.Text = "Utwórz grę";
+		_createButton.CustomMinimumSize = new Vector2(0, 0);
 
-    private string GenerateLobbyIDCode()
-    {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var random = new Random();
-        char[] code = new char[6];
+		if (_animationTimer != null)
+		{
+			_animationTimer.Stop();
+			_animationTimer.QueueFree();
+			_animationTimer = null;
+		}
+	}
 
-        for (int i = 0; i < 6; i++)
-        {
-            code[i] = chars[random.Next(chars.Length)];
-        }
+	private void OnAnimationTimerTimeout()
+	{
+		_dotCount = (_dotCount + 1) % 4;
+		string dots = new string('.', _dotCount);
+		_createButton.Text = "Tworzenie" + dots;
+	}
 
-        return new string(code);
-    }
+	private string GenerateLobbyIDCode()
+	{
+		const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		var random = new Random();
+		char[] code = new char[6];
 
-    private void OnJoinGamePressed()
-    {
-        GD.Print("Loading Lobby Search scene...");
-        GetTree().ChangeSceneToFile(LobbySearchMenuString);
-    }
+		for (int i = 0; i < 6; i++)
+		{
+			code[i] = chars[random.Next(chars.Length)];
+		}
 
-    private void OnQuitPressed()
-    {
-        GD.Print("Quitting game...");
-        GetTree().Quit();
-    }
+		return new string(code);
+	}
 
-    private void OnSettingsPressed()
-    {
-        GD.Print("Loading Settings scene...");
-        GetTree().ChangeSceneToFile(SettingsSceneString);
-    }
+	private void OnJoinGamePressed()
+	{
+		GD.Print("Loading Lobby Search scene...");
+		GetTree().ChangeSceneToFile(LobbySearchMenuString);
+	}
 
-    private void OnHelpPressed()
-    {
-        GD.Print("Loading Help scene...");
-        GetTree().ChangeSceneToFile(HelpSceneString);
-    }
+	private void OnQuitPressed()
+	{
+		GD.Print("Quitting game...");
+		GetTree().Quit();
+	}
 
-    public override void _ExitTree()
-    {
-        base._ExitTree();
+	private void OnSettingsPressed()
+	{
+		GD.Print("Loading Settings scene...");
+		GetTree().ChangeSceneToFile(SettingsSceneString);
+	}
 
-        // Odłącz sygnał przy wyjściu
-        if (eosManager != null)
-        {
-            eosManager.LobbyCreated -= OnLobbyCreated;
-        }
+	private void OnHelpPressed()
+	{
+		GD.Print("Loading Help scene...");
+		GetTree().ChangeSceneToFile(HelpSceneString);
+	}
 
-        // Wyczyść timer jeśli istnieje
-        if (animationTimer != null)
-        {
-            animationTimer.QueueFree();
-        }
-    }
+	public override void _ExitTree()
+	{
+		base._ExitTree();
+
+		if (_eosManager != null)
+		{
+			_eosManager.LobbyCreated -= OnLobbyCreated;
+		}
+
+		if (_animationTimer != null)
+		{
+			_animationTimer.QueueFree();
+		}
+	}
 }
