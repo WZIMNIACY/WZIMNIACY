@@ -4,35 +4,45 @@ using System.Collections.Generic;
 
 public partial class Settings : Control
 {
-	// --- PRZYCISKI ---
-	private Button _backButton;
-	private Button _saveButton;
+	// --- ELEMENTY UI (Teraz przypisywane w Inspektorze) ---
+	[ExportGroup("Buttons")]
+	[Export] private Button _backButton;
+	[Export] private Button _saveButton;
 
-	// --- AUDIO UI ---
-	private HSlider _masterVolumeSlider;
-	private HSlider _musicVolumeSlider;
-	private HSlider _sfxVolumeSlider;
-	private CheckButton _mutedCheckBox;
+	[ExportGroup("Audio Settings")]
+	[Export] private HSlider _masterVolumeSlider;
+	[Export] private HSlider _musicVolumeSlider;
+	[Export] private HSlider _sfxVolumeSlider;
+	[Export] private CheckButton _mutedCheckBox;
 
-	// --- VIDEO UI ---
-	private OptionButton _resolutionOptionButton;
-	private OptionButton _screenModeOptionButton;
-	private HSlider _scaleUISlider;
+	[ExportGroup("Video Settings")]
+	[Export] private OptionButton _resolutionOptionButton;
+	[Export] private OptionButton _screenModeOptionButton;
+	[Export] private HSlider _scaleUISlider;
 
-	// kopia listy rozdzielczości (z managera)
+	// Kopia listy rozdzielczości
 	private readonly List<Vector2I> _availableResolutions = new List<Vector2I>();
 
 	public override void _Ready()
 	{
 		GD.Print("⚙ Settings UI start");
 
+		// 1. Sprawdzenie SettingsManagera
 		if (SettingsManager.Instance == null)
 		{
 			GD.PrintErr("❌ Brak SettingsManager! Upewnij się, że dodałeś go w Globalne → Autładowanie.");
 			return;
 		}
 
-		AssignNodes();
+		// 2. Sprawdzenie czy przypisałeś węzły w Inspektorze (Dla bezpieczeństwa)
+		if (!CheckNodesAssigned())
+		{
+			GD.PrintErr("❌ Nie wszystkie węzły UI są przypisane w Inspektorze skryptu Settings.cs!");
+			return;
+		}
+
+		// (AssignNodes zostało usunięte, bo robi to teraz Godot automatycznie)
+
 		SetupResolutionsFromManager();
 		SetupVideoOptions();
 		UpdateUiFromManager();
@@ -41,26 +51,20 @@ public partial class Settings : Control
 		GD.Print("✅ Settings UI gotowe.");
 	}
 
-	private void AssignNodes()
+	// Metoda pomocnicza, żebyś wiedział, jeśli o czymś zapomniałeś w edytorze
+	private bool CheckNodesAssigned()
 	{
-		try
-		{
-			_backButton = GetNode<Button>("Control/BackButton");
-			_saveButton = GetNode<Button>("SettingsPanel/SettingsCenter/VSettings/SaveButton");
-
-			_masterVolumeSlider = GetNode<HSlider>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk/MasterSlider");
-			_musicVolumeSlider  = GetNode<HSlider>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk/MusicSlider");
-			_sfxVolumeSlider    = GetNode<HSlider>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk/SFXSlider");
-			_mutedCheckBox      = GetNode<CheckButton>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk/MuteCheckBox");
-
-			_screenModeOptionButton = GetNode<OptionButton>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Video/ScreenOption");
-			_resolutionOptionButton = GetNode<OptionButton>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Video/ResolutionOption");
-			_scaleUISlider          = GetNode<HSlider>("SettingsPanel/SettingsCenter/VSettings/TabContainer/Video/SliderUI");
-		}
-		catch (Exception e)
-		{
-			GD.PrintErr("❌ Błąd AssignNodes w Settings.cs: " + e.Message);
-		}
+		bool allOk = true;
+		if (_backButton == null) { GD.PrintErr("Brakuje: BackButton"); allOk = false; }
+		if (_saveButton == null) { GD.PrintErr("Brakuje: SaveButton"); allOk = false; }
+		if (_masterVolumeSlider == null) { GD.PrintErr("Brakuje: MasterSlider"); allOk = false; }
+		if (_musicVolumeSlider == null) { GD.PrintErr("Brakuje: MusicSlider"); allOk = false; }
+		if (_sfxVolumeSlider == null) { GD.PrintErr("Brakuje: SfxSlider"); allOk = false; }
+		if (_mutedCheckBox == null) { GD.PrintErr("Brakuje: MutedCheckBox"); allOk = false; }
+		if (_resolutionOptionButton == null) { GD.PrintErr("Brakuje: ResolutionOption"); allOk = false; }
+		if (_screenModeOptionButton == null) { GD.PrintErr("Brakuje: ScreenModeOption"); allOk = false; }
+		if (_scaleUISlider == null) { GD.PrintErr("Brakuje: ScaleUISlider"); allOk = false; }
+		return allOk;
 	}
 
 	private void SetupResolutionsFromManager()
@@ -72,26 +76,31 @@ public partial class Settings : Control
 
 	private void SetupVideoOptions()
 	{
-		if (_screenModeOptionButton == null || _resolutionOptionButton == null)
-			return;
-
+		// Dzięki [Export] mamy pewność, że jeśli CheckNodesAssigned przeszło, to te elementy istnieją
+		
 		_screenModeOptionButton.Clear();
 		_screenModeOptionButton.AddItem("W oknie", 0);
 		_screenModeOptionButton.AddItem("Pełny ekran", 1);
 
 		_resolutionOptionButton.Clear();
+		
+		// Pobieramy natywną rozdzielczość dla oznaczenia "(Twój ekran)"
+		Vector2I nativeRes = DisplayServer.ScreenGetSize();
+
 		for (int i = 0; i < _availableResolutions.Count; i++)
 		{
 			Vector2I res = _availableResolutions[i];
-			_resolutionOptionButton.AddItem($"{res.X} x {res.Y}", i);
+			string label = $"{res.X} x {res.Y}";
+			
+			if (res == nativeRes)
+				label += " (Twój ekran)";
+
+			_resolutionOptionButton.AddItem(label, i);
 		}
 
-		if (_scaleUISlider != null)
-		{
-			_scaleUISlider.MinValue = 0.5f;
-			_scaleUISlider.MaxValue = 1.5f;
-			_scaleUISlider.Step     = 0.1f;
-		}
+		_scaleUISlider.MinValue = 0.5f;
+		_scaleUISlider.MaxValue = 1.5f;
+		_scaleUISlider.Step     = 0.1f;
 	}
 
 	private void UpdateUiFromManager()
@@ -99,15 +108,15 @@ public partial class Settings : Control
 		var mgr = SettingsManager.Instance;
 
 		// Audio
-		if (_masterVolumeSlider != null) _masterVolumeSlider.Value   = mgr.Sound.MasterVolume;
-		if (_musicVolumeSlider  != null) _musicVolumeSlider.Value    = mgr.Sound.MusicVolume;
-		if (_sfxVolumeSlider    != null) _sfxVolumeSlider.Value      = mgr.Sound.SfxVolume;
-		if (_mutedCheckBox      != null) _mutedCheckBox.ButtonPressed = mgr.Sound.Muted;
+		_masterVolumeSlider.Value = mgr.Sound.MasterVolume;
+		_musicVolumeSlider.Value  = mgr.Sound.MusicVolume;
+		_sfxVolumeSlider.Value    = mgr.Sound.SfxVolume;
+		_mutedCheckBox.ButtonPressed = mgr.Sound.Muted;
 
 		// Video
-		if (_screenModeOptionButton != null) _screenModeOptionButton.Selected = mgr.Video.DisplayMode;
-		if (_resolutionOptionButton != null) _resolutionOptionButton.Selected = mgr.Video.ResolutionIndex;
-		if (_scaleUISlider          != null) _scaleUISlider.Value            = mgr.Video.UiScale;
+		_screenModeOptionButton.Selected = mgr.Video.DisplayMode;
+		_resolutionOptionButton.Selected = mgr.Video.ResolutionIndex;
+		_scaleUISlider.Value             = mgr.Video.UiScale;
 
 		UpdateResolutionLock();
 	}
@@ -116,46 +125,31 @@ public partial class Settings : Control
 	{
 		var mgr = SettingsManager.Instance;
 
-		if (_backButton != null)
-			_backButton.Pressed += OnBackButtonPressed;
+		_backButton.Pressed += OnBackButtonPressed;
+		_saveButton.Pressed += mgr.SaveConfig;
 
-		if (_saveButton != null)
-			_saveButton.Pressed += mgr.SaveConfig;
+		_masterVolumeSlider.ValueChanged += val => mgr.SetMasterVolume((float)val);
+		_musicVolumeSlider.ValueChanged  += val => mgr.SetMusicVolume((float)val);
+		_sfxVolumeSlider.ValueChanged    += val => mgr.SetSfxVolume((float)val);
+		_mutedCheckBox.Toggled           += pressed => mgr.SetMuted(pressed);
 
-		if (_masterVolumeSlider != null)
-			_masterVolumeSlider.ValueChanged += val => mgr.SetMasterVolume((float)val);
+		_screenModeOptionButton.ItemSelected += index =>
+		{
+			mgr.SetDisplayMode((int)index);
+			UpdateResolutionLock();
+		};
 
-		if (_musicVolumeSlider != null)
-			_musicVolumeSlider.ValueChanged += val => mgr.SetMusicVolume((float)val);
+		_resolutionOptionButton.ItemSelected += index =>
+		{
+			mgr.SetResolutionIndex((int)index);
+		};
 
-		if (_sfxVolumeSlider != null)
-			_sfxVolumeSlider.ValueChanged += val => mgr.SetSfxVolume((float)val);
-
-		if (_mutedCheckBox != null)
-			_mutedCheckBox.Toggled += pressed => mgr.SetMuted(pressed);
-
-		if (_screenModeOptionButton != null)
-			_screenModeOptionButton.ItemSelected += index =>
-			{
-				mgr.SetDisplayMode((int)index);
-				UpdateResolutionLock();
-			};
-
-		if (_resolutionOptionButton != null)
-			_resolutionOptionButton.ItemSelected += index =>
-			{
-				mgr.SetResolutionIndex((int)index);
-			};
-
-		if (_scaleUISlider != null)
-			_scaleUISlider.ValueChanged += value => mgr.SetUiScale((float)value);
+		_scaleUISlider.ValueChanged += value => mgr.SetUiScale((float)value);
 	}
 
 	private void UpdateResolutionLock()
 	{
-		if (_resolutionOptionButton == null)
-			return;
-
+		// Blokujemy wybór rozdzielczości jeśli jest pełny ekran
 		bool isWindowed = SettingsManager.Instance.Video.DisplayMode == 0;
 		_resolutionOptionButton.Disabled = !isWindowed;
 	}
