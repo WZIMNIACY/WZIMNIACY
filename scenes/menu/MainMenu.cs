@@ -10,19 +10,19 @@ public partial class MainMenu : Node
 
 	// --- ELEMENTY UI (Exportowane do Inspektora) ---
 	[ExportGroup("Menu Buttons")]
-	[Export] private Button _createButton;
-	[Export] private Button _joinButton;
-	[Export] private Button _settingsButton;
-	[Export] private Button _helpButton;
-	[Export] private Button _quitButton;
+	[Export] private Button createButton;
+	[Export] private Button joinButton;
+	[Export] private Button settingsButton;
+	[Export] private Button helpButton;
+	[Export] private Button quitButton;
 
 	// --- MANAGERY ---
-	private EOSManager _eosManager;
+	private EOSManager eosManager;
 
 	// --- ZMIENNE STANU ---
-	private Timer _animationTimer;
-	private int _dotCount = 0;
-	private bool _isCreatingLobby = false;
+	private Timer animationTimer;
+	private int dotCount = 0;
+	private bool isCreatingLobby = false;
 	private const float CreateTimeout = 5.0f;
 
 	public override void _Ready()
@@ -37,19 +37,19 @@ public partial class MainMenu : Node
 		}
 
 		// 2. Pobierz Managera (Autoload - tego nie eksportujemy, bo jest w /root)
-		_eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
+		eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
 
 		// 3. Podłącz sygnały
-		_createButton.Pressed   += OnCreateGamePressed;
-		_joinButton.Pressed     += OnJoinGamePressed;
-		_quitButton.Pressed     += OnQuitPressed;
-		_settingsButton.Pressed += OnSettingsPressed;
-		_helpButton.Pressed     += OnHelpPressed;
+		createButton.Pressed   += OnCreateGamePressed;
+		joinButton.Pressed     += OnJoinGamePressed;
+		quitButton.Pressed     += OnQuitPressed;
+		settingsButton.Pressed += OnSettingsPressed;
+		helpButton.Pressed     += OnHelpPressed;
 
 		// Podłącz sygnał LobbyCreated
-		if (_eosManager != null)
+		if (eosManager != null)
 		{
-			_eosManager.LobbyCreated += OnLobbyCreated;
+			eosManager.LobbyCreated += OnLobbyCreated;
 		}
 		else
 		{
@@ -60,31 +60,31 @@ public partial class MainMenu : Node
 	// Metoda walidująca przypisania
 	private bool AreNodesAssigned()
 	{
-		return _createButton != null && 
-			   _joinButton != null && 
-			   _quitButton != null && 
-			   _settingsButton != null && 
-			   _helpButton != null;
+		return createButton != null && 
+			   joinButton != null && 
+			   quitButton != null && 
+			   settingsButton != null && 
+			   helpButton != null;
 	}
 
 	private void OnCreateGamePressed()
 	{
-		if (_isCreatingLobby) return;
+		if (isCreatingLobby) return;
 
 		GD.Print("Creating lobby in background...");
 
-		if (_eosManager != null && !string.IsNullOrEmpty(_eosManager.currentLobbyId))
+		if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
 		{
 			GD.Print("🚪 Leaving lobby before creating a new one...");
-			_eosManager.LeaveLobby();
+			eosManager.LeaveLobby();
 		}
 
 		StartCreatingAnimation();
 
-		if (_eosManager != null)
+		if (eosManager != null)
 		{
 			string lobbyId = GenerateLobbyIDCode();
-			_eosManager.CreateLobby(lobbyId, 10, true);
+			eosManager.CreateLobby(lobbyId, 10, true);
 		}
 	}
 
@@ -102,18 +102,18 @@ public partial class MainMenu : Node
 
 	private void StartCreatingAnimation()
 	{
-		_isCreatingLobby = true;
-		_createButton.Disabled = true;
-		_dotCount = 0;
+		isCreatingLobby = true;
+		createButton.Disabled = true;
+		dotCount = 0;
 
-		float originalHeight = _createButton.Size.Y;
-		_createButton.CustomMinimumSize = new Vector2(0, originalHeight);
+		float originalHeight = createButton.Size.Y;
+		createButton.CustomMinimumSize = new Vector2(0, originalHeight);
 
-		_animationTimer = new Timer();
-		_animationTimer.WaitTime = 0.5;
-		_animationTimer.Timeout += OnAnimationTimerTimeout;
-		AddChild(_animationTimer);
-		_animationTimer.Start();
+		animationTimer = new Timer();
+		animationTimer.WaitTime = 0.5;
+		animationTimer.Timeout += OnAnimationTimerTimeout;
+		AddChild(animationTimer);
+		animationTimer.Start();
 
 		Timer timeoutTimer = new Timer();
 		timeoutTimer.WaitTime = CreateTimeout;
@@ -126,29 +126,29 @@ public partial class MainMenu : Node
 		AddChild(timeoutTimer);
 		timeoutTimer.Start();
 
-		_createButton.Text = "Tworzenie";
+		createButton.Text = "Tworzenie";
 	}
 
 	private void StopCreatingAnimation()
 	{
-		_isCreatingLobby = false;
-		_createButton.Disabled = false;
-		_createButton.Text = "Utwórz grę";
-		_createButton.CustomMinimumSize = new Vector2(0, 0);
+		isCreatingLobby = false;
+		createButton.Disabled = false;
+		createButton.Text = "Utwórz grę";
+		createButton.CustomMinimumSize = new Vector2(0, 0);
 
-		if (_animationTimer != null)
+		if (animationTimer != null)
 		{
-			_animationTimer.Stop();
-			_animationTimer.QueueFree();
-			_animationTimer = null;
+			animationTimer.Stop();
+			animationTimer.QueueFree();
+			animationTimer = null;
 		}
 	}
 
 	private void OnAnimationTimerTimeout()
 	{
-		_dotCount = (_dotCount + 1) % 4;
-		string dots = new string('.', _dotCount);
-		_createButton.Text = "Tworzenie" + dots;
+		dotCount = (dotCount + 1) % 4;
+		string dots = new string('.', dotCount);
+		createButton.Text = "Tworzenie" + dots;
 	}
 
 	private string GenerateLobbyIDCode()
@@ -193,14 +193,14 @@ public partial class MainMenu : Node
 	{
 		base._ExitTree();
 
-		if (_eosManager != null)
+		if (eosManager != null)
 		{
-			_eosManager.LobbyCreated -= OnLobbyCreated;
+			eosManager.LobbyCreated -= OnLobbyCreated;
 		}
 
-		if (_animationTimer != null)
+		if (animationTimer != null)
 		{
-			_animationTimer.QueueFree();
+			animationTimer.QueueFree();
 		}
 	}
 }
