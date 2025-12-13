@@ -53,6 +53,8 @@ public partial class EndGameScreen : Control
 
         if (lobbyButton != null) lobbyButton.Pressed += OnLobbyPressed;
         if (menuButton != null) menuButton.Pressed += OnMenuPressed;
+
+        eosManager = GetNode<EOSManager>("/root/EOSManager");
     }
 
     public void ShowGameOver(TeamGameStats blueStats, TeamGameStats redStats)
@@ -115,8 +117,6 @@ public partial class EndGameScreen : Control
     private void OnMenuPressed()
     {
         GD.Print("MenuButton pressed");
-
-        eosManager = GetNode<EOSManager>("/root/EOSManager");
 
         if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
         {
