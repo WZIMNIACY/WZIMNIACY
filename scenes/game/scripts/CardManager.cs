@@ -4,16 +4,40 @@ using System.IO;
 using System.Text.Json;
 using System.Collections.Generic;
 
-public partial class CardMenager : GridContainer
+public partial class CardManager : GridContainer
 {
+	[Signal] public delegate void CardManagerReadyEventHandler();
+
+	[Export] private MainGame mainGame;
+
 	private List<string> names;
 	private Random rand = new Random(); 
 	private int commonCards = 0;
 	private int blueCards = 0;
 	private int redCards = 0;
 	private int assassinCards = 0;
-	private string teamWithMoreCards = "red";
 	
+	public MainGame.Team teamWithMoreCards = MainGame.Team.None;
+	
+	public enum CardType
+	{	
+		Red,
+		Blue,
+		Assassin,
+		Common
+	}
+
+	public override void _Ready()
+	{
+		base._Ready();
+		mainGame.GameReady += OnGameReady;
+	}
+
+	private void OnGameReady()
+	{
+		EmitSignal(SignalName.CardManagerReady);
+	}
+
 	public void LoadNames(){
 		string json = File.ReadAllText("assets/dict.json");
  		string[] name = JsonSerializer.Deserialize<string[]>(json);
@@ -26,35 +50,39 @@ public partial class CardMenager : GridContainer
 		names.Remove(name);
 		return name;
 	}
-
-	public string GetCardType(){
+	
+	public CardType GetCardType(){
 		//3-assassin 2-blue 1-red 0-common
+		if(teamWithMoreCards == MainGame.Team.None)
+		{
+			teamWithMoreCards = mainGame.StartingTeam;
+		}
 		int num = rand.Next(0,4);
 		if(num == 3){
 			if(assassinCards == 0) {
 				assassinCards += 1;
-				return "assassin";
+				return CardType.Assassin;
 			}
 			return GetCardType();
 		}
 		else if(num == 2){
-			if(blueCards < 8 || (blueCards < 9 &&  teamWithMoreCards == "blue")){
+			if(blueCards < 8 || (blueCards < 9 &&  teamWithMoreCards == MainGame.Team.Blue)){
 				blueCards += 1;
-				return "blue";
+				return CardType.Blue;
 			}
 			return GetCardType();
 		}
 		else if(num == 1){
-			if(redCards < 8 || (redCards < 9 &&  teamWithMoreCards == "red")){
+			if(redCards < 8 || (redCards < 9 &&  teamWithMoreCards == MainGame.Team.Red)){
 				redCards += 1;
-				return "red";
+				return CardType.Red;
 			}
 			return GetCardType();
 		}
 		else{
 			if(commonCards < 7){
 				commonCards += 1;
-				return "common";
+				return CardType.Common;
 			}
 			return GetCardType();
 		}
