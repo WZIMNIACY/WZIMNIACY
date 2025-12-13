@@ -555,6 +555,7 @@ theme_override_styles/hover = ExtResource("10_5cypo")
 text = "Resume"
 
 [node name="EndGameScreen" parent="." instance=ExtResource("16_eixuh")]
+visible = false
 layout_mode = 1
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
