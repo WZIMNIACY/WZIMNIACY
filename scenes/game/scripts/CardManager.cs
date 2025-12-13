@@ -31,6 +31,10 @@ public partial class CardManager : GridContainer
 	{
 		base._Ready();
 		mainGame.GameReady += OnGameReady;
+		foreach (var card in GetTree().GetNodesInGroup("cards"))
+		{
+			card.Connect("CardConfirmed", new Callable(this, nameof(OnCardConfirmed)));
+		}
 	}
 
 	private void OnGameReady()
@@ -85,6 +89,20 @@ public partial class CardManager : GridContainer
 				return CardType.Common;
 			}
 			return GetCardType();
+		}
+	}
+	
+	private void OnCardConfirmed(AgentCard card)
+	{
+		GD.Print("Karta kliknięta: " + card.Name);
+		HideAllCards();
+	}
+
+	private void HideAllCards()
+	{
+		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
+		{
+			card.Unselect();
 		}
 	}
 }

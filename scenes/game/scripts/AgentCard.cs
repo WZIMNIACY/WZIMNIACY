@@ -9,6 +9,10 @@ public partial class AgentCard : PanelContainer
 	[Export] private Label textLabel;
 	[Export] private TextureRect cardImage;
 
+	[Export] private Button selectButton;
+	
+	[Signal] public delegate void CardConfirmedEventHandler(AgentCard card);
+
 	private Vector2 hoverScale = new Vector2(1.05f, 1.05f); 
 	private float duration = 0.1f; 
 
@@ -20,6 +24,7 @@ public partial class AgentCard : PanelContainer
 	{ 
 		get { return type; } 
 	}
+	private bool selected = false;
 
 	public override void _Ready()
 	{
@@ -32,6 +37,9 @@ public partial class AgentCard : PanelContainer
 		Resized += SetPivotCenter;
 
 		cardManager.CardManagerReady += SetCard;
+		AddToGroup("cards");
+		MouseFilter = MouseFilterEnum.Pass;
+		SetProcessInput(true);
 	}
 
 	private void SetPivotCenter()
@@ -82,19 +90,52 @@ public partial class AgentCard : PanelContainer
 		SetColor();
 	}
 	
-	private void SetCardName(string name){
+	private void SetCardName(string name)
+	{
 		textLabel.Text = name;
 	}
 
-	private void SetColor(){
-		if(type == CardManager.CardType.Blue){
+	private void SetColor()
+	{	
+		if(type == CardManager.CardType.Blue)
+		{
 			cardImage.Modulate = new Color("4597ffff");
 		}
-		else if(type == CardManager.CardType.Red){
+		else if(type == CardManager.CardType.Red)
+		{
 			cardImage.Modulate = new Color("ff627bff");
 		}
-		else if(type == CardManager.CardType.Assassin){
+		else if(type == CardManager.CardType.Assassin)
+		{
 			cardImage.Modulate = new Color("767676aa");
 		}
+	}	
+
+	public override void _GuiInput(InputEvent @event)
+	{
+		base._GuiInput(@event);
+		if (@event is InputEventMouseButton mouseEvent &&
+			mouseEvent.Pressed &&
+			mouseEvent.ButtonIndex == MouseButton.Left)
+		{
+			ToggleSelected();
+		}
+	}
+
+	public void Unselect()
+	{
+		selected = false;
+		selectButton.Visible = false;
+	}
+	
+	public void ToggleSelected()
+	{
+		selected = !selected;
+		selectButton.Visible = selected;
+	}
+	
+	public void OnSelectButtonPressed()
+	{
+		EmitSignal(SignalName.CardConfirmed, this);
 	}
 }
