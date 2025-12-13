@@ -117,7 +117,7 @@ public partial class MainMenu : Node
     {
         isCreatingLobby = false;
         createButton.Disabled = false;
-        createButton.Text = "Utwórz grę";
+        createButton.Text = "Stwórz grę";
 
         // Przywróć automatyczny rozmiar
         createButton.CustomMinimumSize = new Vector2(0, 0);

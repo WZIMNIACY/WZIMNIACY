@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3 uid="uid://dfk05vil0kmxx"]
+
+[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="1_y36rg"]
+
+[node name="playerRow" type="HBoxContainer"]
+
+[node name="ProfilePicture" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_horizontal = 0
+stretch_mode = 4
+
+[node name="HSpacer" type="Control" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlayerNicknameLabel" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_fonts/font = ExtResource("1_y36rg")
+text = "Ziomeczek (TY)"
+horizontal_alignment = 2
+vertical_alignment = 1
