@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://dottn65ntydo4"]
+[gd_scene load_steps=30 format=3 uid="uid://bqfm3bpx8hfit"]
 
 [ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://themes/main_game.tres" id="1_s3esy"]
@@ -15,7 +15,9 @@
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="10_5cypo"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="10_wjob3"]
 [ext_resource type="Script" uid="uid://bhdawio8cc0ed" path="res://scenes/game/scripts/CaptainInput.cs" id="10_xgagw"]
-[ext_resource type="PackedScene" path="res://scenes/components/main_game/end_game_screen.tscn" id="16_eixuh"]
+[ext_resource type="PackedScene" uid="uid://bfxpcutxox0tt" path="res://scenes/settings/Settings.tscn" id="15_eixuh"]
+[ext_resource type="PackedScene" uid="uid://b6bdhq5ktk0vo" path="res://scenes/components/main_game/end_game_screen.tscn" id="16_eixuh"]
+[ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="16_v72ow"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -83,7 +85,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel")]
+[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -99,6 +101,8 @@ teamListRed = NodePath("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListConta
 gameRightPanel = NodePath("Panel/HBoxContainer/RightPanel")
 gameInputPanel = NodePath("Panel/InputPanel")
 turnLabel = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/TurnCounterContainer/Label")
+settingsScene = NodePath("Settings")
+helpScene = NodePath("HelpScene")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
@@ -144,14 +148,6 @@ alignment = 0
 [node name="Label" type="Label" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer"]
 layout_mode = 2
 text = "Menu"
-
-[node name="HelpBtnContainer" type="PanelContainer" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel"]
-layout_mode = 2
-theme_type_variation = &"SubPanel"
-
-[node name="Label" type="Label" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/HelpBtnContainer"]
-layout_mode = 2
-text = "Pomoc"
 
 [node name="PlayerListContainer" type="MarginContainer" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel"]
 layout_mode = 2
@@ -482,7 +478,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="PopUp" type="Panel" parent="MenuPanel/CenterContainer"]
-custom_minimum_size = Vector2(346, 375.455)
+custom_minimum_size = Vector2(346, 325.455)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_o6v7o")
 
@@ -519,6 +515,7 @@ theme_override_styles/hover = ExtResource("10_5cypo")
 text = "Wyjdź z gry"
 
 [node name="PauseButton" type="Button" parent="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 theme_override_colors/font_hover_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
 theme_override_fonts/font = ExtResource("10_wjob3")
@@ -557,6 +554,14 @@ theme_override_styles/normal = ExtResource("9_nqdth")
 theme_override_styles/pressed = ExtResource("9_nqdth")
 theme_override_styles/hover = ExtResource("10_5cypo")
 text = "Resume"
+
+[node name="Settings" parent="." instance=ExtResource("15_eixuh")]
+visible = false
+layout_mode = 1
+
+[node name="HelpScene" parent="." instance=ExtResource("16_v72ow")]
+visible = false
+layout_mode = 1
 
 [node name="EndGameScreen" parent="." instance=ExtResource("16_eixuh")]
 visible = false

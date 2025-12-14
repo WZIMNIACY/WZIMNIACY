@@ -14,6 +14,9 @@ public partial class MainGame : Control
     [Export] public RightPanel gameRightPanel;
     [Export] public CaptainInput gameInputPanel;
     [Export] Label turnLabel;
+    [Export] Control settingsScene;
+    [Export] Control helpScene;
+    private EOSManager eosManager;
     public const bool IsHost = true; // temp value
     private int pointsBlue;
     public int PointsBlue
@@ -46,8 +49,13 @@ public partial class MainGame : Control
     public override void _Ready()
     {
         base._Ready();
-        // Hide menu panel at start
+
+        eosManager = GetNode<EOSManager>("/root/EOSManager");
+
+        // Ensureing popups are hidden at start
         menuPanel.Visible = false;
+        settingsScene.Visible = false;
+        helpScene.Visible = false;
 
         // Choosing starting team
         if (IsHost)
@@ -140,6 +148,14 @@ public partial class MainGame : Control
     public void OnQuitButtonPressed()
     {
         GD.Print("QuitButton pressed...");
+
+        if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
+        {
+            GD.Print("🚪 Leaving lobby before returning to menu...");
+            eosManager.LeaveLobby();
+        }
+
+        GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
     }
 
     public void OnPauseButtonPressed()
@@ -150,11 +166,13 @@ public partial class MainGame : Control
     public void OnSettingsButtonPressed()
     {
         GD.Print("SettingsButton pressed...");
+        settingsScene.Visible = true;
     }
 
     public void OnHelpButtonPressed()
     {
         GD.Print("HelpButton pressed...");
+        helpScene.Visible = true;
     }
 
     public void OnResumeButtonPressed()
