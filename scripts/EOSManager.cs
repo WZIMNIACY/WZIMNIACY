@@ -120,6 +120,8 @@ public partial class EOSManager : Node
 
 	// Timer do odświeżania lobby
 	private Timer lobbyRefreshTimer;
+	//Limit graczy w drużynie
+	private const int MaxPlayersPerTeam = 5;
 
 	// Enum dla drużyn
 	public enum Team
@@ -1861,13 +1863,7 @@ public partial class EOSManager : Node
 	/// <param name="value">Wartość atrybutu</param>
 	public void SetMyTeam(Team teamName)
 	{
-		if (teamName != Team.Blue && teamName != Team.Red && teamName != Team.None && teamName != Team.Universal)
-		{
-			GD.PrintErr($"❌ Invalid team name: {teamName}");
-			return;
-		}
 
-		const int MaxPlayersPerTeam = 5;
 		if ((teamName == Team.Blue || teamName == Team.Red) && GetTeamPlayerCount(teamName) >= MaxPlayersPerTeam)
 		{
 			GD.PrintErr($"❌ Cannot join team {teamName}: Team is full ({MaxPlayersPerTeam}/{MaxPlayersPerTeam})");
@@ -2434,13 +2430,6 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		if (teamName != Team.Blue && teamName != Team.Red && teamName != Team.None && teamName != Team.Universal)
-		{
-			GD.PrintErr($"❌ Cannot move player: Invalid team '{teamName}'");
-			return;
-		}
-
-		const int MaxPlayersPerTeam = 5;
 		if ((teamName == Team.Blue || teamName == Team.Red) && GetTeamPlayerCount(teamName) >= MaxPlayersPerTeam)
 		{
 			GD.PrintErr($"❌ Cannot move player: Team {teamName} is full ({MaxPlayersPerTeam}/{MaxPlayersPerTeam})");
@@ -2554,6 +2543,8 @@ public partial class EOSManager : Node
 				}
 			}
 
+			bool isLocalPlayer = userId == localProductUserId.ToString();
+
 			// Przywróć tylko graczy z Universal
 			if (currentTeam == Team.Universal)
 			{
@@ -2568,7 +2559,6 @@ public partial class EOSManager : Node
 					SetLobbyAttribute($"{ForceTeamAttributePrefix}{userId}", "");
 
 					// Dodatkowo dla hosta - ustaw MEMBER attribute bezpośrednio
-					bool isLocalPlayer = userId == localProductUserId.ToString();
 					if (isLocalPlayer)
 					{
 						SetMemberAttribute("Team", "");
@@ -2589,8 +2579,7 @@ public partial class EOSManager : Node
 				SetLobbyAttribute($"{ForceTeamAttributePrefix}{userId}", previousTeam.ToString());
 
 				// Jeśli to host - ustaw też jego MEMBER attribute
-				bool isLocalPlayer2 = userId == localProductUserId.ToString();
-				if (isLocalPlayer2)
+				if (isLocalPlayer)
 				{
 					SetMemberAttribute("Team", previousTeam.ToString());
 					GD.Print($"✅ Host restored to {previousTeam} team");

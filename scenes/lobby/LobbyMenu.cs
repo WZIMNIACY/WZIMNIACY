@@ -876,19 +876,6 @@ public partial class LobbyMenu : Control
         bool isValid = ValidateAPIKey(newText);
         LobbyStatus.isAPIKeySet = isValid;
 
-        // Opcjonalnie: wizualna informacja zwrotna
-        if (aiAPIKeyInput != null)
-        {
-            if (isValid)
-            {
-                GD.Print("✅ Valid API Key entered");
-            }
-            else if (!string.IsNullOrWhiteSpace(newText))
-            {
-                GD.Print("❌ Invalid API Key format");
-            }
-        }
-
         if (eosManager != null && eosManager.isLobbyOwner)
         {
             UpdateHostReadyStatus();
@@ -1105,12 +1092,6 @@ public partial class LobbyMenu : Control
         // Sprawdź czy cooldown jest aktywny
         if (isTeamChangeCooldownActive)
         {
-            return;
-        }
-
-        if (teamName != EOSManager.Team.Blue && teamName != EOSManager.Team.Red && teamName != EOSManager.Team.None && teamName != EOSManager.Team.Universal)
-        {
-            GD.PrintErr($"❌ Invalid team name requested: {teamName}");
             return;
         }
 
