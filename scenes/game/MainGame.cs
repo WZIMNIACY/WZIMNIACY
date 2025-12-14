@@ -1,14 +1,11 @@
 using Godot;
 using System;
 
-public enum Team
-{
-    Blue,
-    Red
-}
 
 public partial class MainGame : Control
 {
+    [Signal] public delegate void GameReadyEventHandler();
+
     [Export] Panel menuPanel;
     [Export] ScoreContainer scoreContainerBlue;
     [Export] ScoreContainer scoreContainerRed;
@@ -31,10 +28,23 @@ public partial class MainGame : Control
     {
         get => pointsRed;
     }
+
+    public enum Team
+    {
+        Blue,
+        Red,
+        None
+    }
+
     private int turnCounter = 1;
     Team startingTeam;
+    public Team StartingTeam
+    {
+        get => startingTeam;
+    }
     Team currentTurn;
 
+    
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
@@ -52,7 +62,7 @@ public partial class MainGame : Control
         {
             // Choose starting team randomly
             startingTeam = (Team)Random.Shared.Next(0, 2);
-
+            GD.Print("Starting team: " + startingTeam.ToString());
             // TODO: send starting team to clients
         }
         else
@@ -87,6 +97,7 @@ public partial class MainGame : Control
         {
             GD.PrintErr("Error");
         }
+        EmitSignal(SignalName.GameReady);
     }
 
     private void StartCaptainPhase()

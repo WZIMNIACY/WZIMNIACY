@@ -17,25 +17,27 @@ border_color = Color(0, 1, 0.8, 1)
 border_blend = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7al6y"]
-bg_color = Color(1.92523e-06, 0.71535814, 0.4095113, 1)
+bg_color = Color(0, 0.7225577, 0.28072357, 1)
 corner_radius_top_left = 100
 corner_radius_top_right = 100
 corner_radius_bottom_right = 100
 corner_radius_bottom_left = 100
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yxvjk"]
-bg_color = Color(0.028187888, 0.2844371, 0, 1)
+bg_color = Color(7.8814105e-07, 0.315687, 0.04577127, 1)
 corner_radius_top_left = 100
 corner_radius_top_right = 100
 corner_radius_bottom_right = 100
 corner_radius_bottom_left = 100
 
-[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "selectButton")]
+[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage", "selectButton")]
 offset_right = 110.0
 offset_bottom = 110.0
 script = ExtResource("1_m8y6f")
 highlightBorder = NodePath("HighlightBorder")
 contentContainer = NodePath(".")
+textLabel = NodePath("MarginContainer/Label")
+cardImage = NodePath("AgentCard")
 selectButton = NodePath("Control/SelectButton")
 
 [node name="AgentCard" type="TextureRect" parent="."]
@@ -74,7 +76,6 @@ offset_left = 5.0
 offset_top = 10.0
 offset_right = 23.0
 offset_bottom = 28.0
-mouse_filter = 1
 theme_override_styles/normal = SubResource("StyleBoxFlat_7al6y")
 theme_override_styles/hover = SubResource("StyleBoxFlat_yxvjk")
 
