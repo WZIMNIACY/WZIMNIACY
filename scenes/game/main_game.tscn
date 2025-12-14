@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://dottn65ntydo4"]
+[gd_scene load_steps=30 format=3 uid="uid://bqfm3bpx8hfit"]
 
 [ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://themes/main_game.tres" id="1_s3esy"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://db8ggkdji87xs" path="res://scenes/components/main_game/red_score_container.tscn" id="5_ygxny"]
 [ext_resource type="PackedScene" uid="uid://s7i54u0fg4ly" path="res://scenes/components/main_game/agent_card.tscn" id="6_ygxny"]
 [ext_resource type="Texture2D" uid="uid://bjri1j0tawip8" path="res://assets/textures/gradients/game_skip_turn_button_gradient.tres" id="7_wi4c7"]
+[ext_resource type="Script" uid="uid://cy8ql364lktdi" path="res://scenes/game/scripts/CardMenager.cs" id="7_xgagw"]
 [ext_resource type="Script" uid="uid://dsswor3dmxdlv" path="res://scenes/game/scripts/RightPanel.cs" id="8_cn0rj"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="9_nqdth"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="9_o6v7o"]
@@ -15,6 +16,7 @@
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="10_wjob3"]
 [ext_resource type="Script" uid="uid://bhdawio8cc0ed" path="res://scenes/game/scripts/CaptainInput.cs" id="10_xgagw"]
 [ext_resource type="PackedScene" uid="uid://bfxpcutxox0tt" path="res://scenes/settings/Settings.tscn" id="15_eixuh"]
+[ext_resource type="PackedScene" uid="uid://b6bdhq5ktk0vo" path="res://scenes/components/main_game/end_game_screen.tscn" id="16_eixuh"]
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="16_v72ow"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
@@ -207,86 +209,109 @@ custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_5cwfu")
 
-[node name="GridContainer" type="GridContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel"]
+[node name="CardMenager" type="GridContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/v_separation = 0
 columns = 5
+script = ExtResource("7_xgagw")
 
-[node name="AgentCard" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard2" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard3" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard4" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard5" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard6" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard7" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard8" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard9" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard10" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard11" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
+layout_mode = 2
+cardMenager = NodePath("..")
+
+[node name="AgentCard12" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" instance=ExtResource("6_ygxny")]
 layout_mode = 2
 
-[node name="AgentCard2" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard13" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" instance=ExtResource("6_ygxny")]
 layout_mode = 2
 
-[node name="AgentCard3" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard14" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" instance=ExtResource("6_ygxny")]
 layout_mode = 2
 
-[node name="AgentCard4" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard15" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardMenager = NodePath("..")
 
-[node name="AgentCard5" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard16" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardMenager = NodePath("..")
 
-[node name="AgentCard6" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard17" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardMenager = NodePath("..")
 
-[node name="AgentCard7" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard18" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardMenager = NodePath("..")
 
-[node name="AgentCard8" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard19" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardMenager = NodePath("..")
 
-[node name="AgentCard9" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard20" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardMenager = NodePath("..")
 
-[node name="AgentCard10" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard21" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardMenager = NodePath("..")
 
-[node name="AgentCard11" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard22" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardMenager = NodePath("..")
 
-[node name="AgentCard12" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard23" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardMenager = NodePath("..")
 
-[node name="AgentCard13" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard24" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardMenager = NodePath("..")
 
-[node name="AgentCard14" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard25" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/CardMenager" node_paths=PackedStringArray("cardMenager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
-
-[node name="AgentCard15" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
-
-[node name="AgentCard16" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
-
-[node name="AgentCard17" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
-
-[node name="AgentCard18" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
-
-[node name="AgentCard19" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
-
-[node name="AgentCard20" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
-
-[node name="AgentCard21" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
-
-[node name="AgentCard22" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
-
-[node name="AgentCard23" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
-
-[node name="AgentCard24" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
-
-[node name="AgentCard25" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
-layout_mode = 2
+cardMenager = NodePath("..")
 
 [node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll")]
 layout_mode = 2
@@ -531,6 +556,10 @@ visible = false
 layout_mode = 1
 
 [node name="HelpScene" parent="." instance=ExtResource("16_v72ow")]
+visible = false
+layout_mode = 1
+
+[node name="EndGameScreen" parent="." instance=ExtResource("16_eixuh")]
 visible = false
 layout_mode = 1
 

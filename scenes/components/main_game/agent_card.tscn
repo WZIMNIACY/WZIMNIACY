@@ -1,7 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://s7i54u0fg4ly"]
+[gd_scene load_steps=7 format=3 uid="uid://s7i54u0fg4ly"]
 
 [ext_resource type="Texture2D" uid="uid://c8ei6oqum8tx7" path="res://assets/textures/karta.png" id="1_hiodb"]
-[ext_resource type="Script" uid="uid://bf1tk42tabie6" path="res://scenes/game/scripts/AgentCardAnimation.cs" id="1_m8y6f"]
+[ext_resource type="Script" uid="uid://bf1tk42tabie6" path="res://scenes/game/scripts/AgentCard.cs" id="1_m8y6f"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hiodb"]
 font_size = 11
@@ -16,12 +16,27 @@ border_width_bottom = 5
 border_color = Color(0, 1, 0.8, 1)
 border_blend = true
 
-[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer")]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7al6y"]
+bg_color = Color(1.92523e-06, 0.71535814, 0.4095113, 1)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yxvjk"]
+bg_color = Color(0.028187888, 0.2844371, 0, 1)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
+
+[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "selectButton")]
 offset_right = 110.0
 offset_bottom = 110.0
 script = ExtResource("1_m8y6f")
 highlightBorder = NodePath("HighlightBorder")
 contentContainer = NodePath(".")
+selectButton = NodePath("Control/SelectButton")
 
 [node name="AgentCard" type="TextureRect" parent="."]
 custom_minimum_size = Vector2(0, 110)
@@ -47,3 +62,20 @@ vertical_alignment = 1
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_m8y6f")
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="SelectButton" type="Button" parent="Control"]
+visible = false
+layout_mode = 0
+offset_left = 5.0
+offset_top = 10.0
+offset_right = 23.0
+offset_bottom = 28.0
+mouse_filter = 1
+theme_override_styles/normal = SubResource("StyleBoxFlat_7al6y")
+theme_override_styles/hover = SubResource("StyleBoxFlat_yxvjk")
+
+[connection signal="pressed" from="Control/SelectButton" to="." method="OnSelectButtonPressed"]
