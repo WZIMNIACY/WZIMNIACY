@@ -1110,7 +1110,7 @@ public partial class LobbyMenu : Control
             // Sprawdź czy scena nadal istnieje
             if (!IsInsideTree())
                 return;
-        
+
             isTeamChangeCooldownActive = false;
             GD.Print("✅ Team change cooldown finished");
             // Zaktualizuj stan przycisków po zakończeniu cooldownu
@@ -1210,32 +1210,6 @@ public partial class LobbyMenu : Control
                 redTeamJoinButton.Pressed += OnRedTeamJoinButtonPressed;
             }
         }
-    }
-
-    private void BlockButtonToHandleTooManyRequests(Button button)
-    {
-        if (button == null) return;
-
-        button.Disabled = true;
-
-        // Odblokuj przycisk po ustalonym czasie
-        GetTree().CreateTimer(CooldownTime).Timeout += () =>
-        {
-            button.Disabled = false;
-        };
-    }
-
-    private void StartPlayerMoveCooldown(string userId)
-    {
-        playerMoveCooldowns[userId] = true;
-
-        GetTree().CreateTimer(CooldownTime).Timeout += () =>
-        {
-            if (playerMoveCooldowns.ContainsKey(userId))
-            {
-                playerMoveCooldowns[userId] = false;
-            }
-        };
     }
 
     private void BlockButtonToHandleTooManyRequests(Button button)
