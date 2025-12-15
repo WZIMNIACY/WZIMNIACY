@@ -638,13 +638,12 @@ public partial class LobbyMenu : Control
         // W trybie AI vs Human nie sprawdzamy MaxPlayersPerTeam dla Blue/Red (są ukryte)
         if (isAIvsHuman)
         {
-            // W Universal może być więcej graczy niż MaxPlayersPerTeam * 2
             LobbyStatus.isAnyTeamFull = false;
             GD.Print("✅ No team limit in AI vs Human mode.");
         }
         else
         {
-            if (blueCount >= MaxPlayersPerTeam || redCount >= MaxPlayersPerTeam)
+            if (blueCount > MaxPlayersPerTeam || redCount > MaxPlayersPerTeam)
             {
                 LobbyStatus.isAnyTeamFull = true;
                 GD.Print("❌ At least one team is full.");
@@ -725,7 +724,7 @@ public partial class LobbyMenu : Control
                     unmetConditions.Add("Występują gracze bez drużyny");
 
                 if (LobbyStatus.isAnyTeamFull)
-                    unmetConditions.Add("Jedna z drużyn jest pełna");
+                    unmetConditions.Add("Jedna z drużyn jest przepełniona");
 
                 if (!LobbyStatus.isAPIKeySet)
                     unmetConditions.Add("Klucz API nie jest poprawny");
@@ -1109,6 +1108,10 @@ public partial class LobbyMenu : Control
 
         GetTree().CreateTimer(CooldownTime).Timeout += () =>
         {
+            // Sprawdź czy scena nadal istnieje
+            if (!IsInsideTree())
+                return;
+
             isTeamChangeCooldownActive = false;
             GD.Print("✅ Team change cooldown finished");
             // Zaktualizuj stan przycisków po zakończeniu cooldownu
@@ -1219,7 +1222,11 @@ public partial class LobbyMenu : Control
         // Odblokuj przycisk po ustalonym czasie
         GetTree().CreateTimer(CooldownTime).Timeout += () =>
         {
-            button.Disabled = false;
+            // Sprawdź czy przycisk nadal istnieje przed odwołaniem
+            if (button != null && GodotObject.IsInstanceValid(button))
+            {
+                button.Disabled = false;
+            }
         };
     }
 
