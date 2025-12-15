@@ -22,4 +22,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_sip7s")
 
 [node name="Label" parent="VBoxContainer" index="0"]
 theme_override_styles/normal = SubResource("StyleBoxFlat_f1ayf")
-text = "Punkty niebieskich: 0"
+text = "Karty niebieskich: -"
+
+[node name="ColorRect" parent="VBoxContainer/Control" index="0"]
+color = Color(0.24313726, 0.54901963, 0.5921569, 1)

@@ -1,19 +1,92 @@
 using Godot;
+using System;
+
 
 public partial class MainGame : Control
 {
+    [Signal] public delegate void GameReadyEventHandler();
+
     [Export] Panel menuPanel;
+    [Export] ScoreContainer scoreContainerBlue;
+    [Export] ScoreContainer scoreContainerRed;
+    [Export] PlayerListContainer teamListBlue;
+    [Export] PlayerListContainer teamListRed;
     [Export] public RightPanel gameRightPanel;
     [Export] public CaptainInput gameInputPanel;
+    [Export] Label turnLabel;
+    [Export] Control settingsScene;
+    [Export] Control helpScene;
+    private EOSManager eosManager;
+    public const bool IsHost = true; // temp value
+    private int pointsBlue;
+    public int PointsBlue
+    {
+        get => pointsBlue;
+    }
+    private int pointsRed;
+    public int PointsRed
+    {
+        get => pointsRed;
+    }
 
-    private bool isBlueTurn = true;
+    public enum Team
+    {
+        Blue,
+        Red,
+        None
+    }
 
+    private int turnCounter = 1;
+    Team startingTeam;
+    public Team StartingTeam
+    {
+        get => startingTeam;
+    }
+    Team currentTurn;
+
+    
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
-	{
+    {
         base._Ready();
-        menuPanel = GetNode<Panel>("MenuPanel");
+
+        eosManager = GetNode<EOSManager>("/root/EOSManager");
+
+        // Ensureing popups are hidden at start
         menuPanel.Visible = false;
+        settingsScene.Visible = false;
+        helpScene.Visible = false;
+
+        // Choosing starting team
+        if (IsHost)
+        {
+            // Choose starting team randomly
+            startingTeam = (Team)Random.Shared.Next(0, 2);
+            GD.Print("Starting team: " + startingTeam.ToString());
+            // TODO: send starting team to clients
+        }
+        else
+        {
+            // TODO: wait to receive starting team from host
+        }
+
+        // Assing initianl points and turn
+        if (startingTeam == Team.Blue)
+        {
+            currentTurn = Team.Blue;
+            pointsBlue = 9;
+            pointsRed = 8;
+            SetTurnBlue();
+        }
+        else
+        {
+            currentTurn = Team.Red;
+            pointsBlue = 8;
+            pointsRed = 9;
+            SetTurnRed();
+        }
+        UpdatePointsDisplay();
+        UpdateTurnDisplay();
 
         if (gameInputPanel != null)
         {
@@ -24,14 +97,15 @@ public partial class MainGame : Control
         {
             GD.PrintErr("Error");
         }
+        EmitSignal(SignalName.GameReady);
     }
 
     private void StartCaptainPhase()
     {
-        GD.Print($"Początek tury {(isBlueTurn ? "BLUE" : "RED")}");
+        GD.Print($"Początek tury {(currentTurn == Team.Blue ? "BLUE" : "RED")}");
         if(gameInputPanel != null)
         {
-            gameInputPanel.SetupTurn(isBlueTurn);
+            gameInputPanel.SetupTurn(currentTurn == Team.Blue);
         }
     }
 
@@ -40,7 +114,7 @@ public partial class MainGame : Control
         GD.Print($"{word} [{number}]");
         if (gameRightPanel != null)
         {
-            gameRightPanel.UpdateHintDisplay(word, number, isBlueTurn);
+            gameRightPanel.UpdateHintDisplay(word, number, currentTurn == Team.Blue);
         }
     }
 
@@ -49,13 +123,13 @@ public partial class MainGame : Control
         GD.Print("Koniec tury");
         if(gameRightPanel != null)
             gameRightPanel.CommitToHistory();
-        isBlueTurn = !isBlueTurn;
+        TurnChange();
         StartCaptainPhase();
     }
 
-	// Called every frame. 'delta' is the elapsed time since the previous frame.
-	public override void _Process(double delta)
-	{
+    // Called every frame. 'delta' is the elapsed time since the previous frame.
+    public override void _Process(double delta)
+    {
         base._Process(delta);
     }
 
@@ -74,6 +148,14 @@ public partial class MainGame : Control
     public void OnQuitButtonPressed()
     {
         GD.Print("QuitButton pressed...");
+
+        if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
+        {
+            GD.Print("🚪 Leaving lobby before returning to menu...");
+            eosManager.LeaveLobby();
+        }
+
+        GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
     }
 
     public void OnPauseButtonPressed()
@@ -84,16 +166,84 @@ public partial class MainGame : Control
     public void OnSettingsButtonPressed()
     {
         GD.Print("SettingsButton pressed...");
+        settingsScene.Visible = true;
     }
 
     public void OnHelpButtonPressed()
     {
         GD.Print("HelpButton pressed...");
+        helpScene.Visible = true;
     }
 
     public void OnResumeButtonPressed()
     {
         GD.Print("ResumeButton pressed...");
         menuPanel.Visible = false;
+    }
+
+    private void UpdatePointsDisplay()
+    {
+        string textBlue = "Karty niebieskich: "; // temp value, czekam na lepsza propozycje od UI teamu
+        string textRed = "Karty czerwonych: "; // same
+        scoreContainerBlue.ChangeScoreText(textBlue + pointsBlue.ToString());
+        scoreContainerRed.ChangeScoreText(textRed + pointsRed.ToString());
+    }
+
+    private void UpdateTurnDisplay()
+    {
+        string text = "Aktualna\ntura: ";
+        turnLabel.Text = text + turnCounter.ToString();
+    }
+
+    public void RemovePointBlue()
+    {
+        GD.Print("Point removed from team blue...");
+        pointsBlue--;
+        UpdatePointsDisplay();
+        if (pointsBlue == 0)
+            EndGame(Team.Blue);
+    }
+
+    public void RemovePointRed()
+    {
+        GD.Print("Point removed from team red...");
+        pointsRed--;
+        UpdatePointsDisplay();
+        if (pointsRed == 0)
+            EndGame(Team.Red);
+    }
+
+    public void TurnChange()
+    {
+        turnCounter++;
+        UpdateTurnDisplay();
+        if (currentTurn == Team.Blue)
+            SetTurnRed();
+        else
+            SetTurnBlue();
+    }
+
+    public void SetTurnBlue()
+    {
+        GD.Print("Turn blue...");
+        currentTurn = Team.Blue;
+        scoreContainerBlue.SetDiodeOn();
+        scoreContainerRed.SetDiodeOff();
+        teamListBlue.Modulate = new Color(2.8f, 2.8f, 2.8f, 1f);
+        teamListRed.Modulate = new Color(1f, 1f, 1f, 1f);
+    }
+
+    public void SetTurnRed()
+    {
+        GD.Print("Turn red...");
+        currentTurn = Team.Red;
+        scoreContainerBlue.SetDiodeOff();
+        scoreContainerRed.SetDiodeOn();
+        teamListBlue.Modulate = new Color(1f, 1f, 1f, 1f);
+        teamListRed.Modulate = new Color(2.8f, 2.8f, 2.8f, 1f);
+    }
+
+    public void EndGame(Team winner)
+    {
     }
 }

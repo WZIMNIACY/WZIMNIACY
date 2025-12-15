@@ -1,13 +1,44 @@
-[gd_scene load_steps=3 format=3 uid="uid://s7i54u0fg4ly"]
+[gd_scene load_steps=7 format=3 uid="uid://s7i54u0fg4ly"]
 
-[ext_resource type="Texture2D" uid="uid://csm6re7xw340e" path="res://assets/textures/UNID_agent_ph.png" id="1_hiodb"]
+[ext_resource type="Texture2D" uid="uid://c8ei6oqum8tx7" path="res://assets/textures/karta.png" id="1_hiodb"]
+[ext_resource type="Script" uid="uid://bf1tk42tabie6" path="res://scenes/game/scripts/AgentCard.cs" id="1_m8y6f"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hiodb"]
 font_size = 11
+font_color = Color(0.0007269123, 0.00068415585, 0.0006720056, 1)
 
-[node name="PanelContainer" type="PanelContainer"]
-offset_right = 40.0
-offset_bottom = 40.0
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_m8y6f"]
+draw_center = false
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0, 1, 0.8, 1)
+border_blend = true
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7al6y"]
+bg_color = Color(0, 0.7225577, 0.28072357, 1)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yxvjk"]
+bg_color = Color(7.8814105e-07, 0.315687, 0.04577127, 1)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
+
+[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage", "selectButton")]
+offset_right = 110.0
+offset_bottom = 110.0
+script = ExtResource("1_m8y6f")
+highlightBorder = NodePath("HighlightBorder")
+contentContainer = NodePath(".")
+textLabel = NodePath("MarginContainer/Label")
+cardImage = NodePath("AgentCard")
+selectButton = NodePath("Control/SelectButton")
 
 [node name="AgentCard" type="TextureRect" parent="."]
 custom_minimum_size = Vector2(0, 110)
@@ -19,7 +50,7 @@ stretch_mode = 5
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
-theme_override_constants/margin_bottom = 9
+theme_override_constants/margin_bottom = 14
 
 [node name="Label" type="Label" parent="MarginContainer"]
 layout_mode = 2
@@ -27,3 +58,25 @@ size_flags_vertical = 8
 text = "Pseudomin"
 label_settings = SubResource("LabelSettings_hiodb")
 horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HighlightBorder" type="Panel" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_m8y6f")
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="SelectButton" type="Button" parent="Control"]
+visible = false
+layout_mode = 0
+offset_left = 5.0
+offset_top = 10.0
+offset_right = 23.0
+offset_bottom = 28.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_7al6y")
+theme_override_styles/hover = SubResource("StyleBoxFlat_yxvjk")
+
+[connection signal="pressed" from="Control/SelectButton" to="." method="OnSelectButtonPressed"]

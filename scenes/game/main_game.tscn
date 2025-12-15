@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://dottn65ntydo4"]
+[gd_scene load_steps=30 format=3 uid="uid://bqfm3bpx8hfit"]
 
 [ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://assets/themes/main_game.tres" id="1_s3esy"]
@@ -8,17 +8,21 @@
 [ext_resource type="PackedScene" uid="uid://db8ggkdji87xs" path="res://scenes/components/main_game/red_score_container.tscn" id="5_ygxny"]
 [ext_resource type="PackedScene" uid="uid://s7i54u0fg4ly" path="res://scenes/components/main_game/agent_card.tscn" id="6_ygxny"]
 [ext_resource type="Texture2D" uid="uid://bjri1j0tawip8" path="res://assets/textures/gradients/game_skip_turn_button_gradient.tres" id="7_wi4c7"]
+[ext_resource type="Script" uid="uid://c6763jmkxnoou" path="res://scenes/game/scripts/CardManager.cs" id="7_xgagw"]
 [ext_resource type="Script" uid="uid://dsswor3dmxdlv" path="res://scenes/game/scripts/RightPanel.cs" id="8_cn0rj"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="9_nqdth"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="9_o6v7o"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="10_5cypo"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="10_wjob3"]
 [ext_resource type="Script" uid="uid://bhdawio8cc0ed" path="res://scenes/game/scripts/CaptainInput.cs" id="10_xgagw"]
+[ext_resource type="PackedScene" uid="uid://bfxpcutxox0tt" path="res://scenes/settings/Settings.tscn" id="15_eixuh"]
+[ext_resource type="PackedScene" uid="uid://b6bdhq5ktk0vo" path="res://scenes/components/main_game/end_game_screen.tscn" id="16_eixuh"]
+[ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="16_v72ow"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wi4c7"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vde2q"]
 resource_local_to_scene = true
 bg_color = Color(0.08627451, 0.19607843, 0.21176471, 1)
 border_width_left = 1
@@ -35,7 +39,7 @@ border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.047058824, 0.047058824, 0.047058824, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_70vka"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5cwfu"]
 resource_local_to_scene = true
 bg_color = Color(0.24313726, 0.02745098, 0.06666667, 1)
 border_width_left = 1
@@ -81,7 +85,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("gameRightPanel", "gameInputPanel")]
+[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -89,8 +93,16 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_o6v7o")
+menuPanel = NodePath("MenuPanel")
+scoreContainerBlue = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/BlueScoreContainer")
+scoreContainerRed = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer")
+teamListBlue = NodePath("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer/BluePlayerList")
+teamListRed = NodePath("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer/RedPlayerList")
 gameRightPanel = NodePath("Panel/HBoxContainer/RightPanel")
 gameInputPanel = NodePath("Panel/InputPanel")
+turnLabel = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/TurnCounterContainer/Label")
+settingsScene = NodePath("Settings")
+helpScene = NodePath("HelpScene")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
@@ -137,14 +149,6 @@ alignment = 0
 layout_mode = 2
 text = "Menu"
 
-[node name="HelpBtnContainer" type="PanelContainer" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel"]
-layout_mode = 2
-theme_type_variation = &"SubPanel"
-
-[node name="Label" type="Label" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/HelpBtnContainer"]
-layout_mode = 2
-text = "Pomoc"
-
 [node name="PlayerListContainer" type="MarginContainer" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -165,7 +169,7 @@ text = "Gracze:"
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="PlayerList" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer" instance=ExtResource("3_wi4c7")]
+[node name="RedPlayerList" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListContainer/PanelContainer/VBoxContainer" instance=ExtResource("3_wi4c7")]
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -180,10 +184,10 @@ layout_mode = 2
 [node name="TopBar" type="HBoxContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel"]
 layout_mode = 2
 
-[node name="BlueScoreContainer2" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar" instance=ExtResource("5_ipu61")]
+[node name="BlueScoreContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar" instance=ExtResource("5_ipu61")]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_wi4c7")
+theme_override_styles/panel = SubResource("StyleBoxFlat_vde2q")
 
 [node name="TurnCounterContainer" type="PanelContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar"]
 custom_minimum_size = Vector2(0, 70)
@@ -196,95 +200,122 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_ygxny")
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 text = "Aktualna
- tura: 1"
+ tura: -"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="RedScoreContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar" instance=ExtResource("5_ygxny")]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_70vka")
+theme_override_styles/panel = SubResource("StyleBoxFlat_5cwfu")
 
-[node name="GridContainer" type="GridContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel"]
+[node name="GridContainer" type="GridContainer" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel" node_paths=PackedStringArray("mainGame")]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/v_separation = 0
 columns = 5
+script = ExtResource("7_xgagw")
+mainGame = NodePath("../../../../..")
 
-[node name="AgentCard" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard2" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard2" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard3" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard3" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard4" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard4" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard5" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard5" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard6" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard6" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard7" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard7" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard8" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard8" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard9" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard9" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard10" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard10" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard11" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard11" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard12" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard12" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard13" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard13" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard14" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard14" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard15" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard15" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard16" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard16" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard17" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard17" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard18" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard18" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard19" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard19" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard20" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard20" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard21" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard21" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard22" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard22" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard23" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard23" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard24" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard24" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
-[node name="AgentCard25" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" instance=ExtResource("6_ygxny")]
+[node name="AgentCard25" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+cardManager = NodePath("..")
 
 [node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll")]
 layout_mode = 2
@@ -418,6 +449,7 @@ text = "Wysłać
 "
 
 [node name="MenuPanel" type="Panel" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -446,7 +478,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="PopUp" type="Panel" parent="MenuPanel/CenterContainer"]
-custom_minimum_size = Vector2(346, 375.455)
+custom_minimum_size = Vector2(346, 325.455)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_o6v7o")
 
@@ -483,6 +515,7 @@ theme_override_styles/hover = ExtResource("10_5cypo")
 text = "Wyjdź z gry"
 
 [node name="PauseButton" type="Button" parent="MenuPanel/CenterContainer/PopUp/CenterContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 theme_override_colors/font_hover_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
 theme_override_fonts/font = ExtResource("10_wjob3")
@@ -521,6 +554,18 @@ theme_override_styles/normal = ExtResource("9_nqdth")
 theme_override_styles/pressed = ExtResource("9_nqdth")
 theme_override_styles/hover = ExtResource("10_5cypo")
 text = "Resume"
+
+[node name="Settings" parent="." instance=ExtResource("15_eixuh")]
+visible = false
+layout_mode = 1
+
+[node name="HelpScene" parent="." instance=ExtResource("16_v72ow")]
+visible = false
+layout_mode = 1
+
+[node name="EndGameScreen" parent="." instance=ExtResource("16_eixuh")]
+visible = false
+layout_mode = 1
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
 [connection signal="pressed" from="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer/Button" to="." method="OnSkipTurnPressed"]
