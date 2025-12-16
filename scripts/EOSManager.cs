@@ -2463,6 +2463,60 @@ public partial class EOSManager : Node
 		GD.Print($"✅ Setting ReadyToStart to: {isReady}");
 	}
 
+	public void SetAPIKey(string apiKey)
+	{
+		if (string.IsNullOrWhiteSpace(apiKey))
+		{
+			GD.Print("⚠️ Cannot set empty API Key");
+			return;
+		}
+
+		SetLobbyAttribute("APIKey", apiKey);
+	}
+
+	public string GetAPIKey()
+	{
+		if (string.IsNullOrEmpty(currentLobbyId))
+		{
+			GD.PrintErr("❌ Cannot get API Key: Not in any lobby!");
+			return "";
+		}
+
+		// Sprawdź czy mamy lobby details
+		if (!foundLobbyDetails.ContainsKey(currentLobbyId))
+		{
+			GD.PrintErr("❌ Cannot get API Key: Lobby details not found!");
+			return "";
+		}
+
+		LobbyDetails lobbyDetails = foundLobbyDetails[currentLobbyId];
+
+		if (lobbyDetails != null)
+		{
+			var attrCountOptions = new LobbyDetailsGetAttributeCountOptions();
+			uint attributeCount = lobbyDetails.GetAttributeCount(ref attrCountOptions);
+
+			for (uint i = 0; i < attributeCount; i++)
+			{
+				var attrOptions = new LobbyDetailsCopyAttributeByIndexOptions() { AttrIndex = i };
+				Result attrResult = lobbyDetails.CopyAttributeByIndex(ref attrOptions, out Epic.OnlineServices.Lobby.Attribute? attribute);
+
+				if (attrResult == Result.Success && attribute.HasValue && attribute.Value.Data.HasValue)
+				{
+					string keyStr = attribute.Value.Data.Value.Key;
+					string valueStr = attribute.Value.Data.Value.Value.AsUtf8;
+
+					if (keyStr != null && keyStr.Equals("APIKey", StringComparison.OrdinalIgnoreCase))
+					{
+						return valueStr;
+					}
+				}
+			}
+		}
+
+		return "";
+	}
+
 	/// <summary>
 	/// Zapisuje poprzednią drużynę gracza w atrybutach lobby (przed przeniesieniem do Universal)
 	/// </summary>
