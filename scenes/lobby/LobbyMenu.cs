@@ -1126,9 +1126,6 @@ public partial class LobbyMenu : Control
     /// </summary>
     private void OnAPIKeySubmitted(string newText)
     {
-        GD.Print($"🔑 API Key submitted: {newText.Substring(0, Math.Min(10, newText.Length))}...");
-
-        // Rozpocznij walidację
         ValidateAPIKeyAsync(newText);
     }
 
