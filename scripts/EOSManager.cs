@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Linq;
 using System.ComponentModel;
 using System.Collections.Generic;
 using Epic.OnlineServices;
@@ -118,6 +119,12 @@ public partial class EOSManager : Node
 	private System.Collections.Generic.List<string> animalNames = new System.Collections.Generic.List<string>();    // Flaga blokująca tworzenie lobby
 	private bool isCreatingLobby = false;
 
+	// Kolejkowanie atrybutów lobby - zbieranie zmian i wysyłanie razem
+	private System.Collections.Generic.Dictionary<string, string> pendingLobbyAttributes = new System.Collections.Generic.Dictionary<string, string>();
+	private System.Collections.Generic.HashSet<string> attributesToRemove = new System.Collections.Generic.HashSet<string>();
+	private SceneTreeTimer attributeBatchTimer = null;
+	private const float AttributeBatchDelay = 0.1f;
+
 	// Timer do odświeżania lobby
 	private Timer lobbyRefreshTimer;
 	//Limit graczy w drużynie
@@ -179,6 +186,22 @@ public partial class EOSManager : Node
 	public override void _Ready()
 	{
 		base._Ready();
+
+		// Opcjonalne opóźnienie sieci (do testów)
+		// uzycie: --delay-networking=value_in_ms dla kazdej instancji w cmdline
+		var args = OS.GetCmdlineArgs();
+		string delayArg = args.FirstOrDefault(s => s.StartsWith("--delay-networking="));
+		if (delayArg != null)
+		{
+			string delayValue = delayArg.Substring("--delay-networking=".Length);
+			if (int.TryParse(delayValue, out int delayMs))
+			{
+				if (delayMs > 0)
+				{
+					OS.DelayMsec(delayMs);
+				}
+			}
+		}
 
 		GD.Print("=== Starting EOS Initialization ===");
 
@@ -1811,7 +1834,7 @@ public partial class EOSManager : Node
 			{
 				GD.Print($"  ➖ Member LEFT/KICKED: {GetShortUserId(userId)}");
 
-				// Małe opóźnienie na synchronizację EOS
+				// Małe opóźnienie na pełną synchronizację
 				GetTree().CreateTimer(0.3).Timeout += () =>
 				{
 					GetLobbyMembers();
@@ -2203,7 +2226,64 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		GD.Print($"📝 Setting lobby attribute: {key} = '{value}'");
+		if (!isLobbyOwner)
+		{
+			GD.PrintErr($"❌ Cannot set lobby attribute '{key}': Not lobby owner!");
+			return;
+		}
+
+		// Obługa kolejki i wysłanie batch'a
+		pendingLobbyAttributes[key] = value;
+		attributesToRemove.Remove(key);
+		ScheduleAttributeBatchUpdate();
+	}
+
+	/// <summary>
+	/// Planuje wysłanie batch'a atrybutów lobby po krótkim opóźnieniu
+	/// </summary>
+	private void ScheduleAttributeBatchUpdate()
+	{
+		// Jeśli timer już działa, zostaw go (zbieramy więcej zmian)
+		if (attributeBatchTimer != null && attributeBatchTimer.TimeLeft > 0)
+		{
+			return;
+		}
+
+		// Uruchom nowy timer
+		attributeBatchTimer = GetTree().CreateTimer(AttributeBatchDelay);
+		attributeBatchTimer.Timeout += FlushPendingLobbyAttributes;
+	}
+
+	/// <summary>
+	/// Wysyła wszystkie zebrane zmiany atrybutów lobby w jednym żądaniu
+	/// </summary>
+	private void FlushPendingLobbyAttributes()
+	{
+		// Anuluj zaplanowany timer jeśli istnieje
+		if (attributeBatchTimer != null)
+		{
+			attributeBatchTimer.Timeout -= FlushPendingLobbyAttributes;
+			attributeBatchTimer = null;
+		}
+
+		if (pendingLobbyAttributes.Count == 0 && attributesToRemove.Count == 0)
+		{
+			return;
+		}
+
+		if (string.IsNullOrEmpty(currentLobbyId) || localProductUserId == null || !localProductUserId.IsValid())
+		{
+			pendingLobbyAttributes.Clear();
+			attributesToRemove.Clear();
+			return;
+		}
+
+		if (!isLobbyOwner)
+		{
+			pendingLobbyAttributes.Clear();
+			attributesToRemove.Clear();
+			return;
+		}
 
 		var modifyOptions = new UpdateLobbyModificationOptions()
 		{
@@ -2215,33 +2295,57 @@ public partial class EOSManager : Node
 
 		if (result != Result.Success || lobbyModification == null)
 		{
-			GD.PrintErr($"❌ Failed to create lobby modification: {result}");
+			pendingLobbyAttributes.Clear();
+			attributesToRemove.Clear();
 			return;
 		}
 
-		// Dodaj lobby attribute
-		var attributeData = new AttributeData()
+		// Nowe/zmienione atrybuty
+		foreach (var kvp in pendingLobbyAttributes)
 		{
-			Key = key,
-			Value = new AttributeDataValue() { AsUtf8 = value }
-		};
+			var attributeData = new AttributeData()
+			{
+				Key = kvp.Key,
+				Value = new AttributeDataValue() { AsUtf8 = kvp.Value }
+			};
 
-		var addAttrOptions = new LobbyModificationAddAttributeOptions()
-		{
-			Attribute = attributeData,
-			Visibility = LobbyAttributeVisibility.Public
-		};
+			var addAttrOptions = new LobbyModificationAddAttributeOptions()
+			{
+				Attribute = attributeData,
+				Visibility = LobbyAttributeVisibility.Public
+			};
 
-		result = lobbyModification.AddAttribute(ref addAttrOptions);
+			result = lobbyModification.AddAttribute(ref addAttrOptions);
 
-		if (result != Result.Success)
-		{
-			GD.PrintErr($"❌ Failed to add lobby attribute '{key}': {result}");
-			lobbyModification.Release();
-			return;
+			if (result != Result.Success)
+			{
+				GD.PrintErr($"❌ Failed to add lobby attribute '{kvp.Key}': {result}");
+			}
 		}
 
-		// Wyślij modyfikację do EOS
+		// Atrybuty do usunięcia
+		foreach (var key in attributesToRemove)
+		{
+			var removeAttrOptions = new LobbyModificationRemoveAttributeOptions()
+			{
+				Key = key
+			};
+
+			result = lobbyModification.RemoveAttribute(ref removeAttrOptions);
+
+			if (result != Result.Success)
+			{
+				GD.PrintErr($"❌ Failed to remove lobby attribute '{key}': {result}");
+			}
+		}
+
+		// Wyczyść kolejki
+		var updatedKeys = new List<string>(pendingLobbyAttributes.Keys);
+		var removedKeys = new List<string>(attributesToRemove);
+		pendingLobbyAttributes.Clear();
+		attributesToRemove.Clear();
+
+		// Wyślij modyfikację
 		var updateOptions = new UpdateLobbyOptions()
 		{
 			LobbyModificationHandle = lobbyModification
@@ -2251,11 +2355,11 @@ public partial class EOSManager : Node
 		{
 			if (data.ResultCode == Result.Success)
 			{
-				GD.Print($"✅ Lobby attribute '{key}' set successfully: '{value}'");
+				GD.Print($"✅ Lobby batch update successful ({updatedKeys.Count} updates, {removedKeys.Count} removals)");
 			}
 			else
 			{
-				GD.PrintErr($"❌ Failed to update lobby attribute '{key}': {data.ResultCode}");
+				GD.PrintErr($"❌ Failed to update lobby attributes batch: {data.ResultCode}");
 			}
 
 			lobbyModification.Release();
@@ -2276,52 +2380,16 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		var modifyOptions = new UpdateLobbyModificationOptions()
+		if (!isLobbyOwner)
 		{
-			LobbyId = currentLobbyId,
-			LocalUserId = localProductUserId
-		};
-
-		Result result = lobbyInterface.UpdateLobbyModification(ref modifyOptions, out LobbyModification lobbyModification);
-
-		if (result != Result.Success || lobbyModification == null)
-		{
-			GD.PrintErr($"❌ Failed to create lobby modification (remove attr): {result}");
+			GD.PrintErr($"❌ Cannot remove lobby attribute '{key}': Not lobby owner!");
 			return;
 		}
 
-		var removeOptions = new LobbyModificationRemoveAttributeOptions()
-		{
-			Key = key
-		};
-
-		result = lobbyModification.RemoveAttribute(ref removeOptions);
-
-		if (result != Result.Success)
-		{
-			GD.PrintErr($"❌ Failed to remove lobby attribute '{key}': {result}");
-			lobbyModification.Release();
-			return;
-		}
-
-		var updateOptions = new UpdateLobbyOptions()
-		{
-			LobbyModificationHandle = lobbyModification
-		};
-
-		lobbyInterface.UpdateLobby(ref updateOptions, null, (ref UpdateLobbyCallbackInfo data) =>
-		{
-			if (data.ResultCode == Result.Success)
-			{
-				GD.Print($"🗑️ Lobby attribute '{key}' removed");
-			}
-			else
-			{
-				GD.PrintErr($"❌ Failed to finalize removal of lobby attribute '{key}': {data.ResultCode}");
-			}
-
-			lobbyModification.Release();
-		});
+		// Obługa kolejki
+		attributesToRemove.Add(key);
+		pendingLobbyAttributes.Remove(key);
+		ScheduleAttributeBatchUpdate();
 	}
 
 	/// <summary>
@@ -2506,8 +2574,12 @@ public partial class EOSManager : Node
 
 		GD.Print($"✅ Moved {movedCount} players to Universal team");
 
-		// Odśwież listę członków, żeby UI zaktualizowało zespoły
-		GetLobbyMembers();
+		// Wyślij wszystkie zmiany atrybutów
+		FlushPendingLobbyAttributes();
+		GetTree().CreateTimer(0.3).Timeout += () =>
+		{
+			GetLobbyMembers();
+		};
 	}
 
 	/// <summary>
@@ -2593,8 +2665,12 @@ public partial class EOSManager : Node
 		}
 		GD.Print($"✅ Restored {restoredCount} players from Universal team");
 
-		// Odśwież listę członków, żeby UI zaktualizowało zespoły
-		GetLobbyMembers();
+		// Wyślij wszystkie zmiany atrybutów
+		FlushPendingLobbyAttributes();
+		GetTree().CreateTimer(0.3).Timeout += () =>
+		{
+			GetLobbyMembers();
+		};
 	}
 
 	private Team GetTeamForUser(string userId)
