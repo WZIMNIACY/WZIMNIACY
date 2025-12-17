@@ -22,6 +22,10 @@ namespace Diagnostics
         {
             get { return MinVRAMMB; }
         }
+        public static double GetCurrentVRAMMB
+        {
+            get { return GetGPUInfo(); }
+        }
 
         public static string GetHardwareInfo()
         {
