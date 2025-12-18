@@ -960,10 +960,10 @@ public partial class LobbyMenu : Control
         var dialog = new AcceptDialog();
         dialog.Title = "Ostrzeżenie - Niewystarczający sprzęt";
 
-        string message = "Twój komputer nie spełnia minimalnych wymagań dla lokalnego LLM.\n\n";
+        string message = "Twój komputer nie spełnia zalecanych wymagań dla lokalnego LLM.\n\n";
         message += " Twój sprzęt:\n";
         message += currentHardwareInfo + "\n\n";
-        message += " Zalecane wymagania:\n";
+        message += "Zalecane wymagania:\n";
         message += $"• CPU: {HardwareResources.GetMinCPUCores} rdzeni\n";
         message += $"• RAM: {HardwareResources.GetMinMemoryMB / 1024} GB ({HardwareResources.GetMinMemoryMB} MB)\n";
         if (HardwareResources.GetCurrentVRAMMB > 0)
@@ -978,12 +978,22 @@ public partial class LobbyMenu : Control
         message += "• Spowolnienie systemu\n";
         message += "• Niską jakość odpowiedzi AI\n";
         message += "• Błędy lub zawieszenia gry\n\n";
-        message += " Zalecamy użycie trybu API dla lepszej wydajności.\n\n";
+        message += "Zalecane jest użycie trybu API dla lepszej wydajności.\n\n";
         message += "Czy mimo to chcesz kontynuować z lokalnym LLM?";
 
         dialog.DialogText = message;
         dialog.AddButton("Nie, powróć", true, "cancel");
         dialog.OkButtonText = "Kontynuuj mimo to";
+
+        // Czcionka
+        var font = GD.Load<FontFile>("res://assets/fonts/SpaceMono-Bold.ttf");
+        if (font != null)
+        {
+            var theme = new Theme();
+            theme.DefaultFont = font;
+            theme.DefaultFontSize = 14;
+            dialog.Theme = theme;
+        }
 
         dialog.Confirmed += () =>
         {

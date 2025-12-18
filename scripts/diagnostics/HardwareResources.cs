@@ -35,10 +35,10 @@ namespace Diagnostics
 
             if (gpuInfo != 0f)
             {
-                return $"• CPU: {cpuInfo} rdzeni, \n• RAM: {memoryInfo / 1024} GB ({memoryInfo} MB), \n• Pamięć VRAM: {gpuInfo / 1024} GB ({gpuInfo} MB)";
+                return $"• CPU: {cpuInfo} rdzeni\n• RAM: {memoryInfo / 1024} GB ({memoryInfo} MB)\n• Pamięć VRAM: {gpuInfo / 1024} GB ({gpuInfo} MB)";
             }
 
-            return $"• CPU: {cpuInfo} rdzeni, \n• RAM: {memoryInfo / 1024} GB ({memoryInfo} MB)";
+            return $"• CPU: {cpuInfo} rdzeni\n• RAM: {memoryInfo / 1024} GB ({memoryInfo} MB)";
         }
 
         public static bool IfAICapable()
@@ -47,10 +47,12 @@ namespace Diagnostics
             double totalMemoryMB = GetMemoryInfo();
             float vramMB = GetGPUInfo();
 
-            if (vramMB != 0f)
+            //Jeśli VRAM jest wystarczający, to pomiń RAM
+            if (vramMB >= MinVRAMMB)
             {
-                return cpuCores >= MinCPUCores && totalMemoryMB >= MinMemoryMB && vramMB >= MinVRAMMB;
+                return cpuCores >= MinCPUCores;
             }
+            //Jak nie ma informacji o VRAM to sprawdź CPU i RAM
             return cpuCores >= MinCPUCores && totalMemoryMB >= MinMemoryMB;
         }
 
