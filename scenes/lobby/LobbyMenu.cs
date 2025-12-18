@@ -730,6 +730,9 @@ public partial class LobbyMenu : Control
 
                 if (unmetConditions.Count > 0)
                 {
+                    string tooltipText = string.Join("\n", unmetConditions);
+                    lobbyStatusCounter.TooltipText = tooltipText;
+
                     int totalCount = unmetConditions.Count;
                     if (lobbyStatusCounter != null)
                     {
