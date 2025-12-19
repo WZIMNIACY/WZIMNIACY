@@ -1731,6 +1731,67 @@ public partial class EOSManager : Node
 		}
 	}
 
+	/// <summary>
+	/// Przekazuje rolę hosta innemu graczowi (tylko host może to zrobić!)
+	/// </summary>
+	public void TransferLobbyOwnership(string targetUserId)
+	{
+		if (string.IsNullOrEmpty(currentLobbyId))
+		{
+			GD.PrintErr("❌ Cannot transfer ownership: Not in any lobby!");
+			return;
+		}
+
+		if (!isLobbyOwner)
+		{
+			GD.PrintErr("❌ Cannot transfer ownership: You are not the host!");
+			return;
+		}
+
+		if (targetUserId == localProductUserId.ToString())
+		{
+			GD.PrintErr("❌ Cannot transfer ownership to yourself!");
+			return;
+		}
+
+		GD.Print($"👑 Transferring lobby ownership to: {targetUserId}");
+
+		var promoteMemberOptions = new PromoteMemberOptions()
+		{
+			LobbyId = currentLobbyId,
+			LocalUserId = localProductUserId,
+			TargetUserId = ProductUserId.FromString(targetUserId)
+		};
+
+		lobbyInterface.PromoteMember(ref promoteMemberOptions, null, OnPromoteMemberComplete);
+	}
+
+	private void OnPromoteMemberComplete(ref PromoteMemberCallbackInfo data)
+	{
+		if (data.ResultCode == Result.Success)
+		{
+			GD.Print($"✅ Successfully transferred ownership in lobby: {data.LobbyId}");
+			GD.Print($"👑 You are no longer the host!");
+
+			// Zaktualizuj lokalny stan - już nie jesteśmy hostem
+			isLobbyOwner = false;
+
+			// Odśwież cache i listę członków po transferze
+			GetTree().CreateTimer(0.3).Timeout += () =>
+			{
+				CacheCurrentLobbyDetailsHandle("after_promote");
+				GetTree().CreateTimer(0.1).Timeout += () =>
+				{
+					GetLobbyMembers();
+				};
+			};
+		}
+		else
+		{
+			GD.PrintErr($"❌ Failed to transfer ownership: {data.ResultCode}");
+		}
+	}
+
 	// ============================================
 	// NASŁUCHIWANIE NA ZMIANY W LOBBY
 	// ============================================
@@ -1804,6 +1865,25 @@ public partial class EOSManager : Node
 			return; // Ignoruj wszystkie dalsze eventy
 		}
 
+		// Sprawdź czy ktoś został awansowany na hosta
+		if (data.CurrentStatus == LobbyMemberStatus.Promoted)
+		{
+			string promotedUserId = data.TargetUserId.ToString();
+			GD.Print($"  👑 Member PROMOTED to host: {GetShortUserId(promotedUserId)}");
+
+			// Jeśli to MY zostaliśmy awansowani
+			if (promotedUserId == localProductUserId.ToString())
+			{
+				GD.Print("  👑 ✅ YOU have been promoted to lobby owner!");
+				isLobbyOwner = true;
+			}
+			else
+			{
+				GD.Print($"  👑 {GetShortUserId(promotedUserId)} is now the lobby owner");
+				isLobbyOwner = false;
+			}
+		}
+
 		// Jeśli to nasze lobby (i nie zostaliśmy wyrzuceni)
 		if (!string.IsNullOrEmpty(currentLobbyId) && currentLobbyId == data.LobbyId.ToString())
 		{
@@ -1818,7 +1898,7 @@ public partial class EOSManager : Node
 			// Odśwież LobbyDetails handle (tylko jeśli nie zostaliśmy wyrzuceni)
 			CacheCurrentLobbyDetailsHandle("member_status");
 
-			// JOINED, LEFT lub KICKED - odśwież całą listę członków
+			// JOINED, LEFT, KICKED lub PROMOTED - odśwież całą listę członków
 			if (data.CurrentStatus == LobbyMemberStatus.Joined)
 			{
 				GD.Print($"  ➕ Member JOINED: {GetShortUserId(userId)}");
@@ -1830,9 +1910,9 @@ public partial class EOSManager : Node
 					EmitSignal(SignalName.CurrentLobbyInfoUpdated, currentLobbyId, currentLobbyMembers.Count, 10, isLobbyOwner);
 				};
 			}
-			else if (data.CurrentStatus == LobbyMemberStatus.Left || data.CurrentStatus == LobbyMemberStatus.Kicked)
+			else if (data.CurrentStatus == LobbyMemberStatus.Left || data.CurrentStatus == LobbyMemberStatus.Kicked || data.CurrentStatus == LobbyMemberStatus.Promoted)
 			{
-				GD.Print($"  ➖ Member LEFT/KICKED: {GetShortUserId(userId)}");
+				GD.Print($"  ➖ Member LEFT/KICKED/PROMOTED: {GetShortUserId(userId)}");
 
 				// Małe opóźnienie na pełną synchronizację
 				GetTree().CreateTimer(0.3).Timeout += () =>
