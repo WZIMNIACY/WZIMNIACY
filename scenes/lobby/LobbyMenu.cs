@@ -1018,22 +1018,6 @@ public partial class LobbyMenu : Control
             }
         }
 
-        // Sprawdź czy nie jest typowym placeholder'em
-        string lowerKey = apiKey.ToLower();
-        if (lowerKey.Contains("your_api_key") ||
-            lowerKey.Contains("insert") ||
-            lowerKey.Contains("paste") ||
-            lowerKey.Contains("example") ||
-            lowerKey == "xxxx" ||
-            lowerKey == "****")
-        {
-            GD.Print("⚠️ API Key is a placeholder");
-            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
-            LobbyStatus.isAPIKeySet = false;
-            UpdateHostReadyStatusIfOwner();
-            return;
-        }
-
         try
         {
             LLM apiLLM = new LLM(apiKey);
@@ -1059,7 +1043,45 @@ public partial class LobbyMenu : Control
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"❌ API Key validation failed: {ex.Message}");
+            string errorMessage = ex.Message.ToLower();
+
+            if (errorMessage.Contains("401") || errorMessage.Contains("unauthorized") || errorMessage.Contains("authentication"))
+            {
+                GD.PrintErr($"❌ API Key validation failed: Invalid API key");
+            }
+            else if (errorMessage.Contains("429") || errorMessage.Contains("rate_limit") || errorMessage.Contains("too many requests"))
+            {
+                GD.PrintErr($"❌ API Key validation failed: Rate limit exceeded");
+            }
+            else if (errorMessage.Contains("quota") || errorMessage.Contains("insufficient_quota") || errorMessage.Contains("limit"))
+            {
+                GD.PrintErr($"❌ API Key validation failed: Quota exceeded");
+            }
+            else if (errorMessage.Contains("max_tokens") || errorMessage.Contains("token") && errorMessage.Contains("limit"))
+            {
+                GD.PrintErr($"❌ API Key validation failed: Token limit in request");
+            }
+            else if (errorMessage.Contains("400") || errorMessage.Contains("bad request") || errorMessage.Contains("invalid_request"))
+            {
+                GD.PrintErr($"❌ API Key validation failed: Bad request");
+            }
+            else if (errorMessage.Contains("500") || errorMessage.Contains("503") || errorMessage.Contains("internal") || errorMessage.Contains("server"))
+            {
+                GD.PrintErr($"❌ API Key validation failed: Server error");
+            }
+            else if (errorMessage.Contains("timeout") || errorMessage.Contains("timed out"))
+            {
+                GD.PrintErr($"❌ API Key validation failed: Timeout");
+            }
+            else if (errorMessage.Contains("network") || errorMessage.Contains("connection"))
+            {
+                GD.PrintErr($"❌ API Key validation failed: Network error");
+            }
+            else
+            {
+                GD.PrintErr($"❌ API Key validation failed: {ex.Message}");
+            }
+
             SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
             LobbyStatus.isAPIKeySet = false;
             UpdateHostReadyStatusIfOwner();
