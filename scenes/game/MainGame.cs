@@ -6,6 +6,7 @@ public partial class MainGame : Control
 {
     [Signal] public delegate void GameReadyEventHandler();
 
+    [Export] public EndGameScreen endGameScreen;
     [Export] Panel menuPanel;
     [Export] ScoreContainer scoreContainerBlue;
     [Export] ScoreContainer scoreContainerRed;
@@ -28,6 +29,15 @@ public partial class MainGame : Control
     {
         get => pointsRed;
     }
+
+    private int blueNeutralFound = 0;
+    private int redNeutralFound = 0;
+    private int blueOpponentFound = 0;
+    private int redOpponentFound = 0;
+
+    private int currentStreak = 0; 
+    private int blueMaxStreak = 0;
+    private int redMaxStreak = 0;
 
     public enum Team
     {
@@ -102,6 +112,8 @@ public partial class MainGame : Control
 
     private void StartCaptainPhase()
     {
+        currentStreak = 0;
+
         GD.Print($"Początek tury {(currentTurn == Team.Blue ? "BLUE" : "RED")}");
         if(gameInputPanel != null)
         {
@@ -121,10 +133,25 @@ public partial class MainGame : Control
     public void OnSkipTurnPressed()
     {
         GD.Print("Koniec tury");
+
+        CheckMaxStreak();
+
         if(gameRightPanel != null)
             gameRightPanel.CommitToHistory();
         TurnChange();
         StartCaptainPhase();
+    }
+
+    private void CheckMaxStreak()
+    {
+        if (currentTurn == Team.Blue)
+        {
+            if (currentStreak > blueMaxStreak) blueMaxStreak = currentStreak;
+        }
+        else
+        {
+            if (currentStreak > redMaxStreak) redMaxStreak = currentStreak;
+        }
     }
 
     // Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -199,6 +226,16 @@ public partial class MainGame : Control
     {
         GD.Print("Point removed from team blue...");
         pointsBlue--;
+
+        if (currentTurn == Team.Blue) 
+        {
+            currentStreak++;
+        } 
+        else 
+        {
+            redOpponentFound++; 
+        }
+
         UpdatePointsDisplay();
         if (pointsBlue == 0)
             EndGame(Team.Blue);
@@ -208,6 +245,16 @@ public partial class MainGame : Control
     {
         GD.Print("Point removed from team red...");
         pointsRed--;
+
+        if (currentTurn == Team.Red) 
+        {
+            currentStreak++;
+        }
+        else
+        {
+            blueOpponentFound++;
+        }
+
         UpdatePointsDisplay();
         if (pointsRed == 0)
             EndGame(Team.Red);
@@ -245,5 +292,31 @@ public partial class MainGame : Control
 
     public void EndGame(Team winner)
     {
+        GD.Print($"Koniec gry! Wygrywa: {winner}");
+        CheckMaxStreak();
+
+        int maxBlue = (startingTeam == Team.Blue) ? 9 : 8;
+        int maxRed = (startingTeam == Team.Red) ? 9 : 8;
+
+        int foundBlue = maxBlue - pointsBlue;
+        int foundRed = maxRed - pointsRed;
+
+        TeamGameStats blueStats = new TeamGameStats
+        {
+            Found = foundBlue,
+            Neutral = blueNeutralFound,
+            Opponent = blueOpponentFound,
+            Streak = blueMaxStreak
+        };
+
+        TeamGameStats redStats = new TeamGameStats
+        {
+            Found = foundRed,
+            Neutral = redNeutralFound,
+            Opponent = redOpponentFound,
+            Streak = redMaxStreak
+        };
+
+        endGameScreen.ShowGameOver(blueStats, redStats);
     }
 }
