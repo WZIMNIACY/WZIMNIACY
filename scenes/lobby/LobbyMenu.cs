@@ -967,15 +967,7 @@ public partial class LobbyMenu : Control
         message += "Zalecane wymagania:\n";
         message += $"• CPU: {HardwareResources.GetMinCPUCores} rdzeni\n";
         message += $"• RAM: {HardwareResources.GetMinMemoryMB / 1024} GB ({HardwareResources.GetMinMemoryMB} MB)\n";
-        if (HardwareResources.GetCurrentVRAMMB > 0)
-        {
-            message += $"• VRAM: {HardwareResources.GetMinVRAMMB / 1024} GB ({HardwareResources.GetMinVRAMMB} MB)\n\n";
-        }
-        else
-        {
-            message += "\n";
-        }
-        message += " Uruchomienie lokalnego LLM może spowodować:\n";
+        message += "\nUruchomienie lokalnego LLM może spowodować:\n";
         message += "• Spowolnienie systemu\n";
         message += "• Niską jakość odpowiedzi AI\n";
         message += "• Błędy lub zawieszenia gry\n\n";
