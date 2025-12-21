@@ -927,21 +927,22 @@ public partial class LobbyMenu : Control
         string selectedAITypeStr = aiTypeList.GetItemText((int)index);
         EOSManager.AIType selectedAIType = EOSManager.ParseEnumFromDescription<EOSManager.AIType>(selectedAITypeStr, EOSManager.AIType.API);
 
-        //sprawdzenie wymagań sprzętowych jeśli wybrano AI lokalne
-        bool hardwareOk = CheckHardwareCapabilities();
-        string hardwareInfo = HardwareResources.GetHardwareInfo();
-        GD.Print($"💻 Hardware Info: {hardwareInfo}");
-        if (selectedAIType != EOSManager.AIType.API && !hardwareOk)
+        if (selectedAIType != EOSManager.AIType.API)
         {
-            // Pokaż okno ostrzeżenia z możliwością potwierdzenia
-            ShowHardwareWarningDialog(selectedAIType, hardwareInfo);
+            //sprawdzenie wymagań sprzętowych jeśli wybrano AI lokalne
+            bool hardwareOk = CheckHardwareCapabilities();
+            string hardwareInfo = HardwareResources.GetHardwareInfo();
+            if (!hardwareOk)
+            {
+                // Pokaż okno ostrzeżenia z możliwością potwierdzenia
+                ShowHardwareWarningDialog(selectedAIType, hardwareInfo);
 
-            CallDeferred(nameof(OnAITypeUpdated), EOSManager.GetEnumDescription(eosManager.currentAIType));
-            return;
+                CallDeferred(nameof(OnAITypeUpdated), EOSManager.GetEnumDescription(eosManager.currentAIType));
+                return;
+
+            }
         }
         GD.Print("✅ Hardware meets AI requirements.");
-
-        GD.Print($"👆 User selected AI type: {selectedAITypeStr} -> {selectedAIType}");
 
         //zablokuj buttonList by uniknąć wielokrotnych zapytań
         BlockButtonToHandleTooManyRequests(aiTypeList);
