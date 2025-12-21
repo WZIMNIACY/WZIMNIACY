@@ -1,5 +1,7 @@
 [gd_scene load_steps=28 format=3 uid="uid://cqr5yj8x3kp2m"]
 
+[ext_resource type="Script" uid="uid://d3qcvlrxpnrc2" path="res://scripts/ui/EscapeBackHandler.cs" id="1_escape"]
+[ext_resource type="Script" uid="uid://e1gwnvhxoqi8a" path="res://scripts/ui/LobbyLeaveConfirmation.cs" id="1_leave_confirm"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="2_31whf"]
 [ext_resource type="StyleBox" uid="uid://dgkp41umsnv7g" path="res://assets/inputs/InputPlaceHolder.tres" id="2_qh262"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="3_1cd5g"]
@@ -147,6 +149,16 @@ aiTypeSelectedLabel = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyCo
 aiAPIKeyInput = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbySettingsContainer/LobbyUsedAIType/AIAPIEditLine")
 lobbyStatusLabel = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbySettingsContainer/LobbyStatus/Status")
 lobbyStatusCounter = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbySettingsContainer/LobbyStatus/StatusLabel")
+
+[node name="LobbyLeaveConfirmation" type="Node" parent="."]
+script = ExtResource("1_leave_confirm")
+ReturnScenePath = "res://scenes/menu/main.tscn"
+
+[node name="EscapeBackHandler" type="Node" parent="."]
+script = ExtResource("1_escape")
+PreviousScenePath = "res://scenes/menu/main.tscn"
+LeaveLobbyBeforeExit = true
+ShowConfirmDialog = true
 
 [node name="Panel" type="ColorRect" parent="."]
 layout_mode = 1
