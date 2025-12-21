@@ -115,7 +115,7 @@ corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 corner_detail = 5
 
-[node name="Lobby" type="Control" node_paths=PackedStringArray("backButton", "leaveLobbyButton", "blueTeamList", "redTeamList", "neutralTeamList", "universalTeamList", "teamsContainer", "universalTeamContainer", "neutralTeamContainer", "blueTeamJoinButton", "redTeamJoinButton", "blueTeamCountLabel", "redTeamCountLabel", "lobbyIdInput", "copyIdButton", "generateNewIdButton", "startGameButton", "gameModeList", "aiTypeList", "gameModeSelectedLabel", "aiTypeSelectedLabel", "aiAPIKeyInput", "lobbyStatusLabel", "lobbyStatusCounter")]
+[node name="Lobby" type="Control" node_paths=PackedStringArray("backButton", "leaveLobbyButton", "blueTeamList", "redTeamList", "neutralTeamList", "universalTeamList", "teamsContainer", "universalTeamContainer", "neutralTeamContainer", "blueTeamJoinButton", "redTeamJoinButton", "blueTeamCountLabel", "redTeamCountLabel", "universalTeamCountLabel", "lobbyIdInput", "copyIdButton", "generateNewIdButton", "startGameButton", "gameModeList", "aiTypeList", "gameModeSelectedLabel", "aiTypeSelectedLabel", "aiAPIKeyInput", "lobbyStatusLabel", "lobbyStatusCounter")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -136,6 +136,7 @@ blueTeamJoinButton = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyCon
 redTeamJoinButton = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer/RedTeamJoinButton")
 blueTeamCountLabel = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/BlueTeamPanel/BlueTeamContainer/BlueTeamHeaderContainer/BlueTeamCount")
 redTeamCountLabel = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyTeamsContainer/RedTeamPanel/RedTeamContainer/RedTeamHeaderContainer/RedTeamCount")
+universalTeamCountLabel = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/UniversalTeamPanel/LobbyUniversalTeam/UniversalTeamHeaderContainer/UniversalTeamCount")
 lobbyIdInput = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/InputHolders/LobbyIDInput")
 copyIdButton = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/ActionButtons/HBoxContainer/CopyIDButton")
 generateNewIdButton = NodePath("Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/LobbyIDContainer/ActionButtons/HBoxContainer/GenerateNewIDButton")
@@ -374,12 +375,23 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_3pywa")
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 
-[node name="LobbyUniversalTeamLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/UniversalTeamPanel/LobbyUniversalTeam"]
+[node name="UniversalTeamHeaderContainer" type="HBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/UniversalTeamPanel/LobbyUniversalTeam"]
+layout_mode = 2
+alignment = 1
+
+[node name="LobbyUniversalTeamLabel" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/UniversalTeamPanel/LobbyUniversalTeam/UniversalTeamHeaderContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_1cd5g")
 theme_override_styles/normal = SubResource("StyleBoxEmpty_phpfy")
 text = "Drużyna"
 horizontal_alignment = 1
+
+[node name="UniversalTeamCount" type="Label" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/UniversalTeamPanel/LobbyUniversalTeam/UniversalTeamHeaderContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_1cd5g")
+text = "0/5"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="LobbyUniversalTeamContent" type="HBoxContainer" parent="Panel/CenterContainer/LobbyMainContainer/LobbyContentContainer/UniversalTeamPanel/LobbyUniversalTeam"]
 custom_minimum_size = Vector2(0, 150)

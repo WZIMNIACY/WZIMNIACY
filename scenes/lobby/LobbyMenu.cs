@@ -18,6 +18,7 @@ public partial class LobbyMenu : Control
     [Export] private Button redTeamJoinButton;
     [Export] private Label blueTeamCountLabel;
     [Export] private Label redTeamCountLabel;
+    [Export] private Label universalTeamCountLabel;
     [Export] private LineEdit lobbyIdInput;
     [Export] private Button copyIdButton;
     [Export] private Button generateNewIdButton;
@@ -326,6 +327,10 @@ public partial class LobbyMenu : Control
         {
             redTeamCountLabel.Text = $"{redTeamList.ItemCount}/{MaxPlayersPerTeam}";
         }
+        if (universalTeamCountLabel != null)
+        {
+            universalTeamCountLabel.Text = $"{universalTeamList.ItemCount}/{MaxPlayersPerTeam}";
+        }
 
         // Zaktualizuj widoczność przycisków dla hosta/gracza
         UpdateUIVisibility();
@@ -358,6 +363,34 @@ public partial class LobbyMenu : Control
         if (gameModeList != null)
         {
             gameModeList.Visible = isHost;
+
+            // Wyłącz opcję "AI vs Human" jeśli jest więcej niż 5 graczy w trybie AI Master
+            if (isHost && eosManager != null && eosManager.currentGameMode == EOSManager.GameMode.AIMaster)
+            {
+                int totalPlayers = 0;
+                if (blueTeamList != null) totalPlayers += blueTeamList.ItemCount;
+                if (redTeamList != null) totalPlayers += redTeamList.ItemCount;
+                if (neutralTeamList != null) totalPlayers += neutralTeamList.ItemCount;
+
+                // Znajdź indeks "AI vs Human" i wyłącz go jeśli jest więcej niż 5 graczy
+                for (int i = 0; i < gameModeList.ItemCount; i++)
+                {
+                    string itemText = gameModeList.GetItemText(i);
+                    if (itemText == EOSManager.GetEnumDescription(EOSManager.GameMode.AIvsHuman))
+                    {
+                        gameModeList.SetItemDisabled(i, totalPlayers > 5);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // W trybie AI vs Human odblokuj wszystkie opcje
+                for (int i = 0; i < gameModeList.ItemCount; i++)
+                {
+                    gameModeList.SetItemDisabled(i, false);
+                }
+            }
         }
         if (aiTypeList != null)
         {
@@ -904,6 +937,34 @@ public partial class LobbyMenu : Control
         EOSManager.GameMode selectedMode = EOSManager.ParseEnumFromDescription<EOSManager.GameMode>(selectedModeStr, EOSManager.GameMode.AIMaster);
 
         GD.Print($"👆 User selected game mode: {selectedModeStr} -> {selectedMode}");
+
+        // Sprawdź czy próbujemy zmienić na AI vs Human
+        if (selectedMode == EOSManager.GameMode.AIvsHuman)
+        {
+            // Policz wszystkich graczy (Blue + Red + Neutral)
+            int totalPlayers = 0;
+            if (blueTeamList != null) totalPlayers += blueTeamList.ItemCount;
+            if (redTeamList != null) totalPlayers += redTeamList.ItemCount;
+            if (neutralTeamList != null) totalPlayers += neutralTeamList.ItemCount;
+
+            // Jeśli jest więcej niż 5 graczy, nie pozwól na zmianę
+            if (totalPlayers > 5)
+            {
+                GD.PrintErr($"❌ Cannot switch to AI vs Human mode: Too many players ({totalPlayers}/5)");
+
+                // Przywróć poprzednią wartość w dropdown (AI Master)
+                for (int i = 0; i < gameModeList.ItemCount; i++)
+                {
+                    if (gameModeList.GetItemText(i) == EOSManager.GetEnumDescription(EOSManager.GameMode.AIMaster))
+                    {
+                        gameModeList.Selected = i;
+                        break;
+                    }
+                }
+
+                return;
+            }
+        }
 
         //zablokuj buttonList by uniknąć wielokrotnych zapytań
         BlockButtonToHandleTooManyRequests(gameModeList);
