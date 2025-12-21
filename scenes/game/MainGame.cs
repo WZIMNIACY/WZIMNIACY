@@ -97,8 +97,6 @@ public partial class MainGame : Control
         {
             GD.PrintErr("Error");
         }
-        
-
         EmitSignal(SignalName.GameReady);
     }
 
