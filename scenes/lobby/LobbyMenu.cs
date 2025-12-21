@@ -522,7 +522,7 @@ public partial class LobbyMenu : Control
     /// <summary>
     /// Callback wywoływany gdy AIType zostanie zaktualizowany w EOSManager
     /// </summary>
-    private void OnAITypeUpdated(string aiType)
+    private async void OnAITypeUpdated(string aiType)
     {
         GD.Print($"🤖 [SIGNAL] AIType updated: '{aiType}'");
 
@@ -567,14 +567,13 @@ public partial class LobbyMenu : Control
         //Sprawdź czy API key jest potrzebny i czy jest wypełniony
         if (aiTypeEnum == EOSManager.AIType.API)
         {
-            // Automatyczna walidacja jeśli pole jest wypełnione
-            if (aiAPIKeyInput != null && !string.IsNullOrWhiteSpace(aiAPIKeyInput.Text))
+            string apiKey = aiAPIKeyInput.Text;
+            if (apiKey != "")
             {
-                ValidateAPIKeyAsync(aiAPIKeyInput.Text);
+                ProceedAPIKey(apiKey);
             }
             else
             {
-                // Pole puste - wymagany klucz
                 LobbyStatus.isAPIKeySet = false;
             }
         }
@@ -836,16 +835,17 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Waliduje czy klucz API jest poprawnie sformatowany i działa
+    /// Waliduje czy klucz API jest poprawnie sformatowany
     /// </summary>
-    private async void ValidateAPIKeyAsync(string apiKey)
+    private bool ValidateAPIKey(string apiKey)
     {
+        // Sprawdź czy klucz nie jest null lub pusty
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             SetAPIKeyInputBorder(new Color(0.5f, 0.5f, 0.5f)); // Szary
             LobbyStatus.isAPIKeySet = false;
             UpdateHostReadyStatusIfOwner();
-            return;
+            return false;
         }
 
         // Minimalna długość klucza API
@@ -856,7 +856,7 @@ public partial class LobbyMenu : Control
             SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
             LobbyStatus.isAPIKeySet = false;
             UpdateHostReadyStatusIfOwner();
-            return;
+            return false;
         }
 
         // Sprawdź dozwolone znaki
@@ -873,15 +873,17 @@ public partial class LobbyMenu : Control
             if (!isValidChar)
             {
                 GD.Print($"⚠️ API Key contains invalid character: {c}");
-                SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
-                LobbyStatus.isAPIKeySet = false;
-                UpdateHostReadyStatusIfOwner();
-                return;
+                return false;
             }
         }
+        return true;
+    }
 
+    private async void ProceedAPIKey(string apiKey)
+    {
         try
         {
+            GD.Print($"Proceeding API Key.");
             LLM apiLLM = new LLM(apiKey);
 
             // Dane testowe - minimalny request
@@ -948,6 +950,7 @@ public partial class LobbyMenu : Control
             LobbyStatus.isAPIKeySet = false;
             UpdateHostReadyStatusIfOwner();
         }
+
     }
 
     /// <summary>
@@ -1010,7 +1013,13 @@ public partial class LobbyMenu : Control
     /// </summary>
     private void OnAPIKeySubmitted(string newText)
     {
-        ValidateAPIKeyAsync(newText);
+        bool isValid = ValidateAPIKey(newText);
+        if (!isValid)
+        {
+            GD.Print($"⚠️ Invalid API Key. Aborting submission.");
+            return;
+        }
+        ProceedAPIKey(newText);
     }
 
     /// <summary>
