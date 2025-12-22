@@ -657,7 +657,7 @@ public partial class LobbyMenu : Control
             string apiKey = aiAPIKeyInput.Text;
             if (apiKey != "")
             {
-                ProceedAPIKey(apiKey);
+                OnAPIKeySubmitted(apiKey);
             }
             else
             {
