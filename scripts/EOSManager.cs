@@ -2792,7 +2792,7 @@ public partial class EOSManager : Node
 		};
 	}
 
-	private Team GetTeamForUser(string userId)
+	public Team GetTeamForUser(string userId)
 	{
 		foreach (var member in currentLobbyMembers)
 		{

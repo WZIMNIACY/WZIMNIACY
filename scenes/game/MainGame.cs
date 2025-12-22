@@ -17,6 +17,7 @@ public partial class MainGame : Control
     [Export] Control settingsScene;
     [Export] Control helpScene;
     private EOSManager eosManager;
+    private Team playerTeam;
     public const bool IsHost = true; // temp value
     private int pointsBlue;
     public int PointsBlue
@@ -97,6 +98,20 @@ public partial class MainGame : Control
         {
             GD.PrintErr("Error");
         }
+
+        string userID = eosManager.localProductUserIdString;
+        EOSManager.Team team = eosManager.GetTeamForUser(userID);
+        playerTeam = (team == EOSManager.Team.Blue) ? Team.Blue : Team.Red;
+        if(playerTeam == startingTeam)
+        {
+            gameRightPanel.EnableSkipButton();
+        }
+        else
+        {
+            gameRightPanel.DisableSkipButton();
+        }
+        
+
         EmitSignal(SignalName.GameReady);
     }
 
@@ -227,6 +242,10 @@ public partial class MainGame : Control
     {
         GD.Print("Turn blue...");
         currentTurn = Team.Blue;
+        if(playerTeam == currentTurn)
+            gameRightPanel.EnableSkipButton();    
+        else
+            gameRightPanel.DisableSkipButton();
         scoreContainerBlue.SetDiodeOn();
         scoreContainerRed.SetDiodeOff();
         teamListBlue.Modulate = new Color(2.8f, 2.8f, 2.8f, 1f);
@@ -237,6 +256,10 @@ public partial class MainGame : Control
     {
         GD.Print("Turn red...");
         currentTurn = Team.Red;
+        if(playerTeam == currentTurn)
+            gameRightPanel.EnableSkipButton();    
+        else
+            gameRightPanel.DisableSkipButton();
         scoreContainerBlue.SetDiodeOff();
         scoreContainerRed.SetDiodeOn();
         teamListBlue.Modulate = new Color(1f, 1f, 1f, 1f);
