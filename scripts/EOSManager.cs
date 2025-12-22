@@ -50,6 +50,9 @@ public partial class EOSManager : Node
 
 	[Signal]
 	public delegate void LobbyReadyStatusUpdatedEventHandler(bool isReady);
+	
+	[Signal]
+	public delegate void GameStartedFromLobbyEventHandler();
 
 	// Stałe konfiguracyjne
 	private const int MinNicknameLength = 2;
@@ -2073,6 +2076,15 @@ public partial class EOSManager : Node
 					GD.Print($"✅ ReadyToStart status received: {isReady}");
 					EmitSignal(SignalName.LobbyReadyStatusUpdated, isReady);
 				}
+				else if (keyStr != null && keyStr.Equals("GameStatus", StringComparison.OrdinalIgnoreCase))
+				{
+					// Jeśli status zmienił się na "Starting", emitujemy sygnał
+					if (valueStr == "Starting")
+					{
+						GD.Print("🚀 GameStatus changed to STARTING! Emitting signal...");
+						EmitSignal("GameStartedFromLobby");
+					}
+				}
 				else if (keyStr != null && keyStr.StartsWith(ForceTeamAttributePrefix, StringComparison.OrdinalIgnoreCase))
 				{
 					string targetUserId = keyStr.Substring(ForceTeamAttributePrefix.Length);
@@ -2331,7 +2343,7 @@ public partial class EOSManager : Node
 	/// </summary>
 	/// <param name="key">Klucz atrybutu</param>
 	/// <param name="value">Wartość atrybutu</param>
-	private void SetLobbyAttribute(string key, string value)
+	public void SetLobbyAttribute(string key, string value)
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
@@ -3155,9 +3167,24 @@ public partial class EOSManager : Node
 			GD.Print($"❌ Failed to copy LobbyDetails handle (reason={reason}): {r}");
 		}
 	}
+	public string GetCurrentLobbyOwnerId()
+	{
+		if (string.IsNullOrEmpty(currentLobbyId)) return "";
+		
+		// Sprawdź czy mamy szczegóły lobby w cache
+		if (foundLobbyDetails.ContainsKey(currentLobbyId) && foundLobbyDetails[currentLobbyId] != null)
+		{
+			var lobbyDetails = foundLobbyDetails[currentLobbyId];
+			var infoOptions = new Epic.OnlineServices.Lobby.LobbyDetailsCopyInfoOptions();
+			
+			lobbyDetails.CopyInfo(ref infoOptions, out Epic.OnlineServices.Lobby.LobbyDetailsInfo? info);
+
+			if (info.HasValue && info.Value.LobbyOwnerUserId != null)
+			{
+				return info.Value.LobbyOwnerUserId.ToString();
+			}
+		}
+		return "";
+	}
+	
 }
-
-
-
-
-
