@@ -112,13 +112,16 @@ public partial class CustomTooltip : PanelContainer
         var tooltipSize = Size;
         var screenSize = GetViewportRect().Size;
 
+        Vector2 newPosition = Position;
+
         if (Position.X + tooltipSize.X > screenSize.X)
         {
-            Position = new Vector2(screenSize.X - tooltipSize.X - 10, Position.Y);
+            newPosition.X = screenSize.X - tooltipSize.X - 10;
         }
         if (Position.Y + tooltipSize.Y > screenSize.Y)
         {
-            Position = new Vector2(Position.X, mousePos.Y - tooltipSize.Y - 10);
+            newPosition.Y = mousePos.Y - tooltipSize.Y - 10;
         }
+        Position = newPosition;
     }
 }
