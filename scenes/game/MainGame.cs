@@ -243,6 +243,35 @@ public partial class MainGame : Control
         teamListRed.Modulate = new Color(2.8f, 2.8f, 2.8f, 1f);
     }
 
+    public void CardConfirm(AgentCard card)
+    {
+        switch (card.Type)
+        {
+            case CardManager.CardType.Blue:
+                RemovePointBlue();
+                if (currentTurn == Team.Red)
+                    TurnChange();
+                break;
+
+            case CardManager.CardType.Red:
+                RemovePointRed();
+                if (currentTurn == Team.Blue)
+                    TurnChange();
+                break;
+
+            case CardManager.CardType.Common:
+                TurnChange();
+                break;
+
+            case CardManager.CardType.Assassin:
+                if (currentTurn == Team.Blue)
+                    EndGame(Team.Red);
+                else
+                    EndGame(Team.Blue);
+                break;
+        }
+    }
+
     public void EndGame(Team winner)
     {
     }

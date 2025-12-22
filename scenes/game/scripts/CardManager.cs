@@ -34,7 +34,7 @@ public partial class CardManager : GridContainer
 		foreach (var card in GetTree().GetNodesInGroup("cards"))
 		{
 			card.Connect("CardConfirmed", new Callable(this, nameof(OnCardConfirmed)));
-		}
+        }
 	}
 
 	private void OnGameReady()
@@ -96,7 +96,8 @@ public partial class CardManager : GridContainer
 	{
 		GD.Print("Karta kliknięta: " + card.Name);
 		HideAllCards();
-	}
+        mainGame.CardConfirm(card);
+    }
 
 	private void HideAllCards()
 	{
