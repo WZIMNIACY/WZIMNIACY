@@ -31,6 +31,7 @@ public partial class LobbyMenu : Control
     [Export] private Label lobbyStatusLabel;
     [Export] private Label lobbyStatusCounter;
 
+    private LobbyLeaveConfirmation leaveConfirmation;
     private string currentLobbyCode = "";
     private const int LobbyCodeLength = 6;
     private const int LobbyMaxPlayers = 10;
@@ -63,6 +64,9 @@ public partial class LobbyMenu : Control
 
         // Pobierz EOSManager z autoload
         eosManager = GetNode<EOSManager>("/root/EOSManager");
+
+        // Inicjalizuj LobbyLeaveConfirmation
+        leaveConfirmation = GetNode<LobbyLeaveConfirmation>("LobbyLeaveConfirmation");
 
         // Podłącz sygnały przycisków
         if (backButton != null)
@@ -1039,30 +1043,18 @@ public partial class LobbyMenu : Control
 
     private void OnBackButtonPressed()
     {
-        GD.Print("Returning to main menu...");
-
-        // Opuść lobby jeśli jesteś w jakimś
-        if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
+        if (leaveConfirmation != null)
         {
-            GD.Print("🚪 Leaving lobby before returning to menu...");
-            eosManager.LeaveLobby();
+            leaveConfirmation.ShowConfirmation();
         }
-
-        GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
     }
 
     private void OnLeaveLobbyPressed()
     {
-        GD.Print("Returning to main menu...");
-
-        // Opuść lobby jeśli jesteś w jakimś
-        if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
+        if (leaveConfirmation != null)
         {
-            GD.Print("🚪 Leaving lobby before returning to menu...");
-            eosManager.LeaveLobby();
+            leaveConfirmation.ShowConfirmation();
         }
-
-        GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
     }
 
     private async void CreateLobbyWithRetry(int attempt = 0)
