@@ -134,7 +134,7 @@ public partial class MainGame : Control
     {
         GD.Print("Koniec tury");
 
-        CheckMaxStreak();
+        UpdateMaxStreak();
 
         if(gameRightPanel != null)
             gameRightPanel.CommitToHistory();
@@ -142,7 +142,7 @@ public partial class MainGame : Control
         StartCaptainPhase();
     }
 
-    private void CheckMaxStreak()
+    private void UpdateMaxStreak()
     {
         if (currentTurn == Team.Blue)
         {
@@ -293,7 +293,7 @@ public partial class MainGame : Control
     public void EndGame(Team winner)
     {
         GD.Print($"Koniec gry! Wygrywa: {winner}");
-        CheckMaxStreak();
+        UpdateMaxStreak();
 
         int maxBlue = (startingTeam == Team.Blue) ? 9 : 8;
         int maxRed = (startingTeam == Team.Red) ? 9 : 8;
