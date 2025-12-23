@@ -51,6 +51,10 @@ public partial class EOSManager : Node
 	[Signal]
 	public delegate void LobbyReadyStatusUpdatedEventHandler(bool isReady);
 
+	//Sygnał emitowany, gdy lobby wykryje rozpoczęcie sesji gry (dla hosta i klientów)
+	[Signal]
+	public delegate void GameSessionStartRequestedEventHandler(string sessionId, string hostUserId, ulong seed);
+
 	// Stałe konfiguracyjne
 	private const int MinNicknameLength = 2;
 	private const int MaxNicknameLength = 20;
@@ -59,6 +63,11 @@ public partial class EOSManager : Node
 	private const int RandomSuffixMax = 10000;
 	private const int NicknameRandomMax = 99;
 	private const int FallbackAnimalRandomMax = 9999;
+	// Klucze atrybutów lobby używane do synchronizacji startu sesji gry
+	private const string ATTR_SESSION_ID = "GameSessionId";
+	private const string ATTR_SESSION_SEED = "GameSeed";
+	private const string ATTR_SESSION_HOST = "GameHostId";
+	private const string ATTR_SESSION_STATE = "GameSessionState"; // None / Starting / InGame
 
 	// Dane produktu
 	private string productName = "WZIMniacy";
@@ -85,6 +94,62 @@ public partial class EOSManager : Node
 		set { localProductUserId = ProductUserId.FromString(value); }
 	}  // P2P/Connect ID
 	private EpicAccountId localEpicAccountId;  // Epic Account ID
+	
+	// Lokalny cache danych sesji gry odczytanych z atrybtów lobby
+	public GameSessionData CurrentGameSession { get; private set; } = new GameSessionData();
+
+	// chroni przed wielokrotnym przejściem do sceny gry przy wielu update’ach lobby
+	private bool _sessionStartHandled = false;
+
+    // Wywoływane przez hosta - zapisuje dane sesji do lobby i inicjuje start gry
+	public void RequestStartGameSession()
+	{
+    	if (string.IsNullOrEmpty(currentLobbyId))
+    	{
+        	GD.PrintErr("❌ Cannot start session: not in lobby");
+        	return;
+    	}
+
+    	if (!isLobbyOwner)
+    	{
+        	GD.PrintErr("❌ Only host can start session");
+        	return;
+    	}
+		if (localProductUserId == null || !localProductUserId.IsValid())
+		{
+    		GD.PrintErr("❌ Cannot start session: localProductUserId invalid (not logged in yet)");
+    		return;
+		}
+
+    	// 1) Generowanie danych
+    	string sessionId = GenerateSessionId();
+    	ulong seed = (ulong)GD.Randi(); // na razie proste; potem można rozszerzyć
+		if (seed == 0) seed = 1;
+
+    	// 2) Zapis danych sesji do lobby EOS - uruchamia synchronizację u wszystkich graczy
+    	SetLobbyAttribute(ATTR_SESSION_ID, sessionId);
+    	SetLobbyAttribute(ATTR_SESSION_SEED, seed.ToString());
+    	SetLobbyAttribute(ATTR_SESSION_HOST, localProductUserId.ToString());
+    	SetLobbyAttribute(ATTR_SESSION_STATE, "Starting");
+
+    	// 3) lokalnie też ustaw cache
+    	CurrentGameSession.SessionId = sessionId;
+    	CurrentGameSession.Seed = seed;
+    	CurrentGameSession.HostUserId = localProductUserId.ToString();
+    	CurrentGameSession.State = "Starting";
+
+    	// host też powinien przejść dopiero po update lobby,
+    	// więc NIE robimy tu ChangeScene.
+    	GD.Print($"📤 Host requested session start: {sessionId}, seed={seed}");
+	}
+	//Generuje krótki, czytelny identyfikator sesji gry (debug/ logi/ recconect) 
+	private string GenerateSessionId()
+	{
+    	const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
+    	return new string(Enumerable.Range(0, 8)
+        	.Select(_ => chars[Random.Shared.Next(chars.Length)])
+        	.ToArray());
+	}
 
 	// Przechowywanie znalezionych lobby
 	private System.Collections.Generic.List<string> foundLobbyIds = new System.Collections.Generic.List<string>();
@@ -2014,6 +2079,12 @@ public partial class EOSManager : Node
 		bool gameModeFound = false;
 		bool aiTypeFound = false;
 		forcedTeamAssignments.Clear();
+		
+		// Reset lokalnych danych sesji przed ponownym odczytem atrybutów lobby
+		CurrentGameSession.SessionId = "";
+		CurrentGameSession.HostUserId = "";
+		CurrentGameSession.Seed = 0;
+		CurrentGameSession.State = "";
 
 		// Iteruj po wszystkich atrybutach lobby
 		for (uint i = 0; i < attributeCount; i++)
@@ -2111,6 +2182,25 @@ public partial class EOSManager : Node
 						GD.Print($"🧹 Cleared PreviousTeam for {GetShortUserId(targetUserId)}");
 					}
 				}
+
+				//odczyt danych sesji gry zapisanych w atrybutach lobby
+				else if (keyStr != null && keyStr.Equals(ATTR_SESSION_ID, StringComparison.OrdinalIgnoreCase))
+				{
+    				CurrentGameSession.SessionId = valueStr;
+				}
+				else if (keyStr != null && keyStr.Equals(ATTR_SESSION_SEED, StringComparison.OrdinalIgnoreCase))
+				{
+    				if (!string.IsNullOrEmpty(valueStr) && ulong.TryParse(valueStr, out var parsedSeed))
+        				CurrentGameSession.Seed = parsedSeed;
+				}
+				else if (keyStr != null && keyStr.Equals(ATTR_SESSION_HOST, StringComparison.OrdinalIgnoreCase))
+				{
+    				CurrentGameSession.HostUserId = valueStr;
+				}
+				else if (keyStr != null && keyStr.Equals(ATTR_SESSION_STATE, StringComparison.OrdinalIgnoreCase))
+				{
+    				CurrentGameSession.State = valueStr;
+				}
 			}
 		}
 
@@ -2133,6 +2223,30 @@ public partial class EOSManager : Node
 			currentAIType = AIType.API;
 			EmitSignal(SignalName.AITypeUpdated, GetEnumDescription(currentAIType));
 			GD.Print("⚠️ AIType not found, using default: API");
+		}
+		
+		// Jeśli sesja nie jest w stanie Starting, pozwól na ponowny start w przyszłości
+		if (!string.Equals(CurrentGameSession.State, "Starting", StringComparison.OrdinalIgnoreCase))
+		{
+    		_sessionStartHandled = false;
+		}
+		bool hasAll = !string.IsNullOrEmpty(CurrentGameSession.SessionId)
+          		&& !string.IsNullOrEmpty(CurrentGameSession.HostUserId)
+          		&& CurrentGameSession.Seed != 0;
+		// Bezpieczne wykrycie startu sesji gry - wykonywane tylko raz na update lobby	
+		if (!string.IsNullOrEmpty(currentLobbyId)
+    		&& string.Equals(CurrentGameSession.State, "Starting", StringComparison.OrdinalIgnoreCase)
+    		&& hasAll
+    		&& !_sessionStartHandled)
+		{
+    		_sessionStartHandled = true;
+
+    		GD.Print($"🚀 Session start detected from lobby: {CurrentGameSession.SessionId}, seed={CurrentGameSession.Seed}");
+    		EmitSignal(SignalName.GameSessionStartRequested,
+        		CurrentGameSession.SessionId,
+        		CurrentGameSession.HostUserId,
+        		CurrentGameSession.Seed
+    		);
 		}
 
 
@@ -2475,6 +2589,17 @@ public partial class EOSManager : Node
 			if (data.ResultCode == Result.Success)
 			{
 				GD.Print($"✅ Lobby batch update successful ({updatedKeys.Count} updates, {removedKeys.Count} removals)");
+				
+				// Po udanym update lobby odśwież lokalny cache,
+				// aby klienci zobaczyli nowe atrybuty (np. GameSessionState = strarting)
+    			GetTree().CreateTimer(0.1).Timeout += () =>
+        		{
+            		// 1) odśwież handle (żeby zobaczyć nowe atrybuty)
+            		CacheCurrentLobbyDetailsHandle("refresh_info");
+
+            		// 2) odśwież info → to wywoła RefreshLobbyAttributes(lobbyDetails)
+            		RefreshCurrentLobbyInfo();
+        		};
 			}
 			else
 			{
