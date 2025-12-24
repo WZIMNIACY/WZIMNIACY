@@ -1070,16 +1070,6 @@ public partial class LobbyMenu : Control
 
     private EOSManager.Team currentLocalTeam = EOSManager.Team.None;
 
-    // Enum dla akcji w popup menu gracza
-    private enum PlayerPopupAction
-    {
-        MoveToBlue = 0,
-        MoveToRed = 1,
-        MoveToNeutral = 2,
-        KickPlayer = 4,
-        TransferHost = 5
-    }
-
     private void TryJoinTeam(EOSManager.Team teamName)
     {
         if (eosManager == null)
@@ -1303,17 +1293,22 @@ public partial class LobbyMenu : Control
 
         if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman)
         {
-            popup.AddItem($"Przekaż hosta", 0);
-            popup.AddItem($"Wyrzuć z lobby", 1);
+            // Opcje zarządzania lobby (tryb AI vs Human)
+            int idxTransferHost = 0;
+            popup.AddItem($"Przekaż hosta", idxTransferHost);
+            
+            int idxKickPlayer = 1;
+            popup.AddItem($"Wyrzuć z lobby", idxKickPlayer);
+            
             popup.IndexPressed += (index) =>
             {
                 GD.Print($"📋 Popup menu item {index} pressed for {displayName}");
-                if (index == 0)
+                if (index == idxTransferHost)
                 {
                     GD.Print($"👑 Transferring host to: {displayName}");
                     eosManager.TransferLobbyOwnership(userId);
                 }
-                else if (index == 1)
+                else if (index == idxKickPlayer)
                 {
                     GD.Print($"👢 Kicking player: {displayName}");
                     eosManager.KickPlayer(userId);
