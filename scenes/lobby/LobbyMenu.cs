@@ -234,7 +234,7 @@ public partial class LobbyMenu : Control
 
     private string GenerateLobbyIDCode()
     {
-        //Bez liter O i I 
+        //Bez liter O i I
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
         var random = new Random();
         char[] code = new char[LobbyCodeLength];
@@ -1233,15 +1233,6 @@ public partial class LobbyMenu : Control
 
     private EOSManager.Team currentLocalTeam = EOSManager.Team.None;
 
-    // Enum dla akcji w popup menu gracza
-    private enum PlayerPopupAction
-    {
-        MoveToBlue = 0,
-        MoveToRed = 1,
-        MoveToNeutral = 2,
-        KickPlayer = 4
-    }
-
     private void TryJoinTeam(EOSManager.Team teamName)
     {
         if (eosManager == null)
@@ -1465,12 +1456,22 @@ public partial class LobbyMenu : Control
 
         if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman)
         {
-            //jest tylko jedna opcja - pomijamy enum
-            popup.AddItem($"Wyrzuć z lobby", 0);
+            // Opcje zarządzania lobby (tryb AI vs Human)
+            int idxTransferHost = 0;
+            popup.AddItem($"Przekaż hosta", idxTransferHost);
+            
+            int idxKickPlayer = 1;
+            popup.AddItem($"Wyrzuć z lobby", idxKickPlayer);
+            
             popup.IndexPressed += (index) =>
             {
                 GD.Print($"📋 Popup menu item {index} pressed for {displayName}");
-                if (index == 0)
+                if (index == idxTransferHost)
+                {
+                    GD.Print($"👑 Transferring host to: {displayName}");
+                    eosManager.TransferLobbyOwnership(userId);
+                }
+                else if (index == idxKickPlayer)
                 {
                     GD.Print($"👢 Kicking player: {displayName}");
                     eosManager.KickPlayer(userId);
@@ -1481,40 +1482,62 @@ public partial class LobbyMenu : Control
         }
         else
         {
-            popup.AddItem("Przenieś do Niebieskich", (int)PlayerPopupAction.MoveToBlue);
-            popup.SetItemDisabled((int)PlayerPopupAction.MoveToBlue, currentTeam == EOSManager.Team.Blue || isBlueTeamFull || hasPlayerCooldown);
-            popup.AddItem("Przenieś do Czerwonych", (int)PlayerPopupAction.MoveToRed);
-            popup.SetItemDisabled((int)PlayerPopupAction.MoveToRed, currentTeam == EOSManager.Team.Red || isRedTeamFull || hasPlayerCooldown);
-            popup.AddItem("Wyrzuć z drużyny", (int)PlayerPopupAction.MoveToNeutral);
-            popup.SetItemDisabled((int)PlayerPopupAction.MoveToNeutral, currentTeam == EOSManager.Team.None || hasPlayerCooldown);
+            // Opcje zarządzania drużynami
+            int currentIndex = 0;
+
+            int idxMoveBlue = currentIndex++;
+            popup.AddItem("Przenieś do Niebieskich");
+            popup.SetItemDisabled(idxMoveBlue, currentTeam == EOSManager.Team.Blue || isBlueTeamFull || hasPlayerCooldown);
+
+            int idxMoveRed = currentIndex++;
+            popup.AddItem("Przenieś do Czerwonych");
+            popup.SetItemDisabled(idxMoveRed, currentTeam == EOSManager.Team.Red || isRedTeamFull || hasPlayerCooldown);
+
+            int idxMoveNeutral = currentIndex++;
+            popup.AddItem("Wyrzuć z drużyny");
+            popup.SetItemDisabled(idxMoveNeutral, currentTeam == EOSManager.Team.None || hasPlayerCooldown);
+
             popup.AddSeparator();
-            popup.AddItem($"Wyrzuć z lobby", (int)PlayerPopupAction.KickPlayer);
+            currentIndex++; // Separator też zajmuje index
+
+            // Opcje zarządzania lobby
+            int idxTransferHost = currentIndex++;
+            popup.AddItem($"Przekaż hosta");
+
+            int idxKickPlayer = currentIndex++;
+            popup.AddItem($"Wyrzuć z lobby");
 
             popup.IndexPressed += (index) =>
             {
                 GD.Print($"📋 Popup menu item {index} pressed for {displayName}");
 
-                switch (index)
+                if (index == idxMoveBlue)
                 {
-                    case (int)PlayerPopupAction.MoveToBlue:
-                        GD.Print($"🔁 Moving player {displayName} to Blue via popup");
-                        eosManager.MovePlayerToTeam(userId, EOSManager.Team.Blue);
-                        StartPlayerMoveCooldown(userId);
-                        break;
-                    case (int)PlayerPopupAction.MoveToRed:
-                        GD.Print($"🔁 Moving player {displayName} to Red via popup");
-                        eosManager.MovePlayerToTeam(userId, EOSManager.Team.Red);
-                        StartPlayerMoveCooldown(userId);
-                        break;
-                    case (int)PlayerPopupAction.MoveToNeutral:
-                        GD.Print($"🔁 Moving player {displayName} to Neutral via popup");
-                        eosManager.MovePlayerToTeam(userId, EOSManager.Team.None);
-                        StartPlayerMoveCooldown(userId);
-                        break;
-                    case (int)PlayerPopupAction.KickPlayer:
-                        GD.Print($"👢 Kicking player: {displayName}");
-                        eosManager.KickPlayer(userId);
-                        break;
+                    GD.Print($"🔁 Moving player {displayName} to Blue via popup");
+                    eosManager.MovePlayerToTeam(userId, EOSManager.Team.Blue);
+                    StartPlayerMoveCooldown(userId);
+                }
+                else if (index == idxMoveRed)
+                {
+                    GD.Print($"🔁 Moving player {displayName} to Red via popup");
+                    eosManager.MovePlayerToTeam(userId, EOSManager.Team.Red);
+                    StartPlayerMoveCooldown(userId);
+                }
+                else if (index == idxMoveNeutral)
+                {
+                    GD.Print($"🔁 Moving player {displayName} to Neutral via popup");
+                    eosManager.MovePlayerToTeam(userId, EOSManager.Team.None);
+                    StartPlayerMoveCooldown(userId);
+                }
+                else if (index == idxTransferHost)
+                {
+                    GD.Print($"👑 Transferring host to: {displayName}");
+                    eosManager.TransferLobbyOwnership(userId);
+                }
+                else if (index == idxKickPlayer)
+                {
+                    GD.Print($"👢 Kicking player: {displayName}");
+                    eosManager.KickPlayer(userId);
                 }
 
                 popup.QueueFree();
