@@ -31,6 +31,7 @@ public partial class LobbyMenu : Control
     [Export] private Label lobbyStatusCounter;
 
     private LobbyLeaveConfirmation leaveConfirmation;
+    private EscapeBackHandler escapeBackHandler;
     private string currentLobbyCode = "";
     private const int LobbyCodeLength = 6;
     private const int LobbyMaxPlayers = 10;
@@ -66,6 +67,8 @@ public partial class LobbyMenu : Control
 
         // Inicjalizuj LobbyLeaveConfirmation
         leaveConfirmation = GetNode<LobbyLeaveConfirmation>("LobbyLeaveConfirmation");
+        escapeBackHandler = GetNode<EscapeBackHandler>("EscapeBackHandler");
+        escapeBackHandler.LeaveConfirmation = leaveConfirmation;
 
         // Podłącz sygnały przycisków
         if (backButton != null)

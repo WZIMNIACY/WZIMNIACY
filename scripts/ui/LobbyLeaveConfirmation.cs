@@ -50,7 +50,7 @@ public partial class LobbyLeaveConfirmation : Node
 
         if (isHost)
         {
-            confirmDialog.DialogText = "Jesteś hostem lobby.\nOpuszczenie spowoduje zamknięcie lobby dla wszystkich graczy.\n\nCzy na pewno chcesz opuścić?";
+            confirmDialog.DialogText = "Jesteś hostem lobby.\nOpuszczenie spowoduje przekazanie roli hosta innemu graczowi, jeśli to możliwe.\n\nCzy na pewno chcesz opuścić?";
         }
         else
         {

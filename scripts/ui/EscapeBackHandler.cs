@@ -25,7 +25,11 @@ public partial class EscapeBackHandler : Node
     public bool ShowConfirmDialog { get; set; } = false;
 
     private EOSManager eosManager;
-    private LobbyLeaveConfirmation leaveConfirmation;
+
+    /// <summary>
+    /// Referencja do dialogu potwierdzenia
+    /// </summary>
+    public LobbyLeaveConfirmation LeaveConfirmation { get; set; }
 
     public override void _Ready()
     {
@@ -34,11 +38,6 @@ public partial class EscapeBackHandler : Node
         if (LeaveLobbyBeforeExit)
         {
             eosManager = GetNode<EOSManager>("/root/EOSManager");
-        }
-
-        if (ShowConfirmDialog)
-        {
-            leaveConfirmation = GetParent().GetNodeOrNull<LobbyLeaveConfirmation>("LobbyLeaveConfirmation");
         }
     }
 
@@ -123,12 +122,12 @@ public partial class EscapeBackHandler : Node
     /// </summary>
     private void HandleEscapeBack()
     {
-        if (ShowConfirmDialog && leaveConfirmation != null)
+        if (ShowConfirmDialog && LeaveLobbyBeforeExit && LeaveConfirmation != null)
         {
-            leaveConfirmation.ShowConfirmation();
+            LeaveConfirmation.ReturnScenePath = PreviousScenePath;
+            LeaveConfirmation.ShowConfirmation();
             return;
         }
-
 
         if (LeaveLobbyBeforeExit && eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
         {
