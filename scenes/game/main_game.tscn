@@ -85,7 +85,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel")]
+[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -102,6 +102,8 @@ teamListRed = NodePath("Panel/HBoxContainer/LeftPanel/VLeftPanel/PlayerListConta
 gameRightPanel = NodePath("Panel/HBoxContainer/RightPanel")
 gameInputPanel = NodePath("Panel/InputPanel")
 turnLabel = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/TurnCounterContainer/Label")
+settingsScene = NodePath("Settings")
+helpScene = NodePath("HelpScene")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
