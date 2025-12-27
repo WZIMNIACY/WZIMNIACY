@@ -17,6 +17,11 @@ public partial class MainMenu : Node
     private bool isCreatingLobby = false;
     private const float CreateTimeout = 5.0f; // 5 sekund timeout
 
+    // Sekretne menu admina
+    private string secretCode = "";
+    private const string SecretTrigger = "kakor";
+    private AcceptDialog adminPopup = null;
+
     public override void _Ready()
     {
         base._Ready();
@@ -39,6 +44,38 @@ public partial class MainMenu : Node
         if (eosManager != null)
         {
             eosManager.LobbyCreated += OnLobbyCreated;
+        }
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        base._Input(@event);
+
+        // Sprawdź czy to zdarzenie klawiatury
+        if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
+        {
+            // Pobierz znak Unicode
+            char key = (char)keyEvent.Unicode;
+
+            // Jeśli to litera, dodaj do sekretnego kodu
+            if (char.IsLetter(key))
+            {
+                secretCode += char.ToLower(key);
+
+                // Ogranicz długość do 10 znaków
+                if (secretCode.Length > 10)
+                {
+                    secretCode = secretCode.Substring(secretCode.Length - 10);
+                }
+
+                // Sprawdź czy wpisano sekretny kod
+                if (secretCode.EndsWith(SecretTrigger))
+                {
+                    GD.Print("🔓 Secret admin menu triggered!");
+                    ShowAdminMenu();
+                    secretCode = ""; // Resetuj kod
+                }
+            }
         }
     }
 
@@ -173,6 +210,96 @@ public partial class MainMenu : Node
     {
         GD.Print("Loading Help scene...");
         GetTree().ChangeSceneToFile(HelpSceneString);
+    }
+
+    private void ShowAdminMenu()
+    {
+        // Zamknij poprzedni popup jeśli istnieje
+        if (adminPopup != null)
+        {
+            adminPopup.QueueFree();
+            adminPopup = null;
+        }
+
+        // Pobierz obecne Device ID
+        string currentDeviceId = eosManager != null ? eosManager.GetCurrentDeviceId() : "N/A";
+
+        // Utwórz popup
+        adminPopup = new AcceptDialog();
+        adminPopup.Title = "🔧 Menu Admina";
+        adminPopup.OkButtonText = "Zamknij";
+        adminPopup.DialogText = "";
+
+        // Utwórz kontener dla zawartości
+        VBoxContainer content = new VBoxContainer();
+        content.AddThemeConstantOverride("separation", 10);
+
+        // Label z tytułem
+        Label titleLabel = new Label();
+        titleLabel.Text = "Sekretne Menu Admina";
+        titleLabel.AddThemeColorOverride("font_color", new Color(0, 1, 0.8f));
+        titleLabel.HorizontalAlignment = HorizontalAlignment.Center;
+        content.AddChild(titleLabel);
+
+        // Separator
+        HSeparator separator1 = new HSeparator();
+        content.AddChild(separator1);
+
+        // Label z Device ID
+        Label deviceIdLabel = new Label();
+        deviceIdLabel.Text = "Obecne Device ID:";
+        content.AddChild(deviceIdLabel);
+
+        // TextEdit z Device ID (tylko do odczytu)
+        TextEdit deviceIdText = new TextEdit();
+        deviceIdText.Text = currentDeviceId;
+        deviceIdText.Editable = false;
+        deviceIdText.CustomMinimumSize = new Vector2(400, 60);
+        deviceIdText.WrapMode = TextEdit.LineWrappingMode.Boundary;
+        content.AddChild(deviceIdText);
+
+        // Separator
+        HSeparator separator2 = new HSeparator();
+        content.AddChild(separator2);
+
+        // Przycisk do resetowania Device ID
+        Button resetButton = new Button();
+        resetButton.Text = "🔄 Resetuj Device ID";
+        resetButton.CustomMinimumSize = new Vector2(0, 40);
+        resetButton.Pressed += () =>
+        {
+            GD.Print("🔄 Resetting Device ID from admin menu...");
+            if (eosManager != null)
+            {
+                eosManager.ResetDeviceId();
+
+                // Zaktualizuj wyświetlane ID po krótkiej chwili
+                GetTree().CreateTimer(0.5).Timeout += () =>
+                {
+                    string newDeviceId = eosManager.GetCurrentDeviceId();
+                    deviceIdText.Text = newDeviceId;
+                    GD.Print($"✅ New Device ID: {newDeviceId}");
+                };
+            }
+        };
+        content.AddChild(resetButton);
+
+        // Ostrzeżenie
+        Label warningLabel = new Label();
+        warningLabel.Text = "⚠️ Resetowanie Device ID wymaga ponownego logowania!";
+        warningLabel.AddThemeColorOverride("font_color", new Color(1, 0.5f, 0));
+        warningLabel.HorizontalAlignment = HorizontalAlignment.Center;
+        warningLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        content.AddChild(warningLabel);
+
+        // Dodaj zawartość do popupu
+        adminPopup.AddChild(content);
+
+        // Wyświetl popup
+        GetTree().Root.AddChild(adminPopup);
+        adminPopup.PopupCentered();
+
+        GD.Print($"📋 Admin menu opened. Current Device ID: {currentDeviceId}");
     }
 
     public override void _ExitTree()

@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3 uid="uid://bqfm3bpx8hfit"]
+[gd_scene load_steps=32 format=3 uid="uid://bqfm3bpx8hfit"]
 
 [ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://assets/themes/main_game.tres" id="1_s3esy"]
@@ -63,8 +63,14 @@ bg_color = Color(0.24313726, 0.02745098, 0.06666667, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2l77h"]
 bg_color = Color(0.27450982, 0.03137255, 0.08235294, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ipu61"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mssxc"]
 bg_color = Color(0.41960785, 0.050980393, 0.1254902, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ccb4r"]
+bg_color = Color(0.6, 0.6, 0.6, 0.5372549)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stils"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_ygxny"]
 texture = ExtResource("7_wi4c7")
@@ -85,7 +91,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene")]
+[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -93,6 +99,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_o6v7o")
+endGameScreen = NodePath("EndGameScreen")
 menuPanel = NodePath("MenuPanel")
 scoreContainerBlue = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/BlueScoreContainer")
 scoreContainerRed = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer")
@@ -317,7 +324,7 @@ cardManager = NodePath("..")
 layout_mode = 2
 cardManager = NodePath("..")
 
-[node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll")]
+[node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll", "skipButton")]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("1_s3esy")
@@ -326,6 +333,7 @@ script = ExtResource("8_cn0rj")
 currentWordLabel = NodePath("VRightPanel/PasswordContainer/MarginContainer/HBoxContainer/CurentWordLabel")
 historyList = NodePath("VRightPanel/HintBoxContainer/HistoryScroll/MarginContainer/HistoryList")
 historyScroll = NodePath("VRightPanel/HintBoxContainer/HistoryScroll")
+skipButton = NodePath("VRightPanel/SkipTurnContainer/PanelContainer/Button")
 
 [node name="VRightPanel" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel"]
 custom_minimum_size = Vector2(313.033, 0)
@@ -402,7 +410,9 @@ custom_minimum_size = Vector2(0, 55.6)
 layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxFlat_0rdsr")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_2l77h")
-theme_override_styles/hover = SubResource("StyleBoxFlat_ipu61")
+theme_override_styles/hover = SubResource("StyleBoxFlat_mssxc")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_ccb4r")
+theme_override_styles/focus = SubResource("StyleBoxFlat_stils")
 text = "Pomiń turę"
 
 [node name="Panel" type="Panel" parent="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer"]

@@ -5,6 +5,7 @@ public partial class RightPanel : Node
 	[Export] public Label currentWordLabel;
     [Export] public VBoxContainer historyList;
     [Export] public ScrollContainer historyScroll;
+    [Export] public Button skipButton;
 
 	private Color blueTeamColor = new Color("5AD2C8FF");
 	private Color redTeamColor = new Color("E65050FF");
@@ -56,6 +57,24 @@ public partial class RightPanel : Node
         {
             var vScroll = historyScroll.GetVScrollBar();
             historyScroll.ScrollVertical = (int)vScroll.MaxValue;
+        }
+    }
+
+    public void DisableSkipButton()
+    {
+        if (skipButton != null)
+        {
+            skipButton.Disabled = true;
+            skipButton.MouseFilter = Control.MouseFilterEnum.Ignore;
+        }
+    }
+
+    public void EnableSkipButton()
+    {
+        if (skipButton != null)
+        {
+            skipButton.Disabled = false;
+            skipButton.MouseFilter = Control.MouseFilterEnum.Stop;
         }
     }
 }

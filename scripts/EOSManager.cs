@@ -129,6 +129,8 @@ public partial class EOSManager : Node
 	private Timer lobbyRefreshTimer;
 	//Limit graczy w drużynie
 	private const int MaxPlayersPerTeam = 5;
+	//Limit graczy w trybie AI vs Human (Universal Team)
+	private const int MaxPlayersInAIvsHuman = 5;
 
 	// Enum dla drużyn
 	public enum Team
@@ -562,6 +564,43 @@ public partial class EOSManager : Node
 		int randomSuffix = (int)(GD.Randi() % RandomSuffixMax);
 
 		return $"{computerName}_{userName}_{baseId}_{randomSuffix}";
+	}
+
+	/// <summary>
+	/// Pobiera obecne Device ID
+	/// </summary>
+	public string GetCurrentDeviceId()
+	{
+		return GetOrCreateDeviceId();
+	}
+
+	/// <summary>
+	/// Resetuje Device ID - usuwa obecne i tworzy nowe
+	/// UWAGA: Wymaga ponownego logowania!
+	/// </summary>
+	public void ResetDeviceId()
+	{
+		GD.Print("🔄 Resetting Device ID...");
+
+		var deleteDeviceIdOptions = new DeleteDeviceIdOptions();
+
+		connectInterface.DeleteDeviceId(ref deleteDeviceIdOptions, null, (ref DeleteDeviceIdCallbackInfo data) =>
+		{
+			if (data.ResultCode == Result.Success)
+			{
+				GD.Print("✅ Successfully deleted existing DeviceId, creating new one...");
+				LoginWithDeviceId_P2P();
+			}
+			else if (data.ResultCode == Result.NotFound)
+			{
+				GD.Print("⚠️ DeviceId for deletion was not found, creating new one...");
+				LoginWithDeviceId_P2P();
+			}
+			else
+			{
+				GD.PrintErr($"❌ Unexpected error while deleting DeviceId: {data.ResultCode}");
+			}
+		});
 	}
 
 	// Callback po zakończeniu logowania
@@ -1731,6 +1770,67 @@ public partial class EOSManager : Node
 		}
 	}
 
+	/// <summary>
+	/// Przekazuje rolę hosta innemu graczowi (tylko host może to zrobić!)
+	/// </summary>
+	public void TransferLobbyOwnership(string targetUserId)
+	{
+		if (string.IsNullOrEmpty(currentLobbyId))
+		{
+			GD.PrintErr("❌ Cannot transfer ownership: Not in any lobby!");
+			return;
+		}
+
+		if (!isLobbyOwner)
+		{
+			GD.PrintErr("❌ Cannot transfer ownership: You are not the host!");
+			return;
+		}
+
+		if (targetUserId == localProductUserId.ToString())
+		{
+			GD.PrintErr("❌ Cannot transfer ownership to yourself!");
+			return;
+		}
+
+		GD.Print($"👑 Transferring lobby ownership to: {targetUserId}");
+
+		var promoteMemberOptions = new PromoteMemberOptions()
+		{
+			LobbyId = currentLobbyId,
+			LocalUserId = localProductUserId,
+			TargetUserId = ProductUserId.FromString(targetUserId)
+		};
+
+		lobbyInterface.PromoteMember(ref promoteMemberOptions, null, OnPromoteMemberComplete);
+	}
+
+	private void OnPromoteMemberComplete(ref PromoteMemberCallbackInfo data)
+	{
+		if (data.ResultCode == Result.Success)
+		{
+			GD.Print($"✅ Successfully transferred ownership in lobby: {data.LobbyId}");
+			GD.Print($"👑 You are no longer the host!");
+
+			// Zaktualizuj lokalny stan - już nie jesteśmy hostem
+			isLobbyOwner = false;
+
+			// Odśwież cache i listę członków po transferze
+			GetTree().CreateTimer(0.3).Timeout += () =>
+			{
+				CacheCurrentLobbyDetailsHandle("after_promote");
+				GetTree().CreateTimer(0.1).Timeout += () =>
+				{
+					GetLobbyMembers();
+				};
+			};
+		}
+		else
+		{
+			GD.PrintErr($"❌ Failed to transfer ownership: {data.ResultCode}");
+		}
+	}
+
 	// ============================================
 	// NASŁUCHIWANIE NA ZMIANY W LOBBY
 	// ============================================
@@ -1804,6 +1904,25 @@ public partial class EOSManager : Node
 			return; // Ignoruj wszystkie dalsze eventy
 		}
 
+		// Sprawdź czy ktoś został awansowany na hosta
+		if (data.CurrentStatus == LobbyMemberStatus.Promoted)
+		{
+			string promotedUserId = data.TargetUserId.ToString();
+			GD.Print($"  👑 Member PROMOTED to host: {GetShortUserId(promotedUserId)}");
+
+			// Jeśli to MY zostaliśmy awansowani
+			if (promotedUserId == localProductUserId.ToString())
+			{
+				GD.Print("  👑 ✅ YOU have been promoted to lobby owner!");
+				isLobbyOwner = true;
+			}
+			else
+			{
+				GD.Print($"  👑 {GetShortUserId(promotedUserId)} is now the lobby owner");
+				isLobbyOwner = false;
+			}
+		}
+
 		// Jeśli to nasze lobby (i nie zostaliśmy wyrzuceni)
 		if (!string.IsNullOrEmpty(currentLobbyId) && currentLobbyId == data.LobbyId.ToString())
 		{
@@ -1818,7 +1937,7 @@ public partial class EOSManager : Node
 			// Odśwież LobbyDetails handle (tylko jeśli nie zostaliśmy wyrzuceni)
 			CacheCurrentLobbyDetailsHandle("member_status");
 
-			// JOINED, LEFT lub KICKED - odśwież całą listę członków
+			// JOINED, LEFT, KICKED lub PROMOTED - odśwież całą listę członków
 			if (data.CurrentStatus == LobbyMemberStatus.Joined)
 			{
 				GD.Print($"  ➕ Member JOINED: {GetShortUserId(userId)}");
@@ -1830,9 +1949,9 @@ public partial class EOSManager : Node
 					EmitSignal(SignalName.CurrentLobbyInfoUpdated, currentLobbyId, currentLobbyMembers.Count, 10, isLobbyOwner);
 				};
 			}
-			else if (data.CurrentStatus == LobbyMemberStatus.Left || data.CurrentStatus == LobbyMemberStatus.Kicked)
+			else if (data.CurrentStatus == LobbyMemberStatus.Left || data.CurrentStatus == LobbyMemberStatus.Kicked || data.CurrentStatus == LobbyMemberStatus.Promoted)
 			{
-				GD.Print($"  ➖ Member LEFT/KICKED: {GetShortUserId(userId)}");
+				GD.Print($"  ➖ Member LEFT/KICKED/PROMOTED: {GetShortUserId(userId)}");
 
 				// Małe opóźnienie na pełną synchronizację
 				GetTree().CreateTimer(0.3).Timeout += () =>
@@ -1870,6 +1989,13 @@ public partial class EOSManager : Node
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
 			GD.PrintErr("❌ Cannot assign team: Not in any lobby!");
+			return;
+		}
+
+		// Sprawdź limit graczy w trybie AI vs Human
+		if (GetTeamPlayerCount(Team.Universal) >= MaxPlayersInAIvsHuman)
+		{
+			GD.PrintErr($"❌ Cannot join Universal team: Team is full ({MaxPlayersInAIvsHuman}/{MaxPlayersInAIvsHuman})");
 			return;
 		}
 
@@ -2125,6 +2251,10 @@ public partial class EOSManager : Node
 
 		GD.Print($"🎮 Setting GameMode to: {gameModeStr}");
 
+		// Zmień limit graczy w zależności od trybu gry
+		uint maxMembers = gameMode == GameMode.AIvsHuman ? (uint)MaxPlayersInAIvsHuman : (uint)(MaxPlayersPerTeam * 2);
+		SetMaxLobbyMembers(maxMembers);
+
 		EmitSignal(SignalName.GameModeUpdated, gameModeStr);
 	}
 
@@ -2136,6 +2266,75 @@ public partial class EOSManager : Node
 		GD.Print($"🤖 Setting AIType to: {aiTypeStr}");
 
 		EmitSignal(SignalName.AITypeUpdated, aiTypeStr);
+	}
+
+	/// <summary>
+	/// Zmienia maksymalną liczbę graczy w lobby
+	/// </summary>
+	public void SetMaxLobbyMembers(uint maxMembers)
+	{
+		if (!isLobbyOwner)
+		{
+			GD.PrintErr("❌ Only lobby owner can change max members");
+			return;
+		}
+
+		if (string.IsNullOrEmpty(currentLobbyId) || localProductUserId == null || !localProductUserId.IsValid())
+		{
+			GD.PrintErr("❌ Cannot change max members: Not in a valid lobby");
+			return;
+		}
+
+		GD.Print($"👥 Changing lobby max members to: {maxMembers}");
+
+		var modifyOptions = new UpdateLobbyModificationOptions()
+		{
+			LobbyId = currentLobbyId,
+			LocalUserId = localProductUserId
+		};
+
+		Result result = lobbyInterface.UpdateLobbyModification(ref modifyOptions, out LobbyModification lobbyModification);
+
+		if (result != Result.Success || lobbyModification == null)
+		{
+			GD.PrintErr($"❌ Failed to create lobby modification: {result}");
+			return;
+		}
+
+		// Ustaw nową maksymalną liczbę członków
+		var setMaxMembersOptions = new LobbyModificationSetMaxMembersOptions()
+		{
+			MaxMembers = maxMembers
+		};
+
+		result = lobbyModification.SetMaxMembers(ref setMaxMembersOptions);
+
+		if (result != Result.Success)
+		{
+			GD.PrintErr($"❌ Failed to set max members: {result}");
+			lobbyModification.Release();
+			return;
+		}
+
+		// Wyślij modyfikację
+		var updateOptions = new UpdateLobbyOptions()
+		{
+			LobbyModificationHandle = lobbyModification
+		};
+
+		lobbyInterface.UpdateLobby(ref updateOptions, null, (ref UpdateLobbyCallbackInfo data) =>
+		{
+			if (data.ResultCode == Result.Success)
+			{
+				GD.Print($"✅ Lobby max members updated to: {maxMembers}");
+			}
+			else
+			{
+				GD.PrintErr($"❌ Failed to update max members: {data.ResultCode}");
+			}
+
+			lobbyModification.Release();
+		});
 	}
 
 	public void SetLobbyReadyStatus(bool isReady)
@@ -2673,7 +2872,7 @@ public partial class EOSManager : Node
 		};
 	}
 
-	private Team GetTeamForUser(string userId)
+	public Team GetTeamForUser(string userId)
 	{
 		foreach (var member in currentLobbyMembers)
 		{
@@ -3037,8 +3236,3 @@ public partial class EOSManager : Node
 		}
 	}
 }
-
-
-
-
-

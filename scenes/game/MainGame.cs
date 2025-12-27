@@ -6,6 +6,7 @@ public partial class MainGame : Control
 {
     [Signal] public delegate void GameReadyEventHandler();
 
+    [Export] public EndGameScreen endGameScreen;
     [Export] Panel menuPanel;
     [Export] ScoreContainer scoreContainerBlue;
     [Export] ScoreContainer scoreContainerRed;
@@ -17,6 +18,7 @@ public partial class MainGame : Control
     [Export] Control settingsScene;
     [Export] Control helpScene;
     private EOSManager eosManager;
+    private Team playerTeam;
     public const bool IsHost = true; // temp value
     private int pointsBlue;
     public int PointsBlue
@@ -28,6 +30,15 @@ public partial class MainGame : Control
     {
         get => pointsRed;
     }
+
+    private int blueNeutralFound = 0;
+    private int redNeutralFound = 0;
+    private int blueOpponentFound = 0;
+    private int redOpponentFound = 0;
+
+    private int currentStreak = 0; 
+    private int blueMaxStreak = 0;
+    private int redMaxStreak = 0;
 
     public enum Team
     {
@@ -97,11 +108,27 @@ public partial class MainGame : Control
         {
             GD.PrintErr("Error");
         }
+
+        string userID = eosManager.localProductUserIdString;
+        EOSManager.Team team = eosManager.GetTeamForUser(userID);
+        playerTeam = (team == EOSManager.Team.Blue) ? Team.Blue : Team.Red;
+        if(playerTeam == startingTeam)
+        {
+            gameRightPanel.EnableSkipButton();
+        }
+        else
+        {
+            gameRightPanel.DisableSkipButton();
+        }
+        
+
         EmitSignal(SignalName.GameReady);
     }
 
     private void StartCaptainPhase()
     {
+        currentStreak = 0;
+
         GD.Print($"Początek tury {(currentTurn == Team.Blue ? "BLUE" : "RED")}");
         if(gameInputPanel != null)
         {
@@ -121,10 +148,25 @@ public partial class MainGame : Control
     public void OnSkipTurnPressed()
     {
         GD.Print("Koniec tury");
+
+        UpdateMaxStreak();
+
         if(gameRightPanel != null)
             gameRightPanel.CommitToHistory();
         TurnChange();
         StartCaptainPhase();
+    }
+
+    private void UpdateMaxStreak()
+    {
+        if (currentTurn == Team.Blue)
+        {
+            if (currentStreak > blueMaxStreak) blueMaxStreak = currentStreak;
+        }
+        else
+        {
+            if (currentStreak > redMaxStreak) redMaxStreak = currentStreak;
+        }
     }
 
     // Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -199,6 +241,16 @@ public partial class MainGame : Control
     {
         GD.Print("Point removed from team blue...");
         pointsBlue--;
+
+        if (currentTurn == Team.Blue) 
+        {
+            currentStreak++;
+        } 
+        else 
+        {
+            redOpponentFound++; 
+        }
+
         UpdatePointsDisplay();
         if (pointsBlue == 0)
             EndGame(Team.Blue);
@@ -208,6 +260,16 @@ public partial class MainGame : Control
     {
         GD.Print("Point removed from team red...");
         pointsRed--;
+
+        if (currentTurn == Team.Red) 
+        {
+            currentStreak++;
+        }
+        else
+        {
+            blueOpponentFound++;
+        }
+
         UpdatePointsDisplay();
         if (pointsRed == 0)
             EndGame(Team.Red);
@@ -227,6 +289,10 @@ public partial class MainGame : Control
     {
         GD.Print("Turn blue...");
         currentTurn = Team.Blue;
+        if(playerTeam == currentTurn)
+            gameRightPanel.EnableSkipButton();    
+        else
+            gameRightPanel.DisableSkipButton();
         scoreContainerBlue.SetDiodeOn();
         scoreContainerRed.SetDiodeOff();
         teamListBlue.Modulate = new Color(2.8f, 2.8f, 2.8f, 1f);
@@ -237,13 +303,72 @@ public partial class MainGame : Control
     {
         GD.Print("Turn red...");
         currentTurn = Team.Red;
+        if(playerTeam == currentTurn)
+            gameRightPanel.EnableSkipButton();    
+        else
+            gameRightPanel.DisableSkipButton();
         scoreContainerBlue.SetDiodeOff();
         scoreContainerRed.SetDiodeOn();
         teamListBlue.Modulate = new Color(1f, 1f, 1f, 1f);
         teamListRed.Modulate = new Color(2.8f, 2.8f, 2.8f, 1f);
     }
 
+    public void CardConfirm(AgentCard card)
+    {
+        switch (card.Type)
+        {
+            case CardManager.CardType.Blue:
+                RemovePointBlue();
+                if (currentTurn == Team.Red)
+                    TurnChange();
+                break;
+
+            case CardManager.CardType.Red:
+                RemovePointRed();
+                if (currentTurn == Team.Blue)
+                    TurnChange();
+                break;
+
+            case CardManager.CardType.Common:
+                TurnChange();
+                break;
+
+            case CardManager.CardType.Assassin:
+                if (currentTurn == Team.Blue)
+                    EndGame(Team.Red);
+                else
+                    EndGame(Team.Blue);
+                break;
+        }
+    }
+
     public void EndGame(Team winner)
     {
+        GD.Print($"Koniec gry! Wygrywa: {winner}");
+        UpdateMaxStreak();
+
+        int maxBlue = (startingTeam == Team.Blue) ? 9 : 8;
+        int maxRed = (startingTeam == Team.Red) ? 9 : 8;
+
+        int foundBlue = maxBlue - pointsBlue;
+        int foundRed = maxRed - pointsRed;
+
+        TeamGameStats blueStats = new TeamGameStats
+        {
+            Found = foundBlue,
+            Neutral = blueNeutralFound,
+            Opponent = blueOpponentFound,
+            Streak = blueMaxStreak
+        };
+
+        TeamGameStats redStats = new TeamGameStats
+        {
+            Found = foundRed,
+            Neutral = redNeutralFound,
+            Opponent = redOpponentFound,
+            Streak = redMaxStreak
+        };
+
+        endGameScreen.ShowGameOver(blueStats, redStats);
     }
 }
