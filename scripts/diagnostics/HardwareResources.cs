@@ -147,6 +147,7 @@ namespace Diagnostics
             return GetVRAMInfo();
         }
 
+        // Jak ktoś nie ma sterowników to i tak nic nie zdziałamy
         private static VRAMInfo GetVRAMInfo()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -172,37 +173,8 @@ namespace Diagnostics
 
         private static VRAMInfo GetWindowsVRAM()
         {
-            // Metoda 1: WMIC
-            string output = RunCommand("wmic", "path win32_VideoController get AdapterRAM");
-
-            if (!string.IsNullOrEmpty(output) && !IsErrorMessage(output))
-            {
-                var match = Regex.Match(output, @"\d+");
-                if (match.Success && long.TryParse(match.Value, out long bytes))
-                {
-                    // Prawdopodobnie to pamięć współdzielona
-                    if (bytes == 0)
-                    {
-                        return new VRAMInfo
-                        {
-                            valueMB = 0,
-                            status = VRAMStatus.SharedMemory,
-                            message = "Pamięć współdzielona"
-                        };
-                    }
-
-                    float vramMB = bytes / 1024f / 1024f;
-                    return new VRAMInfo
-                    {
-                        valueMB = vramMB,
-                        status = VRAMStatus.Detected,
-                        message = ""
-                    };
-                }
-            }
-
-            // Metoda 2: NVIDIA-SMI
-            output = RunCommand("nvidia-smi", "--query-gpu=memory.total --format=csv,noheader,nounits");
+            // Metoda 1: NVIDIA-SMI
+            string output = RunCommand("nvidia-smi", "--query-gpu=memory.total --format=csv,noheader,nounits");
             if (!string.IsNullOrEmpty(output) && !IsErrorMessage(output))
             {
                 var match = Regex.Match(output, @"(\d+)");
@@ -217,7 +189,7 @@ namespace Diagnostics
                 }
             }
 
-            // Metoda 3: AMD
+            // Metoda 2: AMD
             output = RunCommand("rocm-smi", "--showmeminfo vram");
             if (!string.IsNullOrEmpty(output) && !IsErrorMessage(output))
             {
