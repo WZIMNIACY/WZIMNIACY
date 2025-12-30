@@ -21,3 +21,6 @@ mono_crash.*.json
 
 #MacOS specific ignores
 .DS_Store
+
+**/obj/
+**/bin/
