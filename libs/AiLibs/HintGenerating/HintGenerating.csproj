@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\game\game.csproj" />
-    <ProjectReference Include="..\FileOperations\FileOperations.csproj" />
     <ProjectReference Include="..\LLM\LLM.csproj" />
   </ItemGroup>
 
