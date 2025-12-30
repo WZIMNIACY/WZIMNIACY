@@ -99,7 +99,7 @@ public partial class EOSManager : Node
 	public GameSessionData CurrentGameSession { get; private set; } = new GameSessionData();
 
 	// chroni przed wielokrotnym przejściem do sceny gry przy wielu update’ach lobby
-	private bool _sessionStartHandled = false;
+	private bool sessionStartHandled = false;
 
     // Wywoływane przez hosta - zapisuje dane sesji do lobby i inicjuje start gry
 	public void RequestStartGameSession()
@@ -2312,7 +2312,7 @@ public partial class EOSManager : Node
 		// Jeśli sesja nie jest w stanie Starting, pozwól na ponowny start w przyszłości
 		if (CurrentGameSession.State != GameSessionState.Starting)
 		{
-    		_sessionStartHandled = false;
+    		sessionStartHandled = false;
 		}
 		
 		bool hasAll = !string.IsNullOrEmpty(CurrentGameSession.SessionId)
@@ -2323,9 +2323,9 @@ public partial class EOSManager : Node
 		if (!string.IsNullOrEmpty(currentLobbyId)
     		&& CurrentGameSession.State == GameSessionState.Starting
     		&& hasAll
-    		&& !_sessionStartHandled)
+    		&& !sessionStartHandled)
 		{
-    		_sessionStartHandled = true;
+    		sessionStartHandled = true;
 
     		GD.Print($"🚀 Session start detected from lobby: {CurrentGameSession.SessionId}, seed={CurrentGameSession.Seed}");
     		EmitSignal(SignalName.GameSessionStartRequested,

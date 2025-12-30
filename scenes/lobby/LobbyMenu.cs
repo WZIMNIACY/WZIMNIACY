@@ -225,14 +225,14 @@ public partial class LobbyMenu : Control
     }
 
     // Chroni przed wielokrotną zmianą sceny, gdy przyjdzie kilka eventów/odświeżeń lobby
-    private bool _alreadySwitchedToGame = false;
+    private bool alreadySwitchedToGame = false;
 
     // Game Session: wszyscy gracze przechodzą do sceny gry dopiero, gdy lobby ogłosi stan "Starting"
     private void OnGameSessionStartRequested(string sessionId, string hostUserId, ulong seed)
     {
-        if (_alreadySwitchedToGame) return;
+        if (alreadySwitchedToGame) return;
         
-        _alreadySwitchedToGame = true;
+        alreadySwitchedToGame = true;
 
         GD.Print($"🎮 Switching to game. Session={sessionId}, Host={hostUserId}, Seed={seed}");
 
