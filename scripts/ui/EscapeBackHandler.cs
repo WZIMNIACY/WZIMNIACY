@@ -35,10 +35,7 @@ public partial class EscapeBackHandler : Node
     {
         base._Ready();
 
-        if (LeaveLobbyBeforeExit)
-        {
-            eosManager = GetNode<EOSManager>("/root/EOSManager");
-        }
+        eosManager = GetNode<EOSManager>("/root/EOSManager");
     }
 
     public override void _Input(InputEvent @event)
@@ -74,6 +71,14 @@ public partial class EscapeBackHandler : Node
         {
             if (keyEvent.Keycode == Key.Escape)
             {
+                // Jeśli trwa dołączanie do lobby, zablokuj ESC
+                if (eosManager != null && eosManager.isJoiningLobby)
+                {
+                    GD.Print("⏳ ESC zablokowany - trwa dołączanie do lobby...");
+                    viewport.SetInputAsHandled();
+                    return;
+                }
+
                 if (!IsAnyInputActive())
                 {
                     HandleEscapeBack();
@@ -122,6 +127,7 @@ public partial class EscapeBackHandler : Node
     /// </summary>
     private void HandleEscapeBack()
     {
+        // Pokaż dialog (dialog sam obsłuży opuszczenie lobby i zmianę sceny)
         if (ShowConfirmDialog && LeaveLobbyBeforeExit && LeaveConfirmation != null)
         {
             LeaveConfirmation.ReturnScenePath = PreviousScenePath;
@@ -129,12 +135,36 @@ public partial class EscapeBackHandler : Node
             return;
         }
 
-        if (LeaveLobbyBeforeExit && eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
+        // Opuść lobby i zmień scenę bez potwierdzenia (dialog nie istnieje)
+        if (ShowConfirmDialog && LeaveLobbyBeforeExit && LeaveConfirmation == null)
         {
-            eosManager.LeaveLobby();
+            if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
+            {
+                eosManager.LeaveLobby();
+            }
+            GetTree().ChangeSceneToFile(PreviousScenePath);
+            return;
         }
 
-        // Zmień scenę
-        GetTree().ChangeSceneToFile(PreviousScenePath);
+        // Opuść lobby i zmień scenę (bez pytania)
+        if (!ShowConfirmDialog && LeaveLobbyBeforeExit)
+        {
+            if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
+            {
+                eosManager.LeaveLobby();
+            }
+            GetTree().ChangeSceneToFile(PreviousScenePath);
+            return;
+        }
+
+        // Jeśli nie jesteśmy w lobby (lub eosManager nie istnieje)
+        if (eosManager == null || string.IsNullOrEmpty(eosManager.currentLobbyId))
+        {
+            GetTree().ChangeSceneToFile(PreviousScenePath);
+            return;
+        }
+
+        // W sytuacji, gdy jesteś w lobby, ale jeszcze scena się nie zmieniła nic nie rób - czekaj na załadowanie sceny do końca
+        return;
     }
 }
