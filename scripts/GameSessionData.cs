@@ -1,5 +1,3 @@
-using System;
-
 // GameSessionData.cs przechowuje lokalne dane dotyczące sesji gry tworzonej przez hosta
 // Dane te są synchronizowane pomiędzy hostem i klientami poprzez atrybuty lobby (EOS)
 
