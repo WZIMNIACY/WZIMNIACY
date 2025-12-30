@@ -12,8 +12,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="libs\**" />
-    <EmbeddedResource Remove="libs\**" />
+    <Compile Remove="libs/**" />
+    <EmbeddedResource Remove="libs/**" />
   </ItemGroup>
 
   <ItemGroup>
