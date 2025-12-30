@@ -18,8 +18,12 @@ public partial class MainGame : Control
     [Export] Control settingsScene;
     [Export] Control helpScene;
     private EOSManager eosManager;
+
+    // Określa czy lokalny gracz jest hostem (właścicielem lobby EOS) - wartość ustawiana dynamicznie na podstawie EOSManager.IsLobbyOwner
+    public bool isHost = false; 
+
     private Team playerTeam;
-    public const bool IsHost = true; // temp value
+    
     private int pointsBlue;
     public int PointsBlue
     {
@@ -67,18 +71,30 @@ public partial class MainGame : Control
         menuPanel.Visible = false;
         settingsScene.Visible = false;
         helpScene.Visible = false;
+        
+        // Ustalanie czy lokalny gracz jest hostem na podstawie właściciela lobby EOS
+        isHost = eosManager != null && eosManager.isLobbyOwner;
 
-        // Choosing starting team
-        if (IsHost)
+        // (opcjonalnie) log kontrolny
+        // Log diagnostyczny: potwierdzenie roli host/klient po wejściu do sceny gry
+        GD.Print($"[MainGame] isHost={isHost} localPUID={eosManager?.localProductUserIdString}");
+
+        if (isHost)
         {
-            // Choose starting team randomly
+            // Host losuje drużynę rozpoczynającą grę - na razie losowanie 
             startingTeam = (Team)Random.Shared.Next(0, 2);
-            GD.Print("Starting team: " + startingTeam.ToString());
-            // TODO: send starting team to clients
+            GD.Print("Starting team (HOST): " + startingTeam.ToString());
+
+            // TODO: w przyszłości wyślij startingTeam do klientów (P2P / lobby attributes)
         }
         else
         {
-            // TODO: wait to receive starting team from host
+            // Tymczasowe zachowanie klienta:
+            // - do czasu pełnej synchronizacji z hostem
+            // - zapobiega nieustawionemu stanowi gry
+            // TODO: zastąpić odbiorem startingTeam
+            startingTeam = Team.Blue;
+            GD.Print("Starting team (CLIENT TEMP): " + startingTeam.ToString());
         }
 
         // Assing initianl points and turn

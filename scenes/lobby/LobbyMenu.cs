@@ -154,6 +154,9 @@ public partial class LobbyMenu : Control
             eosManager.AITypeUpdated += OnAITypeUpdated;
             eosManager.CheckTeamsBalanceConditions += OnCheckTeamsBalanceConditions;
             eosManager.LobbyReadyStatusUpdated += OnLobbyReadyStatusUpdated;
+            // Game session: odbieramy sygnał startu sesji z EOSManager (ustawiany na podstawie atrybutów lobby)
+            eosManager.GameSessionStartRequested += OnGameSessionStartRequested;
+
             GD.Print("✅ Connected to LobbyMembersUpdated, CustomLobbyIdUpdated, GameModeUpdated, AITypeUpdated, CheckTeamsBalanceConditions and LobbyReadyStatusUpdated signals");
 
             // Sprawdź obecną wartość CustomLobbyId
@@ -219,6 +222,22 @@ public partial class LobbyMenu : Control
     public override void _Process(double delta)
     {
         base._Process(delta);
+    }
+
+    // Chroni przed wielokrotną zmianą sceny, gdy przyjdzie kilka eventów/odświeżeń lobby
+    private bool alreadySwitchedToGame = false;
+
+    // Game Session: wszyscy gracze przechodzą do sceny gry dopiero, gdy lobby ogłosi stan "Starting"
+    private void OnGameSessionStartRequested(string sessionId, string hostUserId, ulong seed)
+    {
+        if (alreadySwitchedToGame) return;
+        
+        alreadySwitchedToGame = true;
+
+        GD.Print($"🎮 Switching to game. Session={sessionId}, Host={hostUserId}, Seed={seed}");
+
+        // Zmiana sceny uruchamiana synchronicznie dla hosta i klientów na podstawie atrybutów lobby
+        GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");    
     }
 
     /// <summary>
@@ -1110,6 +1129,7 @@ public partial class LobbyMenu : Control
         BlockButtonToHandleTooManyRequests(generateNewIdButton);
     }
 
+    // Obsługa przycisku "Start gry" - tylko host inicjuje start sesji
     private void OnStartGamePressed()
     {
         // Sprawdź czy gra jest gotowa do startu
@@ -1119,8 +1139,16 @@ public partial class LobbyMenu : Control
             return;
         }
 
-        GD.Print("🎮 Starting game...");
-        GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");
+        // TYLKO HOST może rozpocząć sesję
+        if (eosManager == null || !eosManager.isLobbyOwner)
+        {
+            GD.Print("⚠️ Only host can start the game");
+            return;
+        }
+
+        GD.Print("🎮 Host requests game session start...");
+        eosManager.RequestStartGameSession();
+        
     }
 
     private void OnBackButtonPressed()
@@ -1565,6 +1593,8 @@ public partial class LobbyMenu : Control
             eosManager.AITypeUpdated -= OnAITypeUpdated;
             eosManager.CheckTeamsBalanceConditions -= OnCheckTeamsBalanceConditions;
             eosManager.LobbyReadyStatusUpdated -= OnLobbyReadyStatusUpdated;
+            // Game session: odpinamy sygnał startu sesji (żeby nie został podwójny handler po ponownym wejściu na scenę)
+            eosManager.GameSessionStartRequested -= OnGameSessionStartRequested;
         }
 
         if (aiAPIKeyInput != null)
