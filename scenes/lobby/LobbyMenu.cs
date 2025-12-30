@@ -31,6 +31,10 @@ public partial class LobbyMenu : Control
     [Export] private Label lobbyStatusLabel;
     [Export] private Label lobbyStatusCounter;
 
+    // Custom tooltip
+    private CustomTooltip customTooltip;
+    private string lobbyReadyTooltip = "";
+
     private string currentLobbyCode = "";
     private const int LobbyCodeLength = 6;
     private const int LobbyMaxPlayers = 10;
@@ -97,6 +101,15 @@ public partial class LobbyMenu : Control
         if (startGameButton != null)
         {
             startGameButton.Pressed += OnStartGamePressed;
+            startGameButton.MouseEntered += OnReadyTooltipMouseEntered;
+            startGameButton.MouseExited += OnReadyTooltipMouseExited;
+        }
+
+        if (lobbyStatusCounter != null)
+        {
+            lobbyStatusCounter.MouseFilter = MouseFilterEnum.Stop;
+            lobbyStatusCounter.MouseEntered += OnReadyTooltipMouseEntered;
+            lobbyStatusCounter.MouseExited += OnReadyTooltipMouseExited;
         }
 
         if (blueTeamList != null)
@@ -187,6 +200,28 @@ public partial class LobbyMenu : Control
 
         // Domyślnie odblokuj przyciski dołączania zanim spłyną dane z EOS
         UpdateTeamButtonsState(EOSManager.Team.None);
+
+        // Załaduj custom tooltip ze sceny
+        LoadCustomTooltip();
+    }
+
+    /// <summary>
+    /// Ładuje custom tooltip ze sceny
+    /// </summary>
+    private void LoadCustomTooltip()
+    {
+        var tooltipScene = GD.Load<PackedScene>("res://scenes/components/tooltip.tscn");
+        if (tooltipScene != null)
+        {
+            customTooltip = tooltipScene.Instantiate<CustomTooltip>();
+            AddChild(customTooltip);
+        }
+    }
+
+    // Tooltip aktualizuje swoją pozycję sam w swoim _Process
+    public override void _Process(double delta)
+    {
+        base._Process(delta);
     }
 
     // Chroni przed wielokrotną zmianą sceny, gdy przyjdzie kilka eventów/odświeżeń lobby
@@ -218,7 +253,7 @@ public partial class LobbyMenu : Control
 
     private string GenerateLobbyIDCode()
     {
-        //Bez liter O i I 
+        //Bez liter O i I
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
         var random = new Random();
         char[] code = new char[LobbyCodeLength];
@@ -726,6 +761,63 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
+    /// Włącza normalny styl przycisku "Rozpocznij grę"
+    /// </summary>
+    private void EnableStartGameButtonStyle()
+    {
+        if (startGameButton == null || leaveLobbyButton == null)
+            return;
+
+        startGameButton.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+        startGameButton.MouseFilter = Control.MouseFilterEnum.Stop;
+        startGameButton.Modulate = new Color(1, 1, 1); // Normalny kolor
+
+        // Przywróć domyślny styl
+        var normalStyle = leaveLobbyButton.GetThemeStylebox("normal");
+        var hoverStyle = leaveLobbyButton.GetThemeStylebox("hover");
+        var pressedStyle = leaveLobbyButton.GetThemeStylebox("pressed");
+        var focusStyle = leaveLobbyButton.GetThemeStylebox("focus");
+        var fontHoverColor = leaveLobbyButton.GetThemeColor("font_hover_color");
+
+        if (normalStyle != null)
+            startGameButton.AddThemeStyleboxOverride("normal", normalStyle);
+        if (hoverStyle != null)
+            startGameButton.AddThemeStyleboxOverride("hover", hoverStyle);
+        if (pressedStyle != null)
+            startGameButton.AddThemeStyleboxOverride("pressed", pressedStyle);
+        if (focusStyle != null)
+            startGameButton.AddThemeStyleboxOverride("focus", focusStyle);
+
+        startGameButton.AddThemeColorOverride("font_hover_color", fontHoverColor);
+    }
+
+    /// <summary>
+    /// Wyłącza styl przycisku "Rozpocznij grę" (disabled look)
+    /// </summary>
+    private void DisableStartGameButtonStyle()
+    {
+        if (startGameButton == null)
+            return;
+
+        startGameButton.MouseDefaultCursorShape = Control.CursorShape.Forbidden;
+        startGameButton.MouseFilter = Control.MouseFilterEnum.Stop;
+        startGameButton.Modulate = new Color(0.5f, 0.5f, 0.5f); // Szary (disabled)
+
+        var normalStyle = startGameButton.GetThemeStylebox("normal");
+        if (normalStyle != null)
+        {
+            startGameButton.AddThemeStyleboxOverride("hover", normalStyle);
+            startGameButton.AddThemeStyleboxOverride("pressed", normalStyle);
+            startGameButton.AddThemeStyleboxOverride("focus", normalStyle);
+        }
+
+        var whiteFontColor = new Color(1, 1, 1); // Biały
+        startGameButton.AddThemeColorOverride("font_color", whiteFontColor);
+        startGameButton.AddThemeColorOverride("font_hover_color", whiteFontColor);
+        startGameButton.AddThemeColorOverride("font_pressed_color", whiteFontColor);
+    }
+
+    /// <summary>
     /// Aktualizuje wyświetlanie statusu lobby
     /// </summary>
     private void UpdateLobbyStatusDisplay(bool isReady)
@@ -737,6 +829,7 @@ public partial class LobbyMenu : Control
 
         if (isHost)
         {
+            List<string> unmetConditions = new List<string>();
             // Host widzi szczegółowy status
             if (isReady)
             {
@@ -751,17 +844,13 @@ public partial class LobbyMenu : Control
                 lobbyStatusLabel.Text = "Gra gotowa";
                 lobbyStatusLabel.Modulate = new Color(0, 1, 0); // Zielony
 
-                if (startGameButton != null)
-                {
-                    startGameButton.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
-                    startGameButton.MouseFilter = Control.MouseFilterEnum.Stop;
-                    startGameButton.Modulate = new Color(1, 1, 1); // Normalny kolor
-                }
+                // Wyczyść tooltip dla gotowego lobby
+                lobbyReadyTooltip = "";
+
+                EnableStartGameButtonStyle();
             }
             else
             {
-                var unmetConditions = new System.Collections.Generic.List<string>();
-
                 if (!LobbyStatus.gameModeSet)
                     unmetConditions.Add("Nie wybrano trybu gry");
 
@@ -782,6 +871,8 @@ public partial class LobbyMenu : Control
 
                 if (unmetConditions.Count > 0)
                 {
+                    lobbyReadyTooltip = string.Join("\n", unmetConditions);
+
                     int totalCount = unmetConditions.Count;
                     if (lobbyStatusCounter != null)
                     {
@@ -801,12 +892,7 @@ public partial class LobbyMenu : Control
                     lobbyStatusLabel.Modulate = new Color(0.7f, 0.7f, 0.7f); // Szary
                 }
 
-                if (startGameButton != null)
-                {
-                    startGameButton.MouseDefaultCursorShape = Control.CursorShape.Arrow;
-                    startGameButton.MouseFilter = Control.MouseFilterEnum.Ignore;
-                    startGameButton.Modulate = new Color(0.5f, 0.5f, 0.5f); // Szary (disabled)
-                }
+                DisableStartGameButtonStyle();
             }
 
             GD.Print($"📊 Host Status: {(lobbyStatusCounter != null ? lobbyStatusCounter.Text : "")} {lobbyStatusLabel.Text}");
@@ -1152,21 +1238,28 @@ public partial class LobbyMenu : Control
         TryJoinTeam(EOSManager.Team.Red);
     }
 
+    private void OnReadyTooltipMouseEntered()
+    {
+        if (customTooltip != null && !string.IsNullOrEmpty(lobbyReadyTooltip))
+        {
+            customTooltip.Show(lobbyReadyTooltip);
+        }
+    }
+
+    private void OnReadyTooltipMouseExited()
+    {
+        if (customTooltip != null)
+        {
+            customTooltip.Hide();
+        }
+    }
+
     private void OnLeaveTeamButtonPressed()
     {
         TryLeftTeam();
     }
 
     private EOSManager.Team currentLocalTeam = EOSManager.Team.None;
-
-    // Enum dla akcji w popup menu gracza
-    private enum PlayerPopupAction
-    {
-        MoveToBlue = 0,
-        MoveToRed = 1,
-        MoveToNeutral = 2,
-        KickPlayer = 4
-    }
 
     private void TryJoinTeam(EOSManager.Team teamName)
     {
@@ -1391,12 +1484,22 @@ public partial class LobbyMenu : Control
 
         if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman)
         {
-            //jest tylko jedna opcja - pomijamy enum
-            popup.AddItem($"Wyrzuć z lobby", 0);
+            // Opcje zarządzania lobby (tryb AI vs Human)
+            int idxTransferHost = 0;
+            popup.AddItem($"Przekaż hosta", idxTransferHost);
+            
+            int idxKickPlayer = 1;
+            popup.AddItem($"Wyrzuć z lobby", idxKickPlayer);
+            
             popup.IndexPressed += (index) =>
             {
                 GD.Print($"📋 Popup menu item {index} pressed for {displayName}");
-                if (index == 0)
+                if (index == idxTransferHost)
+                {
+                    GD.Print($"👑 Transferring host to: {displayName}");
+                    eosManager.TransferLobbyOwnership(userId);
+                }
+                else if (index == idxKickPlayer)
                 {
                     GD.Print($"👢 Kicking player: {displayName}");
                     eosManager.KickPlayer(userId);
@@ -1407,40 +1510,62 @@ public partial class LobbyMenu : Control
         }
         else
         {
-            popup.AddItem("Przenieś do Niebieskich", (int)PlayerPopupAction.MoveToBlue);
-            popup.SetItemDisabled((int)PlayerPopupAction.MoveToBlue, currentTeam == EOSManager.Team.Blue || isBlueTeamFull || hasPlayerCooldown);
-            popup.AddItem("Przenieś do Czerwonych", (int)PlayerPopupAction.MoveToRed);
-            popup.SetItemDisabled((int)PlayerPopupAction.MoveToRed, currentTeam == EOSManager.Team.Red || isRedTeamFull || hasPlayerCooldown);
-            popup.AddItem("Wyrzuć z drużyny", (int)PlayerPopupAction.MoveToNeutral);
-            popup.SetItemDisabled((int)PlayerPopupAction.MoveToNeutral, currentTeam == EOSManager.Team.None || hasPlayerCooldown);
+            // Opcje zarządzania drużynami
+            int currentIndex = 0;
+
+            int idxMoveBlue = currentIndex++;
+            popup.AddItem("Przenieś do Niebieskich");
+            popup.SetItemDisabled(idxMoveBlue, currentTeam == EOSManager.Team.Blue || isBlueTeamFull || hasPlayerCooldown);
+
+            int idxMoveRed = currentIndex++;
+            popup.AddItem("Przenieś do Czerwonych");
+            popup.SetItemDisabled(idxMoveRed, currentTeam == EOSManager.Team.Red || isRedTeamFull || hasPlayerCooldown);
+
+            int idxMoveNeutral = currentIndex++;
+            popup.AddItem("Wyrzuć z drużyny");
+            popup.SetItemDisabled(idxMoveNeutral, currentTeam == EOSManager.Team.None || hasPlayerCooldown);
+
             popup.AddSeparator();
-            popup.AddItem($"Wyrzuć z lobby", (int)PlayerPopupAction.KickPlayer);
+            currentIndex++; // Separator też zajmuje index
+
+            // Opcje zarządzania lobby
+            int idxTransferHost = currentIndex++;
+            popup.AddItem($"Przekaż hosta");
+
+            int idxKickPlayer = currentIndex++;
+            popup.AddItem($"Wyrzuć z lobby");
 
             popup.IndexPressed += (index) =>
             {
                 GD.Print($"📋 Popup menu item {index} pressed for {displayName}");
 
-                switch (index)
+                if (index == idxMoveBlue)
                 {
-                    case (int)PlayerPopupAction.MoveToBlue:
-                        GD.Print($"🔁 Moving player {displayName} to Blue via popup");
-                        eosManager.MovePlayerToTeam(userId, EOSManager.Team.Blue);
-                        StartPlayerMoveCooldown(userId);
-                        break;
-                    case (int)PlayerPopupAction.MoveToRed:
-                        GD.Print($"🔁 Moving player {displayName} to Red via popup");
-                        eosManager.MovePlayerToTeam(userId, EOSManager.Team.Red);
-                        StartPlayerMoveCooldown(userId);
-                        break;
-                    case (int)PlayerPopupAction.MoveToNeutral:
-                        GD.Print($"🔁 Moving player {displayName} to Neutral via popup");
-                        eosManager.MovePlayerToTeam(userId, EOSManager.Team.None);
-                        StartPlayerMoveCooldown(userId);
-                        break;
-                    case (int)PlayerPopupAction.KickPlayer:
-                        GD.Print($"👢 Kicking player: {displayName}");
-                        eosManager.KickPlayer(userId);
-                        break;
+                    GD.Print($"🔁 Moving player {displayName} to Blue via popup");
+                    eosManager.MovePlayerToTeam(userId, EOSManager.Team.Blue);
+                    StartPlayerMoveCooldown(userId);
+                }
+                else if (index == idxMoveRed)
+                {
+                    GD.Print($"🔁 Moving player {displayName} to Red via popup");
+                    eosManager.MovePlayerToTeam(userId, EOSManager.Team.Red);
+                    StartPlayerMoveCooldown(userId);
+                }
+                else if (index == idxMoveNeutral)
+                {
+                    GD.Print($"🔁 Moving player {displayName} to Neutral via popup");
+                    eosManager.MovePlayerToTeam(userId, EOSManager.Team.None);
+                    StartPlayerMoveCooldown(userId);
+                }
+                else if (index == idxTransferHost)
+                {
+                    GD.Print($"👑 Transferring host to: {displayName}");
+                    eosManager.TransferLobbyOwnership(userId);
+                }
+                else if (index == idxKickPlayer)
+                {
+                    GD.Print($"👢 Kicking player: {displayName}");
+                    eosManager.KickPlayer(userId);
                 }
 
                 popup.QueueFree();
@@ -1475,6 +1600,18 @@ public partial class LobbyMenu : Control
         if (aiAPIKeyInput != null)
         {
             aiAPIKeyInput.TextChanged -= OnAPIKeyTextChanged;
+        }
+
+        if (startGameButton != null)
+        {
+            startGameButton.MouseEntered -= OnReadyTooltipMouseEntered;
+            startGameButton.MouseExited -= OnReadyTooltipMouseExited;
+        }
+
+        if (lobbyStatusCounter != null)
+        {
+            lobbyStatusCounter.MouseEntered -= OnReadyTooltipMouseEntered;
+            lobbyStatusCounter.MouseExited -= OnReadyTooltipMouseExited;
         }
 
         if (blueTeamJoinButton != null)

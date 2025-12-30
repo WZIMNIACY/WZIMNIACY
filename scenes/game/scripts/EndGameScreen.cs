@@ -98,21 +98,7 @@ public partial class EndGameScreen : Control
             tween.TweenProperty(bar, "value", mainValue, 1.0f).From(0.0f);
         }
     }
-
-	private void UpdateStatRed(Label label, ProgressBar bar, int redValue, int blueValue)
-    {
-		int maxValue = blueValue + redValue;
-        if (label != null) label.Text = redValue.ToString();
-        
-        if (bar != null)
-        {
-            bar.MaxValue = maxValue;
-            Tween tween = CreateTween();
-            tween.SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.Out);
-            tween.TweenProperty(bar, "value", redValue, 1.0f).From(0.0f);
-        }
-    }
-
+    
     private void OnLobbyPressed() => GetTree().ChangeSceneToFile(lobbyScenePath);
     private void OnMenuPressed()
     {
