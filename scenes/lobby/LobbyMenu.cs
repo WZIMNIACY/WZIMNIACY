@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
-using game;
+using AI;
 
 public partial class LobbyMenu : Control
 {
@@ -240,13 +240,13 @@ public partial class LobbyMenu : Control
     private void OnGameSessionStartRequested(string sessionId, string hostUserId, ulong seed)
     {
         if (alreadySwitchedToGame) return;
-        
+
         alreadySwitchedToGame = true;
 
         GD.Print($"🎮 Switching to game. Session={sessionId}, Host={hostUserId}, Seed={seed}");
 
         // Zmiana sceny uruchamiana synchronicznie dla hosta i klientów na podstawie atrybutów lobby
-        GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");    
+        GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");
     }
 
     /// <summary>
@@ -1022,12 +1022,12 @@ public partial class LobbyMenu : Control
         try
         {
             GD.Print($"Proceeding API Key.");
-            LLM apiLLM = new LLM(apiKey);
+            DeepSeekLLM apiLLM = new DeepSeekLLM(apiKey);
 
             // Dane testowe - minimalny request
             string systemPrompt = "test";
             string userPrompt = "test";
-            int maxTokens = 1;
+            uint maxTokens = 1;
 
             string response = await apiLLM.SendRequestAsync(systemPrompt, userPrompt, maxTokens);
 
@@ -1045,45 +1045,7 @@ public partial class LobbyMenu : Control
         }
         catch (Exception ex)
         {
-            string errorMessage = ex.Message.ToLower();
-
-            if (errorMessage.Contains("401") || errorMessage.Contains("unauthorized") || errorMessage.Contains("authentication"))
-            {
-                GD.PrintErr($"❌ API Key validation failed: Invalid API key");
-            }
-            else if (errorMessage.Contains("429") || errorMessage.Contains("rate_limit") || errorMessage.Contains("too many requests"))
-            {
-                GD.PrintErr($"❌ API Key validation failed: Rate limit exceeded");
-            }
-            else if (errorMessage.Contains("quota") || errorMessage.Contains("insufficient_quota") || errorMessage.Contains("limit"))
-            {
-                GD.PrintErr($"❌ API Key validation failed: Quota exceeded");
-            }
-            else if (errorMessage.Contains("max_tokens") || errorMessage.Contains("token") && errorMessage.Contains("limit"))
-            {
-                GD.PrintErr($"❌ API Key validation failed: Token limit in request");
-            }
-            else if (errorMessage.Contains("400") || errorMessage.Contains("bad request") || errorMessage.Contains("invalid_request"))
-            {
-                GD.PrintErr($"❌ API Key validation failed: Bad request");
-            }
-            else if (errorMessage.Contains("500") || errorMessage.Contains("503") || errorMessage.Contains("internal") || errorMessage.Contains("server"))
-            {
-                GD.PrintErr($"❌ API Key validation failed: Server error");
-            }
-            else if (errorMessage.Contains("timeout") || errorMessage.Contains("timed out"))
-            {
-                GD.PrintErr($"❌ API Key validation failed: Timeout");
-            }
-            else if (errorMessage.Contains("network") || errorMessage.Contains("connection"))
-            {
-                GD.PrintErr($"❌ API Key validation failed: Network error");
-            }
-            else
-            {
-                GD.PrintErr($"❌ API Key validation failed: {ex.Message}");
-            }
-
+            GD.PrintErr($"❌ API Key validation failed: {ex.Message}");
             SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
             LobbyStatus.isAPIKeySet = false;
             UpdateHostReadyStatusIfOwner();
@@ -1311,7 +1273,7 @@ public partial class LobbyMenu : Control
 
         GD.Print("🎮 Host requests game session start...");
         eosManager.RequestStartGameSession();
-        
+
     }
 
     private void OnBackButtonPressed()
@@ -1650,10 +1612,10 @@ public partial class LobbyMenu : Control
             // Opcje zarządzania lobby (tryb AI vs Human)
             int idxTransferHost = 0;
             popup.AddItem($"Przekaż hosta", idxTransferHost);
-            
+
             int idxKickPlayer = 1;
             popup.AddItem($"Wyrzuć z lobby", idxKickPlayer);
-            
+
             popup.IndexPressed += (index) =>
             {
                 GD.Print($"📋 Popup menu item {index} pressed for {displayName}");
