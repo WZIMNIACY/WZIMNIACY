@@ -130,18 +130,19 @@ public partial class EOSManager : Node
     	SetLobbyAttribute(ATTR_SESSION_ID, sessionId);
     	SetLobbyAttribute(ATTR_SESSION_SEED, seed.ToString());
     	SetLobbyAttribute(ATTR_SESSION_HOST, localProductUserId.ToString());
-    	SetLobbyAttribute(ATTR_SESSION_STATE, "Starting");
+    	SetLobbyAttribute(ATTR_SESSION_STATE, GameSessionState.Starting.ToString());
 
     	// 3) lokalnie też ustaw cache
     	CurrentGameSession.SessionId = sessionId;
     	CurrentGameSession.Seed = seed;
     	CurrentGameSession.HostUserId = localProductUserId.ToString();
-    	CurrentGameSession.State = "Starting";
+    	CurrentGameSession.State = GameSessionState.Starting;
 
     	// host też powinien przejść dopiero po update lobby,
     	// więc NIE robimy tu ChangeScene.
     	GD.Print($"📤 Host requested session start: {sessionId}, seed={seed}");
 	}
+
 	//Generuje krótki, czytelny identyfikator sesji gry (debug/ logi/ recconect) 
 	private string GenerateSessionId()
 	{
@@ -2084,7 +2085,7 @@ public partial class EOSManager : Node
 		CurrentGameSession.SessionId = "";
 		CurrentGameSession.HostUserId = "";
 		CurrentGameSession.Seed = 0;
-		CurrentGameSession.State = "";
+		CurrentGameSession.State = GameSessionState.None;
 
 		// Iteruj po wszystkich atrybutach lobby
 		for (uint i = 0; i < attributeCount; i++)
@@ -2199,7 +2200,10 @@ public partial class EOSManager : Node
 				}
 				else if (keyStr != null && keyStr.Equals(ATTR_SESSION_STATE, StringComparison.OrdinalIgnoreCase))
 				{
-    				CurrentGameSession.State = valueStr;
+    				if (!string.IsNullOrEmpty(valueStr) && Enum.TryParse<GameSessionState>(valueStr, true, out var parsedState))
+        				CurrentGameSession.State = parsedState;
+    				else
+        				CurrentGameSession.State = GameSessionState.None;
 				}
 			}
 		}
@@ -2226,16 +2230,18 @@ public partial class EOSManager : Node
 		}
 		
 		// Jeśli sesja nie jest w stanie Starting, pozwól na ponowny start w przyszłości
-		if (!string.Equals(CurrentGameSession.State, "Starting", StringComparison.OrdinalIgnoreCase))
+		if (CurrentGameSession.State != GameSessionState.Starting)
 		{
     		_sessionStartHandled = false;
 		}
+		
 		bool hasAll = !string.IsNullOrEmpty(CurrentGameSession.SessionId)
           		&& !string.IsNullOrEmpty(CurrentGameSession.HostUserId)
           		&& CurrentGameSession.Seed != 0;
+
 		// Bezpieczne wykrycie startu sesji gry - wykonywane tylko raz na update lobby	
 		if (!string.IsNullOrEmpty(currentLobbyId)
-    		&& string.Equals(CurrentGameSession.State, "Starting", StringComparison.OrdinalIgnoreCase)
+    		&& CurrentGameSession.State == GameSessionState.Starting
     		&& hasAll
     		&& !_sessionStartHandled)
 		{

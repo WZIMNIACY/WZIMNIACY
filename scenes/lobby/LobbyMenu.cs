@@ -196,6 +196,7 @@ public partial class LobbyMenu : Control
     private void OnGameSessionStartRequested(string sessionId, string hostUserId, ulong seed)
     {
         if (_alreadySwitchedToGame) return;
+        
         _alreadySwitchedToGame = true;
 
         GD.Print($"🎮 Switching to game. Session={sessionId}, Host={hostUserId}, Seed={seed}");
