@@ -1,9 +1,8 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using FileOperations;
 using game;
-using System;
 using AI;
+using System.Security;
 
 namespace hints
 {
@@ -26,13 +25,30 @@ namespace hints
             this.Cards = cards;
         }
 
-        public static Hint Create(Deck deck, DeepSeekLLM llm, Team nowTour)
+        public static Hint Create(Deck deck, ILLM llm, Team nowTour)
         {
             //Prompt set up
             string _nowTour = nowTour.ToString();
             string _actualDeck = deck.ToJson();
-            string hintPromptPath = Path.Combine(Directory.GetCurrentDirectory(), "hintPrompt.txt");
-            string systemPromptHint = FileOp.Read(hintPromptPath);
+
+            string baseDir = Directory.GetCurrentDirectory();
+            string parentDirInfo;
+            
+            DirectoryInfo? parent = Directory.GetParent(baseDir);
+            if(parent == null)
+            {
+                parentDirInfo = "";
+            }
+            else
+            {
+                parentDirInfo = parent.FullName;
+            }
+
+            if(parentDirInfo == null)
+                parentDirInfo = "";
+
+            string hintPromptPath = Path.Combine(parentDirInfo, @"HintGenerating/hintPrompt.txt");
+            string systemPromptHint = File.ReadAllText(hintPromptPath);
             string userPromptHint = $"" +
                 $"_nowTour = {_nowTour}\n" +
                 $"_actualDeck = {_actualDeck}";
