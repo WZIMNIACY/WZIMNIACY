@@ -95,6 +95,8 @@ public partial class CardManager : GridContainer
 	private void OnCardConfirmed(AgentCard card)
 	{
 		GD.Print("Karta kliknięta: " + card.Name);
+		card.SetColor();
+		card.MouseFilter = MouseFilterEnum.Ignore;
 		HideAllCards();
         mainGame.CardConfirm(card);
     }

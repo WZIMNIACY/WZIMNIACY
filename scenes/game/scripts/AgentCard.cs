@@ -87,7 +87,7 @@ public partial class AgentCard : PanelContainer
 	{
 		SetCardName(cardManager.GetCardName());
 		type = cardManager.GetCardType();
-		SetColor();
+		//SetColor();
 	}
 	
 	private void SetCardName(string name)
@@ -95,7 +95,7 @@ public partial class AgentCard : PanelContainer
 		textLabel.Text = name;
 	}
 
-	private void SetColor()
+	public void SetColor()
 	{	
 		if(type == CardManager.CardType.Blue)
 		{
@@ -108,6 +108,10 @@ public partial class AgentCard : PanelContainer
 		else if(type == CardManager.CardType.Assassin)
 		{
 			cardImage.Modulate = new Color("767676aa");
+		}
+		else
+		{
+			cardImage.Modulate = new Color("ffffbd");
 		}
 	}	
 
