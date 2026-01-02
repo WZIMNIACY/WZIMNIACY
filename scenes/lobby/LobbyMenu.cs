@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using Diagnostics;
 
 public partial class LobbyMenu : Control
 {
@@ -74,6 +75,11 @@ public partial class LobbyMenu : Control
         leaveConfirmation = GetNode<LobbyLeaveConfirmation>("LobbyLeaveConfirmation");
         escapeBackHandler = GetNode<EscapeBackHandler>("EscapeBackHandler");
         escapeBackHandler.LeaveConfirmation = leaveConfirmation;
+        // Sprawdź VRAM i uzupełnij w tle
+        if (HardwareResources.VRAMDetectionStatus == VRAMStatus.NotDetected)
+        {
+            HardwareResources.StartVRAMDetection();
+        }
 
         // Podłącz sygnały przycisków
         if (backButton != null)
@@ -161,6 +167,9 @@ public partial class LobbyMenu : Control
             eosManager.AITypeUpdated += OnAITypeUpdated;
             eosManager.CheckTeamsBalanceConditions += OnCheckTeamsBalanceConditions;
             eosManager.LobbyReadyStatusUpdated += OnLobbyReadyStatusUpdated;
+            // Game session: odbieramy sygnał startu sesji z EOSManager (ustawiany na podstawie atrybutów lobby)
+            eosManager.GameSessionStartRequested += OnGameSessionStartRequested;
+
             GD.Print("✅ Connected to LobbyMembersUpdated, CustomLobbyIdUpdated, GameModeUpdated, AITypeUpdated, CheckTeamsBalanceConditions and LobbyReadyStatusUpdated signals");
 
             // Sprawdź obecną wartość CustomLobbyId
@@ -226,6 +235,22 @@ public partial class LobbyMenu : Control
     public override void _Process(double delta)
     {
         base._Process(delta);
+    }
+
+    // Chroni przed wielokrotną zmianą sceny, gdy przyjdzie kilka eventów/odświeżeń lobby
+    private bool alreadySwitchedToGame = false;
+
+    // Game Session: wszyscy gracze przechodzą do sceny gry dopiero, gdy lobby ogłosi stan "Starting"
+    private void OnGameSessionStartRequested(string sessionId, string hostUserId, ulong seed)
+    {
+        if (alreadySwitchedToGame) return;
+        
+        alreadySwitchedToGame = true;
+
+        GD.Print($"🎮 Switching to game. Session={sessionId}, Host={hostUserId}, Seed={seed}");
+
+        // Zmiana sceny uruchamiana synchronicznie dla hosta i klientów na podstawie atrybutów lobby
+        GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");    
     }
 
     /// <summary>
@@ -1067,6 +1092,12 @@ public partial class LobbyMenu : Control
         LobbyStatus.gameModeSet = true;
         UpdateHostReadyStatus();
     }
+
+    private bool CheckHardwareCapabilities()
+    {
+        return HardwareResources.IfAICapable();
+    }
+
     private void OnSelectedAITypeChanged(long index)
     {
         if (aiTypeList == null || eosManager == null) return;
@@ -1074,15 +1105,96 @@ public partial class LobbyMenu : Control
         string selectedAITypeStr = aiTypeList.GetItemText((int)index);
         EOSManager.AIType selectedAIType = EOSManager.ParseEnumFromDescription<EOSManager.AIType>(selectedAITypeStr, EOSManager.AIType.API);
 
-        GD.Print($"👆 User selected AI type: {selectedAITypeStr} -> {selectedAIType}");
+        if (selectedAIType != EOSManager.AIType.API)
+        {
+            //sprawdzenie wymagań sprzętowych jeśli wybrano AI lokalne
+            bool hardwareOk = CheckHardwareCapabilities();
+            string hardwareInfo = HardwareResources.GetHardwareInfo();
+            if (!hardwareOk)
+            {
+                // Pokaż okno ostrzeżenia z możliwością potwierdzenia
+                ShowHardwareWarningDialog(selectedAIType, hardwareInfo);
+
+                CallDeferred(nameof(OnAITypeUpdated), EOSManager.GetEnumDescription(eosManager.currentAIType));
+                return;
+
+            }
+        }
+        GD.Print("✅ Hardware meets AI requirements.");
 
         //zablokuj buttonList by uniknąć wielokrotnych zapytań
         BlockButtonToHandleTooManyRequests(aiTypeList);
 
-        // Ustaw tryb gry w EOSManager - zostanie zsynchronizowany z innymi graczami
+        //Zmien typ AI
         eosManager.SetAIType(selectedAIType);
         LobbyStatus.aiTypeSet = true;
         UpdateHostReadyStatus();
+    }
+
+    /// <summary>
+    /// Pokazuje okno ostrzeżenia o niewystarczającym sprzęcie z możliwością wybrania LLM mimo to
+    /// </summary>
+    private void ShowHardwareWarningDialog(EOSManager.AIType selectedAIType, string currentHardwareInfo)
+    {
+        var dialog = new AcceptDialog();
+        dialog.Title = "Ostrzeżenie - Niewystarczający sprzęt";
+
+        string message = "Twój komputer nie spełnia zalecanych wymagań dla lokalnego LLM.\n\n";
+        message += " Twój sprzęt:\n";
+        message += currentHardwareInfo + "\n\n";
+        message += "Zalecane wymagania:\n";
+        message += $"• CPU: {HardwareResources.GetMinCPUCores} rdzeni\n";
+        message += $"• RAM: {HardwareResources.GetMinMemoryMB / 1024} GB ({HardwareResources.GetMinMemoryMB} MB) \n";
+        message += $"  lub\n";
+        message += $"• VRAM: {HardwareResources.GetMinVRAMMB / 1024} GB ({HardwareResources.GetMinVRAMMB} MB)\n\n";
+        message += " Uruchomienie lokalnego LLM może spowodować:\n";
+        message += "• Spowolnienie systemu\n";
+        message += "• Niską jakość odpowiedzi AI\n";
+        message += "• Błędy lub zawieszenia gry\n\n";
+        message += "Zalecane jest użycie trybu API dla lepszej wydajności.\n\n";
+        message += "Czy mimo to chcesz kontynuować z lokalnym LLM?";
+
+        dialog.DialogText = message;
+        dialog.AddButton("Nie, powróć", true, "cancel");
+        dialog.OkButtonText = "Kontynuuj mimo to";
+
+        // Czcionka
+        var font = GD.Load<FontFile>("res://assets/fonts/SpaceMono-Bold.ttf");
+        if (font != null)
+        {
+            var theme = new Theme();
+            theme.DefaultFont = font;
+            theme.DefaultFontSize = 14;
+            dialog.Theme = theme;
+        }
+
+        dialog.Confirmed += () =>
+        {
+            GD.Print($"✅ User confirmed local LLM despite hardware warning");
+
+            // Zablokuj buttonList by uniknąć wielokrotnych zapytań
+            BlockButtonToHandleTooManyRequests(aiTypeList);
+
+            //Zmien typ AI
+            eosManager.SetAIType(selectedAIType);
+            LobbyStatus.aiTypeSet = true;
+            UpdateHostReadyStatus();
+
+            dialog.QueueFree();
+        };
+
+        dialog.CustomAction += (actionName) =>
+        {
+            if (actionName.ToString() == "cancel")
+            {
+                GD.Print($"❌ User cancelled local LLM selection");
+                dialog.QueueFree();
+            }
+        };
+
+        // Dodaj do drzewa i wyświetl
+        GetTree().Root.AddChild(dialog);
+        dialog.PopupCentered();
     }
 
     private void OnCopyIdButtonPressed()
@@ -1117,6 +1229,7 @@ public partial class LobbyMenu : Control
         BlockButtonToHandleTooManyRequests(generateNewIdButton);
     }
 
+    // Obsługa przycisku "Start gry" - tylko host inicjuje start sesji
     private void OnStartGamePressed()
     {
         // Sprawdź czy gra jest gotowa do startu
@@ -1126,8 +1239,16 @@ public partial class LobbyMenu : Control
             return;
         }
 
-        GD.Print("🎮 Starting game...");
-        GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");
+        // TYLKO HOST może rozpocząć sesję
+        if (eosManager == null || !eosManager.isLobbyOwner)
+        {
+            GD.Print("⚠️ Only host can start the game");
+            return;
+        }
+
+        GD.Print("🎮 Host requests game session start...");
+        eosManager.RequestStartGameSession();
+        
     }
 
     private void OnBackButtonPressed()
@@ -1560,6 +1681,8 @@ public partial class LobbyMenu : Control
             eosManager.AITypeUpdated -= OnAITypeUpdated;
             eosManager.CheckTeamsBalanceConditions -= OnCheckTeamsBalanceConditions;
             eosManager.LobbyReadyStatusUpdated -= OnLobbyReadyStatusUpdated;
+            // Game session: odpinamy sygnał startu sesji (żeby nie został podwójny handler po ponownym wejściu na scenę)
+            eosManager.GameSessionStartRequested -= OnGameSessionStartRequested;
         }
 
         if (aiAPIKeyInput != null)
