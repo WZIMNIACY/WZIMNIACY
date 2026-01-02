@@ -1307,6 +1307,7 @@ public partial class LobbyMenu : Control
         {
             Process.Start("xdg-open", helpUrl);
         }
+    }
     /// Pokazuje okno ostrzeżenia o niewystarczającym sprzęcie z możliwością wybrania LLM mimo to
     /// </summary>
     private void ShowHardwareWarningDialog(EOSManager.AIType selectedAIType, string currentHardwareInfo)
