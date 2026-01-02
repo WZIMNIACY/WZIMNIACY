@@ -1,6 +1,8 @@
 using Godot;
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
+using AI;
 using Diagnostics;
 
 public partial class LobbyMenu : Control
@@ -25,16 +27,19 @@ public partial class LobbyMenu : Control
     [Export] private Button generateNewIdButton;
     [Export] private Button startGameButton;
     [Export] private OptionButton gameModeList;
+    [Export] private HBoxContainer aiAPIBox;
     [Export] private OptionButton aiTypeList;
     [Export] private Label gameModeSelectedLabel;
     [Export] private Label aiTypeSelectedLabel;
     [Export] private LineEdit aiAPIKeyInput;
+    [Export] private Button apiKeyHelpButton;
     [Export] private Label lobbyStatusLabel;
     [Export] private Label lobbyStatusCounter;
 
     // Custom tooltip
     private CustomTooltip customTooltip;
     private string lobbyReadyTooltip = "";
+    private string apiKeyErrorMessage = "";
 
     private string currentLobbyCode = "";
     private const int LobbyCodeLength = 6;
@@ -104,6 +109,10 @@ public partial class LobbyMenu : Control
         {
             aiTypeList.ItemSelected += OnSelectedAITypeChanged;
         }
+        if (apiKeyHelpButton != null)
+        {
+            apiKeyHelpButton.Pressed += OnAPIKeyHelpButtonPressed;
+        }
 
         if (startGameButton != null)
         {
@@ -146,9 +155,10 @@ public partial class LobbyMenu : Control
             redTeamJoinButton.Pressed += OnRedTeamJoinButtonPressed;
         }
 
-        // Podłącz walidację API key przy zmianie tekstu
+        // Podłącz walidację API key przy wciśnięciu Enter
         if (aiAPIKeyInput != null)
         {
+            aiAPIKeyInput.TextSubmitted += OnAPIKeySubmitted;
             aiAPIKeyInput.TextChanged += OnAPIKeyTextChanged;
         }
 
@@ -238,13 +248,13 @@ public partial class LobbyMenu : Control
     private void OnGameSessionStartRequested(string sessionId, string hostUserId, ulong seed)
     {
         if (alreadySwitchedToGame) return;
-        
+
         alreadySwitchedToGame = true;
 
         GD.Print($"🎮 Switching to game. Session={sessionId}, Host={hostUserId}, Seed={seed}");
 
         // Zmiana sceny uruchamiana synchronicznie dla hosta i klientów na podstawie atrybutów lobby
-        GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");    
+        GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");
     }
 
     /// <summary>
@@ -461,6 +471,10 @@ public partial class LobbyMenu : Control
         {
             aiAPIKeyInput.Visible = isHost && eosManager != null && eosManager.currentAIType == EOSManager.AIType.API;
         }
+        if (apiKeyHelpButton != null)
+        {
+            apiKeyHelpButton.Visible = isHost && eosManager != null && eosManager.currentAIType == EOSManager.AIType.API;
+        }
 
         if (eosManager != null)
         {
@@ -607,6 +621,9 @@ public partial class LobbyMenu : Control
     {
         GD.Print($"🤖 [SIGNAL] AIType updated: '{aiType}'");
 
+        LobbyStatus.isAPIKeySet = false;
+        SetAPIKeyInputBorder(new Color(0.5f, 0.5f, 0.5f)); // Szary
+
         // Parsuj string na enum
         EOSManager.AIType aiTypeEnum = EOSManager.ParseEnumFromDescription<EOSManager.AIType>(aiType, EOSManager.AIType.API);
         GD.Print($"🔍 Parsed AIType enum: {aiTypeEnum}");
@@ -631,6 +648,7 @@ public partial class LobbyMenu : Control
                 bool isHost = eosManager.isLobbyOwner;
                 bool shouldShowAPIKey = isHost && aiTypeEnum == EOSManager.AIType.API;
                 aiAPIKeyInput.Visible = shouldShowAPIKey;
+                apiKeyHelpButton.Visible = shouldShowAPIKey;
             }
         }
 
@@ -641,16 +659,24 @@ public partial class LobbyMenu : Control
             GD.Print($"✅ AIType label updated to: {aiType}");
         }
 
-        //Jeśli nie jest potrzebne API to nie sprawdzaj go by rozpocząć rozgrywkę - porównaj z enumem
-        if (aiTypeEnum != EOSManager.AIType.API)
+        //Sprawdź czy API key jest potrzebny i czy jest wypełniony
+        if (aiTypeEnum == EOSManager.AIType.API)
         {
-            LobbyStatus.isAPIKeySet = true;
-            GD.Print($"✅ API key not required for {aiTypeEnum}");
+            string apiKey = aiAPIKeyInput.Text;
+            if (apiKey != "")
+            {
+                OnAPIKeySubmitted(apiKey);
+            }
+            else
+            {
+                LobbyStatus.isAPIKeySet = false;
+            }
         }
         else
         {
-            LobbyStatus.isAPIKeySet = false;
-            GD.Print($"⚠️ API key required for {aiTypeEnum}");
+            // API nie jest wymagane - automatycznie ustawione na true
+            LobbyStatus.isAPIKeySet = true;
+            GD.Print($"✅ API key not required for {aiTypeEnum}");
         }
 
         LobbyStatus.aiTypeSet = true;
@@ -874,7 +900,17 @@ public partial class LobbyMenu : Control
                     unmetConditions.Add("Jedna z drużyn jest przepełniona");
 
                 if (!LobbyStatus.isAPIKeySet)
-                    unmetConditions.Add("Klucz API nie jest poprawny");
+                {
+                    // Użyj niestandardowego komunikatu błędu API jeśli jest dostępny
+                    if (!string.IsNullOrEmpty(apiKeyErrorMessage))
+                    {
+                        unmetConditions.Add(apiKeyErrorMessage);
+                    }
+                    else
+                    {
+                        unmetConditions.Add("Klucz API nie jest poprawny");
+                    }
+                }
 
                 if (unmetConditions.Count > 0)
                 {
@@ -954,29 +990,32 @@ public partial class LobbyMenu : Control
         }
     }
 
-    //DO POPRAWIENIA GDY DOSTANIEMY SPECYFIKACJE KLUCZA API!!!!
     /// <summary>
     /// Waliduje czy klucz API jest poprawnie sformatowany
     /// </summary>
     private bool ValidateAPIKey(string apiKey)
     {
+        // Sprawdź czy klucz nie jest null lub pusty
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            GD.Print("⚠️ API Key is empty");
+            SetAPIKeyInputBorder(new Color(0.5f, 0.5f, 0.5f)); // Szary
+            LobbyStatus.isAPIKeySet = false;
+            UpdateHostReadyStatusIfOwner();
             return false;
         }
-
-        apiKey = apiKey.Trim();
 
         // Minimalna długość klucza API
-        const int MinKeyLength = 20;
+        const int MinKeyLength = 35;
         if (apiKey.Length < MinKeyLength)
         {
-            GD.Print($"⚠️ API Key too short ({apiKey.Length} chars, minimum {MinKeyLength})");
+            GD.Print($"⚠️ API Key is too short: {apiKey.Length} characters (minimum {MinKeyLength})");
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateHostReadyStatusIfOwner();
             return false;
         }
 
-        // Sprawdź dozwolone znaki (alfanumeryczne i kilka symboli)
+        // Sprawdź dozwolone znaki
         foreach (char c in apiKey)
         {
             bool isValidChar = char.IsLetterOrDigit(c) ||
@@ -989,40 +1028,164 @@ public partial class LobbyMenu : Control
 
             if (!isValidChar)
             {
-                GD.Print($"⚠️ API Key contains invalid character: '{c}'");
+                GD.Print($"⚠️ API Key contains invalid character: {c}");
                 return false;
             }
         }
-
-        // Sprawdź czy nie jest typowym placeholder'em
-        string lowerKey = apiKey.ToLower();
-        if (lowerKey.Contains("your_api_key") ||
-            lowerKey.Contains("insert") ||
-            lowerKey.Contains("paste") ||
-            lowerKey.Contains("example") ||
-            lowerKey == "xxxx" ||
-            lowerKey == "****")
-        {
-            GD.Print("⚠️ API Key looks like a placeholder");
-            return false;
-        }
-
-        GD.Print($"✅ API Key validation passed ({apiKey.Length} chars)");
         return true;
     }
 
-    /// <summary>
-    /// Callback wywoływany przy zmianie tekstu w polu API Key
-    /// </summary>
-    private void OnAPIKeyTextChanged(string newText)
+    private async void ProceedAPIKey(string apiKey)
     {
-        bool isValid = ValidateAPIKey(newText);
-        LobbyStatus.isAPIKeySet = isValid;
+        try
+        {
+            GD.Print($"Proceeding API Key.");
+            DeepSeekLLM apiLLM = new DeepSeekLLM(apiKey);
 
+            // Dane testowe - minimalny request
+            string systemPrompt = "test";
+            string userPrompt = "test";
+            uint maxTokens = 1;
+
+            string response = await apiLLM.SendRequestAsync(systemPrompt, userPrompt, maxTokens);
+
+            GD.Print($"✅ API Key validation successful!");
+            SetAPIKeyInputBorder(new Color(0, 1, 0)); // Zielony
+            LobbyStatus.isAPIKeySet = true;
+            apiKeyErrorMessage = ""; // Wyczyść komunikat błędu
+
+            // Zapisz zwalidowany klucz API w atrybutach lobby
+            if (eosManager != null)
+            {
+                eosManager.SetAPIKey(apiKey);
+            }
+
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (InvalidApiKeyException)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Nieprawidłowy klucz API");
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (NoTokensException)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Brak tokenów AI");
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (RateLimitException)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Limit zapytań AI przekroczony");
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (NoInternetException)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Brak połączenia z internetem");
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (ApiException)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Błąd API");
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (Exception)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Błąd walidacji klucza API");
+            UpdateHostReadyStatusIfOwner();
+        }
+
+    }
+
+    /// <summary>
+    /// Aktualizuje komunikat statusu lobby z błędem API
+    /// </summary>
+    private void UpdateLobbyStatusMessage(string message)
+    {
+        if (eosManager != null && eosManager.isLobbyOwner)
+        {
+            apiKeyErrorMessage = message;
+            GD.Print($"🔔 Updated API error message: {message}");
+        }
+    }
+
+    /// <summary>
+    /// Helper do aktualizacji statusu gotowości jeśli jesteśmy hostem
+    /// </summary>
+    private void UpdateHostReadyStatusIfOwner()
+    {
         if (eosManager != null && eosManager.isLobbyOwner)
         {
             UpdateHostReadyStatus();
         }
+    }
+
+    /// <summary>
+    /// Ustawia kolor obramowania dla pola API Key
+    /// </summary>
+    private void SetAPIKeyInputBorder(Color color)
+    {
+        if (aiAPIKeyInput != null)
+        {
+            // Pobierz aktualny theme override lub utwórz nowy StyleBox
+            var styleBox = aiAPIKeyInput.GetThemeStylebox("normal") as StyleBoxFlat;
+            if (styleBox != null)
+            {
+                // Klonuj StyleBox aby nie modyfikować oryginalnego
+                styleBox = (StyleBoxFlat)styleBox.Duplicate();
+                styleBox.BorderColor = color;
+                styleBox.BorderWidthLeft = 2;
+                styleBox.BorderWidthRight = 2;
+                styleBox.BorderWidthTop = 2;
+                styleBox.BorderWidthBottom = 2;
+                aiAPIKeyInput.AddThemeStyleboxOverride("normal", styleBox);
+                aiAPIKeyInput.AddThemeStyleboxOverride("focus", styleBox);
+            }
+        }
+        else
+        {
+            // Resetuj border do domyślnego
+            SetAPIKeyInputBorder(new Color(0.5f, 0.5f, 0.5f));
+        }
+    }
+
+    /// <summary>
+    /// Callback wywoływany gdy użytkownik zmienia tekst w polu API Key
+    /// </summary>
+    private void OnAPIKeyTextChanged(string newText)
+    {
+        SetAPIKeyInputBorder(new Color(0.7f, 0.7f, 0.7f));
+
+        // Resetuj flagę walidacji - użytkownik musi ponownie wcisnąć Enter
+        if (LobbyStatus.isAPIKeySet)
+        {
+            LobbyStatus.isAPIKeySet = false;
+            UpdateHostReadyStatusIfOwner();
+        }
+    }
+
+    /// <summary>
+    /// Callback wywoływany gdy użytkownik wciśnie Enter w polu API Key
+    /// </summary>
+    private void OnAPIKeySubmitted(string newText)
+    {
+        bool isValid = ValidateAPIKey(newText);
+        if (!isValid)
+        {
+            GD.Print($"⚠️ Invalid API Key. Aborting submission.");
+            return;
+        }
+        ProceedAPIKey(newText);
     }
 
     /// <summary>
@@ -1126,6 +1289,25 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
+    /// Callback wywoływany gdy użytkownik kliknie przycisk pomocy do klucza API
+    /// </summary>
+    private void OnAPIKeyHelpButtonPressed()
+    {
+        string helpUrl = "https://www.deepseek.com/en";
+
+        if (OS.GetName() == "Windows") //Windows
+        {
+            Process.Start("cmd", $"/c start {helpUrl}");
+        }
+        else if (OS.GetName() == "macOS") // macOS
+        {
+            Process.Start("open", helpUrl);
+        }
+        else // Linux
+        {
+            Process.Start("xdg-open", helpUrl);
+        }
+    }
     /// Pokazuje okno ostrzeżenia o niewystarczającym sprzęcie z możliwością wybrania LLM mimo to
     /// </summary>
     private void ShowHardwareWarningDialog(EOSManager.AIType selectedAIType, string currentHardwareInfo)
@@ -1242,7 +1424,7 @@ public partial class LobbyMenu : Control
 
         GD.Print("🎮 Host requests game session start...");
         eosManager.RequestStartGameSession();
-        
+
     }
 
     private void OnBackButtonPressed()
@@ -1581,10 +1763,10 @@ public partial class LobbyMenu : Control
             // Opcje zarządzania lobby (tryb AI vs Human)
             int idxTransferHost = 0;
             popup.AddItem($"Przekaż hosta", idxTransferHost);
-            
+
             int idxKickPlayer = 1;
             popup.AddItem($"Wyrzuć z lobby", idxKickPlayer);
-            
+
             popup.IndexPressed += (index) =>
             {
                 GD.Print($"📋 Popup menu item {index} pressed for {displayName}");
@@ -1693,6 +1875,7 @@ public partial class LobbyMenu : Control
 
         if (aiAPIKeyInput != null)
         {
+            aiAPIKeyInput.TextSubmitted -= OnAPIKeySubmitted;
             aiAPIKeyInput.TextChanged -= OnAPIKeyTextChanged;
         }
 
