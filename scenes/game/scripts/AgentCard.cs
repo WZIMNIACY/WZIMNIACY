@@ -87,7 +87,6 @@ public partial class AgentCard : PanelContainer
 	{
 		SetCardName(cardManager.GetCardName());
 		type = cardManager.GetCardType();
-		//SetColor();
 	}
 	
 	private void SetCardName(string name)
