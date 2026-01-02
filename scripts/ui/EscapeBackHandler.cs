@@ -157,6 +157,12 @@ public partial class EscapeBackHandler : Node
             return;
         }
 
+        if (ShowConfirmDialog && !LeaveLobbyBeforeExit)
+        {
+            GD.PrintErr("You can not change scene without leaving lobby");
+            return;
+        }
+
         // Jeśli nie jesteśmy w lobby (lub eosManager nie istnieje)
         if (eosManager == null || string.IsNullOrEmpty(eosManager.currentLobbyId))
         {
@@ -164,7 +170,5 @@ public partial class EscapeBackHandler : Node
             return;
         }
 
-        // W sytuacji, gdy jesteś w lobby, ale jeszcze scena się nie zmieniła nic nie rób - czekaj na załadowanie sceny do końca
-        return;
     }
 }
