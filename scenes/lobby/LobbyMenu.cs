@@ -38,6 +38,7 @@ public partial class LobbyMenu : Control
     // Custom tooltip
     private CustomTooltip customTooltip;
     private string lobbyReadyTooltip = "";
+    private string apiKeyErrorMessage = "";
 
     private string currentLobbyCode = "";
     private const int LobbyCodeLength = 6;
@@ -609,7 +610,7 @@ public partial class LobbyMenu : Control
     /// <summary>
     /// Callback wywoływany gdy AIType zostanie zaktualizowany w EOSManager
     /// </summary>
-    private async void OnAITypeUpdated(string aiType)
+    private void OnAITypeUpdated(string aiType)
     {
         GD.Print($"🤖 [SIGNAL] AIType updated: '{aiType}'");
 
@@ -892,7 +893,17 @@ public partial class LobbyMenu : Control
                     unmetConditions.Add("Jedna z drużyn jest przepełniona");
 
                 if (!LobbyStatus.isAPIKeySet)
-                    unmetConditions.Add("Klucz API nie jest poprawny");
+                {
+                    // Użyj niestandardowego komunikatu błędu API jeśli jest dostępny
+                    if (!string.IsNullOrEmpty(apiKeyErrorMessage))
+                    {
+                        unmetConditions.Add(apiKeyErrorMessage);
+                    }
+                    else
+                    {
+                        unmetConditions.Add("Klucz API nie jest poprawny");
+                    }
+                }
 
                 if (unmetConditions.Count > 0)
                 {
@@ -1034,6 +1045,7 @@ public partial class LobbyMenu : Control
             GD.Print($"✅ API Key validation successful!");
             SetAPIKeyInputBorder(new Color(0, 1, 0)); // Zielony
             LobbyStatus.isAPIKeySet = true;
+            apiKeyErrorMessage = ""; // Wyczyść komunikat błędu
 
             // Zapisz zwalidowany klucz API w atrybutach lobby
             if (eosManager != null)
@@ -1043,14 +1055,61 @@ public partial class LobbyMenu : Control
 
             UpdateHostReadyStatusIfOwner();
         }
-        catch (Exception ex)
+        catch (InvalidApiKeyException)
         {
-            GD.PrintErr($"❌ API Key validation failed: {ex.Message}");
             SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
             LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Nieprawidłowy klucz API");
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (NoTokensException)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Brak tokenów AI");
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (RateLimitException)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Limit zapytań AI przekroczony");
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (NoInternetException)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Brak połączenia z internetem");
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (ApiException)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Błąd API");
+            UpdateHostReadyStatusIfOwner();
+        }
+        catch (Exception)
+        {
+            SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
+            LobbyStatus.isAPIKeySet = false;
+            UpdateLobbyStatusMessage("Błąd walidacji klucza API");
             UpdateHostReadyStatusIfOwner();
         }
 
+    }
+
+    /// <summary>
+    /// Aktualizuje komunikat statusu lobby z błędem API
+    /// </summary>
+    private void UpdateLobbyStatusMessage(string message)
+    {
+        if (eosManager != null && eosManager.isLobbyOwner)
+        {
+            apiKeyErrorMessage = message;
+            GD.Print($"🔔 Updated API error message: {message}");
+        }
     }
 
     /// <summary>
