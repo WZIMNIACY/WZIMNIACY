@@ -12,9 +12,9 @@ public partial class MainMenu : Node
     private Button createButton;
     private Button settingsButton;
     private Button helpButton;
-    private Timer animationTimer;
-    private int dotCount = 0;
     private bool isCreatingLobby = false;
+    private ColorRect loadingOverlay;
+    private Tween loadingTween;
     private const float CreateTimeout = 5.0f; // 5 sekund timeout
 
     // Sekretne menu admina
@@ -31,6 +31,7 @@ public partial class MainMenu : Node
         Button quitButton = GetNode<Button>("Panel/MenuCenter/VMenu/Quit/QuitButton");
         settingsButton = GetNode<Button>("Panel/MenuCenter/VMenu/Settings/SettingsButton");
         helpButton = GetNode<Button>("Panel/MenuCenter/VMenu/Help/HelpButton");
+        loadingOverlay = GetNode<ColorRect>("Panel/MenuCenter/VMenu/CreateGame/CreateGameButton/LoadingOverlay");
 
         eosManager = GetNode<EOSManager>("/root/EOSManager");
 
@@ -122,18 +123,24 @@ public partial class MainMenu : Node
     {
         isCreatingLobby = true;
         createButton.Disabled = true;
-        dotCount = 0;
 
         // Zapisz oryginalną wysokość przycisku
         float originalHeight = createButton.Size.Y;
         createButton.CustomMinimumSize = new Vector2(0, originalHeight);
 
-        // Utwórz timer dla animacji
-        animationTimer = new Timer();
-        animationTimer.WaitTime = 0.5;
-        animationTimer.Timeout += OnAnimationTimerTimeout;
-        AddChild(animationTimer);
-        animationTimer.Start();
+        // Pokaż overlay i animuj szerokość od lewej do prawej
+        if (loadingOverlay != null)
+        {
+            loadingOverlay.Visible = true;
+            loadingOverlay.Size = new Vector2(0, createButton.Size.Y);
+            
+            // Utwórz animację Tween (2 sekundy na jedno wypełnienie)
+            loadingTween = CreateTween();
+            loadingTween.SetLoops(); // Zapętlenie animacji
+            loadingTween.TweenProperty(loadingOverlay, "size", new Vector2(createButton.Size.X, createButton.Size.Y), 2.0f)
+                .SetTrans(Tween.TransitionType.Cubic)
+                .SetEase(Tween.EaseType.InOut);
+        }
 
         // Utwórz timer dla timeoutu
         Timer timeoutTimer = new Timer();
@@ -147,7 +154,7 @@ public partial class MainMenu : Node
         AddChild(timeoutTimer);
         timeoutTimer.Start();
 
-        createButton.Text = "Tworzenie";
+        createButton.Text = "Ładowanie";
     }
 
     private void StopCreatingAnimation()
@@ -159,19 +166,18 @@ public partial class MainMenu : Node
         // Przywróć automatyczny rozmiar
         createButton.CustomMinimumSize = new Vector2(0, 0);
 
-        if (animationTimer != null)
+        // Ukryj overlay i zatrzymaj animację
+        if (loadingOverlay != null)
         {
-            animationTimer.Stop();
-            animationTimer.QueueFree();
-            animationTimer = null;
+            loadingOverlay.Visible = false;
+            loadingOverlay.Size = new Vector2(0, loadingOverlay.Size.Y);
         }
-    }
 
-    private void OnAnimationTimerTimeout()
-    {
-        dotCount = (dotCount + 1) % 4; // 0, 1, 2, 3, potem znowu 0
-        string dots = new string('.', dotCount);
-        createButton.Text = "Tworzenie" + dots;
+        if (loadingTween != null)
+        {
+            loadingTween.Kill();
+            loadingTween = null;
+        }
     }
 
     private string GenerateLobbyIDCode()
@@ -310,12 +316,6 @@ public partial class MainMenu : Node
         if (eosManager != null)
         {
             eosManager.LobbyCreated -= OnLobbyCreated;
-        }
-
-        // Wyczyść timer jeśli istnieje
-        if (animationTimer != null)
-        {
-            animationTimer.QueueFree();
         }
     }
 }
