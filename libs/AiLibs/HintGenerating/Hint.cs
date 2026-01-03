@@ -1,8 +1,10 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Reflection;
 using game;
 using AI;
 using System.Security;
+using System.Text;
 
 namespace hints
 {
@@ -25,45 +27,42 @@ namespace hints
             this.Cards = cards;
         }
 
-        public static Hint Create(Deck deck, ILLM llm, Team nowTour)
+        public async static Task<Hint> Create(Deck deck, ILLM llm, Team nowTour)
         {
             //Prompt set up
             string _nowTour = nowTour.ToString();
             string _actualDeck = deck.ToJson();
 
-            string baseDir = Directory.GetCurrentDirectory();
-            string parentDirInfo;
-            
-            DirectoryInfo? parent = Directory.GetParent(baseDir);
-            if(parent == null)
+            var assembly = Assembly.GetExecutingAssembly();
+            string hintPromptRes = "Hint_Generating.hintPrompt.txt";
+            string systemPromptHint;
+            using (Stream? stream = assembly.GetManifestResourceStream(hintPromptRes))
             {
-                parentDirInfo = "";
-            }
-            else
-            {
-                parentDirInfo = parent.FullName;
+                if (stream == null)
+                {
+                    throw new FileNotFoundException("Couldn't find embeded resource hintPrompt.txt");
+                }
+
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    systemPromptHint = reader.ReadToEnd();
+                }
             }
 
-            if(parentDirInfo == null)
-                parentDirInfo = "";
-
-            string hintPromptPath = Path.Combine(parentDirInfo, @"HintGenerating/hintPrompt.txt");
-            string systemPromptHint = File.ReadAllText(hintPromptPath);
             string userPromptHint = $"" +
                 $"_nowTour = {_nowTour}\n" +
                 $"_actualDeck = {_actualDeck}";
 
             //Genereting hint
-
             while (true)
             {
                 Console.WriteLine("Generating hint...");
-                string response = llm.SendRequestAsync(systemPromptHint, userPromptHint).Result;
+                string response = await llm.SendRequestAsync(systemPromptHint, userPromptHint);
                 Hint hint = Hint.FromJson(response);
 
                 bool hintInDeck = deck.Cards.Any(card => card.Word.Equals(hint.Word, StringComparison.OrdinalIgnoreCase));
                 bool hintIsEmpty = string.IsNullOrWhiteSpace(hint.Word);
-                bool teamOK = hint.Cards != null && hint.Cards.All(card => card.Team == nowTour.ToString());
+                bool teamOK = hint.Cards != null && hint.Cards.All(card => card.Team == nowTour);
 
                 if (hintInDeck || hintIsEmpty || !teamOK)
                 {
@@ -74,9 +73,6 @@ namespace hints
                 {
                     return hint;
                 }
-
-
-
             }
         }
 
@@ -113,7 +109,12 @@ namespace hints
             {
                 JsonSerializerOptions options = new JsonSerializerOptions
                 {
-                    WriteIndented = true
+                    WriteIndented = true,
+                    ReadCommentHandling = JsonCommentHandling.Skip,
+                    AllowTrailingCommas = true,
+                    PropertyNameCaseInsensitive = true,
+                    NumberHandling = JsonNumberHandling.AllowReadingFromString,
+                    Converters = { new JsonStringEnumConverter() }
                 };
 
                 hint = JsonSerializer.Deserialize<Hint>(trimmed, options);

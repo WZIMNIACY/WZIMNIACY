@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\game\game.csproj" />
     <ProjectReference Include="..\LLM\LLM.csproj" />
+    <EmbeddedResource Include="hintPrompt.txt" />
   </ItemGroup>
 
 </Project>
