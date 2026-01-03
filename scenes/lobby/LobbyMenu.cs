@@ -327,6 +327,19 @@ public partial class LobbyMenu : Control
                 }
             }
 
+            int profileIcon = 0;
+            if (member.ContainsKey("profileIcon"))
+            {
+                try
+                {
+                    profileIcon = member["profileIcon"].As<int>();
+                }
+                catch
+                {
+                    int.TryParse(member["profileIcon"].ToString(), out profileIcon);
+                }
+            }
+
             string userId = member.ContainsKey("userId") ? member["userId"].ToString() : "";
 
             if (isLocalPlayer)
@@ -354,9 +367,21 @@ public partial class LobbyMenu : Control
                 {
                     { "userId", userId },
                     { "isLocalPlayer", isLocalPlayer },
-                    { "team", team.ToString() }
+                    { "team", team.ToString() },
+                    { "profileIcon", profileIcon }
                 });
-                GD.Print($"  ➕ Blue: {displayName}");
+                
+                // Ustaw ikonę jeśli istnieje
+                if (profileIcon > 0 && eosManager != null)
+                {
+                    string iconPath = eosManager.GetProfileIconPath(team, profileIcon);
+                    if (!string.IsNullOrEmpty(iconPath) && ResourceLoader.Exists(iconPath))
+                    {
+                        blueTeamList.SetItemIcon(index, ResourceLoader.Load<Texture2D>(iconPath));
+                    }
+                }
+                
+                GD.Print($"  ➕ Blue: {displayName} (Icon: {profileIcon})");
             }
             else if (team == EOSManager.Team.Red)
             {
@@ -365,9 +390,21 @@ public partial class LobbyMenu : Control
                 {
                     { "userId", userId },
                     { "isLocalPlayer", isLocalPlayer },
-                    { "team", team.ToString() }
+                    { "team", team.ToString() },
+                    { "profileIcon", profileIcon }
                 });
-                GD.Print($"  ➕ Red: {displayName}");
+                
+                // Ustaw ikonę jeśli istnieje
+                if (profileIcon > 0 && eosManager != null)
+                {
+                    string iconPath = eosManager.GetProfileIconPath(team, profileIcon);
+                    if (!string.IsNullOrEmpty(iconPath) && ResourceLoader.Exists(iconPath))
+                    {
+                        redTeamList.SetItemIcon(index, ResourceLoader.Load<Texture2D>(iconPath));
+                    }
+                }
+                
+                GD.Print($"  ➕ Red: {displayName} (Icon: {profileIcon})");
             }
             else if (team == EOSManager.Team.Universal)
             {
@@ -376,9 +413,21 @@ public partial class LobbyMenu : Control
                 {
                     { "userId", userId },
                     { "isLocalPlayer", isLocalPlayer },
-                    { "team", team.ToString() }
+                    { "team", team.ToString() },
+                    { "profileIcon", profileIcon }
                 });
-                GD.Print($"  ➕ Universal: {displayName}");
+                
+                // Ustaw niebieską ikonę dla Universal team
+                if (profileIcon > 0 && eosManager != null)
+                {
+                    string iconPath = eosManager.GetProfileIconPath(team, profileIcon);
+                    if (!string.IsNullOrEmpty(iconPath) && ResourceLoader.Exists(iconPath))
+                    {
+                        universalTeamList.SetItemIcon(index, ResourceLoader.Load<Texture2D>(iconPath));
+                    }
+                }
+                
+                GD.Print($"  ➕ Universal: {displayName} (Icon: {profileIcon})");
             }
             else // team == EOSManager.Team.None (NeutralTeam)
             {
@@ -387,7 +436,8 @@ public partial class LobbyMenu : Control
                 {
                     { "userId", userId },
                     { "isLocalPlayer", isLocalPlayer },
-                    { "team", team.ToString() }
+                    { "team", team.ToString() },
+                    { "profileIcon", profileIcon }
                 });
                 GD.Print($"  ➕ Neutral: {displayName}");
             }

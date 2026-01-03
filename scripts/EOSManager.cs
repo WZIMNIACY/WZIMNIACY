@@ -177,6 +177,10 @@ public partial class EOSManager : Node
 	private const string ForceTeamAttributePrefix = "ForceTeam_";
 	private System.Collections.Generic.Dictionary<string, Team> forcedTeamAssignments = new System.Collections.Generic.Dictionary<string, Team>(StringComparer.OrdinalIgnoreCase);
 
+	// Prefiks atrybutu lobby służącego do wymuszania ikon przez hosta (przy zmianie trybu)
+	private const string ForceIconAttributePrefix = "ForceIcon_";
+	private System.Collections.Generic.Dictionary<string, int> forcedIconAssignments = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
 	// Prefiks atrybutu lobby służącego do przechowywania poprzednich drużyn (przed przejściem do Universal)
 	private const string PreviousTeamAttributePrefix = "PreviousTeam_";
 	private System.Collections.Generic.Dictionary<string, Team> previousTeamAssignments = new System.Collections.Generic.Dictionary<string, Team>(StringComparer.OrdinalIgnoreCase);
@@ -185,7 +189,14 @@ public partial class EOSManager : Node
 	private string pendingNickname = "";
 
 	// Lista zwierzaków wczytana z pliku >w<
-	private System.Collections.Generic.List<string> animalNames = new System.Collections.Generic.List<string>();    // Flaga blokująca tworzenie lobby
+	private System.Collections.Generic.List<string> animalNames = new System.Collections.Generic.List<string>();
+
+	// System ikon profilowych
+	private System.Collections.Generic.HashSet<int> usedBlueIcons = new System.Collections.Generic.HashSet<int>();
+	private System.Collections.Generic.HashSet<int> usedRedIcons = new System.Collections.Generic.HashSet<int>();
+	private const int MaxProfileIconsPerTeam = 5;
+
+	// Flaga blokująca tworzenie lobby
 	private bool isCreatingLobby = false;
 
 	// Kolejkowanie atrybutów lobby - zbieranie zmian i wysyłanie razem
@@ -918,16 +929,167 @@ public partial class EOSManager : Node
 	}
 
 	// ============================================
-	// SYSTEM LOBBY - Tworzenie, wyszukiwanie, dołączanie
+	// PROFILE ICONS MANAGEMENT
 	// ============================================
 
 	/// <summary>
-	/// Tworzy nowe lobby
+	/// Przypisuje unikalną ikonę profilową dla gracza w zależności od drużyny
 	/// </summary>
-	/// <param name="customLobbyId"> kod lobby do wyszukiwania (np. "V5CGSP")</param>
-	/// <param name="maxPlayers">Maksymalna liczba graczy (2-64)</param>
-	/// <param name="isPublic">Czy lobby jest publiczne (można wyszukać)?</param>
-	public void CreateLobby(string customLobbyId, uint maxPlayers = 10, bool isPublic = true)
+	/// <param name="team">Drużyna gracza</param>
+	/// <returns>Numer ikony (1-5) lub 0 jeśli brak dostępnych</returns>
+	private int AssignProfileIcon(Team team)
+	{
+		if (team == Team.None)
+		{
+			return 0; // Brak ikony dla neutralnej drużyny
+		}
+
+		// Universal team używa niebieskich ikon (AI vs Human mode)
+		var usedIcons = (team == Team.Blue || team == Team.Universal) ? usedBlueIcons : usedRedIcons;
+
+		GD.Print($"🔍 AssignProfileIcon for {team}: usedIcons = [{string.Join(", ", usedIcons)}]");
+
+	// Dodatkowo sprawdź currentLobbyMembers aby uniknąć duplikatów
+	HashSet<int> iconsInUse = new HashSet<int>(usedIcons);
+	foreach (var member in currentLobbyMembers)
+	{
+		if (!member.ContainsKey("profileIcon") || !member.ContainsKey("team"))
+			continue;
+
+		string memberTeamStr = member["team"].ToString();
+		if (string.IsNullOrEmpty(memberTeamStr))
+			continue;
+
+		if (Enum.TryParse<Team>(memberTeamStr, out Team memberTeam))
+		{
+			// Sprawdź czy członek jest w tym samym zespole (lub Universal używa blue)
+			bool sameIconPool = (team == Team.Blue || team == Team.Universal) && (memberTeam == Team.Blue || memberTeam == Team.Universal) ||
+								(team == Team.Red && memberTeam == Team.Red);
+			
+			if (sameIconPool)
+			{
+				int iconNumber = 0;
+				try { iconNumber = member["profileIcon"].As<int>(); }
+				catch { int.TryParse(member["profileIcon"].ToString(), out iconNumber); }
+				
+				if (iconNumber > 0)
+				{
+					iconsInUse.Add(iconNumber);
+				}
+			}
+		}
+	}
+
+	// Znajdź pierwszą wolną ikonę
+	for (int i = 1; i <= MaxProfileIconsPerTeam; i++)
+	{
+		if (!iconsInUse.Contains(i))
+		{
+			usedIcons.Add(i);
+			GD.Print($"🖼️ Assigned profile icon {i} for {team} team (verified no duplicates)");
+			return i;
+		}
+	}
+
+	GD.PrintErr($"❌ No available profile icons for {team} team! All icons used: [{string.Join(", ", iconsInUse)}]");
+	return 0;
+}
+
+/// <summary>
+/// Zwalnia ikonę profilową gracza
+/// </summary>
+/// <param name="team">Drużyna gracza</param>
+/// <param name="iconNumber">Numer ikony do zwolnienia</param>
+private void ReleaseProfileIcon(Team team, int iconNumber)
+	{
+		if (iconNumber == 0 || team == Team.None)
+			return;
+
+		// Universal team używa niebieskich ikon (AI vs Human mode)
+		var usedIcons = (team == Team.Blue || team == Team.Universal) ? usedBlueIcons : usedRedIcons;
+		if (usedIcons.Remove(iconNumber))
+		{
+			GD.Print($"🗑️ Released profile icon {iconNumber} for {team} team");
+		}
+	}
+
+	/// <summary>
+	/// Pobiera ścieżkę do tekstury ikony profilowej
+	/// </summary>
+	/// <param name="team">Drużyna</param>
+	/// <param name="iconNumber">Numer ikony (1-5)</param>
+	/// <returns>Ścieżka do pliku tekstury</returns>
+	public string GetProfileIconPath(Team team, int iconNumber)
+	{
+		if (iconNumber == 0 || team == Team.None)
+			return "";
+
+		// Universal team używa niebieskich ikon (AI vs Human mode)
+		string colorPrefix = (team == Team.Blue || team == Team.Universal) ? "blue" : "red";
+		return $"res://assets/profilePictures/Prof_{colorPrefix}_{iconNumber}.png";
+	}
+
+	/// <summary>
+	/// Odbudowuje listę używanych ikon na podstawie obecnych członków lobby
+	/// </summary>
+	private void RebuildUsedIcons()
+	{
+		usedBlueIcons.Clear();
+		usedRedIcons.Clear();
+
+		try
+		{
+			foreach (var member in currentLobbyMembers)
+			{
+				if (!member.ContainsKey("profileIcon") || !member.ContainsKey("team"))
+					continue;
+
+				int iconNumber = 0;
+				try
+				{
+					iconNumber = member["profileIcon"].As<int>();
+				}
+				catch
+				{
+					// Spróbuj parsować jako string
+					string iconStr = member["profileIcon"].ToString();
+					if (!string.IsNullOrEmpty(iconStr))
+					{
+						int.TryParse(iconStr, out iconNumber);
+					}
+				}
+
+				if (iconNumber > 0 && member.ContainsKey("team"))
+				{
+					string teamStr = member["team"].ToString();
+					if (!string.IsNullOrEmpty(teamStr) && Enum.TryParse<Team>(teamStr, out Team team))
+					{
+						// Universal używa niebieskich ikon
+						if (team == Team.Blue || team == Team.Universal)
+						{
+							usedBlueIcons.Add(iconNumber);
+						}
+						else if (team == Team.Red)
+						{
+							usedRedIcons.Add(iconNumber);
+						}
+					}
+				}
+			}
+
+			GD.Print($"🔄 Rebuilt used icons: Blue={string.Join(",", usedBlueIcons)}, Red={string.Join(",", usedRedIcons)}");
+		}
+		catch (System.Exception e)
+		{
+			GD.PrintErr($"❌ Error in RebuildUsedIcons: {e.Message}");
+		}
+	}
+
+
+
+/// <param name="maxPlayers">Maksymalna liczba graczy (2-64)</param>
+/// <param name="isPublic">Czy lobby jest publiczne (można wyszukać)?</param>
+public void CreateLobby(string customLobbyId, uint maxPlayers = 10, bool isPublic = true)
 	{
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
@@ -1123,7 +1285,8 @@ public partial class EOSManager : Node
 				{ "displayName", displayName },
 				{ "isOwner", true },
 				{ "isLocalPlayer", true },
-				{ "team", "" } // Jeszcze nie przypisany
+				{ "team", "" }, // Jeszcze nie przypisany
+				{ "profileIcon", 0 } // Brak ikony na początku
 			};
 			tempMembersList.Add(tempMemberData);
 
@@ -1776,7 +1939,13 @@ public partial class EOSManager : Node
 			EmitSignal(SignalName.AITypeUpdated, GetEnumDescription(currentAIType));
 
 			// Wyczyść cache członków
-			currentLobbyMembers.Clear();            // Wyczyść flagę tworzenia (na wszelki wypadek)
+			currentLobbyMembers.Clear();
+
+			// Wyczyść ikony profilowe
+			usedBlueIcons.Clear();
+			usedRedIcons.Clear();
+
+			// Wyczyść flagę tworzenia (na wszelki wypadek)
 			isCreatingLobby = false;
 			forcedTeamAssignments.Clear();
 
@@ -2054,6 +2223,7 @@ public partial class EOSManager : Node
 		GD.Print($"🟡 Assigning new player to NeutralTeam (None)");
 
 		SetMemberAttribute("Team", Team.None.ToString());
+		SetMemberAttribute("ProfileIcon", "0"); // Brak ikony w Neutral
 	}
 
 	/// <summary>
@@ -2077,7 +2247,10 @@ public partial class EOSManager : Node
 
 		GD.Print($"🟣 Assigning new player to UniversalTeam (Universal)");
 
+		// Przypisz niebieską ikonę dla Universal team
+		int newIcon = AssignProfileIcon(Team.Universal);
 		SetMemberAttribute("Team", Team.Universal.ToString());
+		SetMemberAttribute("ProfileIcon", newIcon.ToString());
 	}
 
 	/// <summary>
@@ -2095,8 +2268,60 @@ public partial class EOSManager : Node
 			return;
 		}
 
+		// Pobierz poprzednią drużynę i ikonę
+		Team oldTeam = Team.None;
+		int oldIcon = 0;
+
+		foreach (var member in currentLobbyMembers)
+		{
+			if (member.ContainsKey("isLocalPlayer") && (bool)member["isLocalPlayer"])
+			{
+				if (member.ContainsKey("team") && !string.IsNullOrEmpty(member["team"].ToString()))
+				{
+					Enum.TryParse<Team>(member["team"].ToString(), out oldTeam);
+				}
+				if (member.ContainsKey("profileIcon"))
+				{
+					try
+					{
+						oldIcon = member["profileIcon"].As<int>();
+					}
+					catch
+					{
+						int.TryParse(member["profileIcon"].ToString(), out oldIcon);
+					}
+				}
+				break;
+			}
+		}
+
+		// Sprawdź czy gracz już jest w tej drużynie
+		if (oldTeam == teamName && oldIcon > 0)
+		{
+			// Już w tej drużynie z ikoną - nie zmieniaj nic
+			GD.Print($"🔄 Already in team {teamName} with icon {oldIcon}, skipping reassignment");
+			return;
+		}
+
+		// Zwolnij starą ikonę jeśli była
+		if (oldIcon > 0)
+		{
+			ReleaseProfileIcon(oldTeam, oldIcon);
+		}
+
+		// Przebuduj używane ikony przed przypisaniem aby uniknąć duplikatów
+		RebuildUsedIcons();
+
+		// Przypisz nową ikonę jeśli drużyna to Blue lub Red
+		int newIcon = 0;
+		if (teamName == Team.Blue || teamName == Team.Red)
+		{
+			newIcon = AssignProfileIcon(teamName);
+		}
+
 		SetMemberAttribute("Team", teamName.ToString());
-		GD.Print($"✅ Set my team to: {teamName}");
+		SetMemberAttribute("ProfileIcon", newIcon.ToString());
+		GD.Print($"✅ Set my team to: {teamName} with icon: {newIcon}");
 
 		//Sprawdzenie warunków dotyczących rozpoczęcia gry
 		EmitSignal(SignalName.CheckTeamsBalanceConditions);
@@ -2254,6 +2479,24 @@ public partial class EOSManager : Node
 						}
 					}
 				}
+				else if (keyStr != null && keyStr.StartsWith(ForceIconAttributePrefix, StringComparison.OrdinalIgnoreCase))
+				{
+					string targetUserId = keyStr.Substring(ForceIconAttributePrefix.Length);
+					if (!string.IsNullOrEmpty(targetUserId))
+					{
+						if (!string.IsNullOrEmpty(valueStr) && int.TryParse(valueStr, out int forcedIcon))
+						{
+							GD.Print($"🖼️ Found ForceIcon: {GetShortUserId(targetUserId)} → {forcedIcon}");
+							forcedIconAssignments[targetUserId] = forcedIcon;
+						}
+						else
+						{
+							// Pusty lub nieprawidłowy - usuń wymuszenie
+							forcedIconAssignments.Remove(targetUserId);
+							GD.Print($"🧹 Cleared ForceIcon for {GetShortUserId(targetUserId)}");
+						}
+					}
+				}
 				else if (keyStr != null && keyStr.StartsWith(PreviousTeamAttributePrefix, StringComparison.OrdinalIgnoreCase))
 				{
 					string targetUserId = keyStr.Substring(PreviousTeamAttributePrefix.Length);
@@ -2375,6 +2618,7 @@ public partial class EOSManager : Node
 
 	public void SetGameMode(GameMode gameMode)
 	{
+		GameMode oldGameMode = currentGameMode;
 		currentGameMode = gameMode;
 		string gameModeStr = GetEnumDescription(gameMode);
 		SetLobbyAttribute("GameMode", gameModeStr);
@@ -2913,6 +3157,7 @@ public partial class EOSManager : Node
 	/// <summary>
 	/// Przenosi wszystkich graczy z Blue/Red do Universal i zapisuje ich poprzednie drużyny
 	/// Wywoływane gdy host zmienia tryb gry na AI vs Human
+	/// Host przypisuje ikony WSZYSTKIM graczom centralnie aby uniknąć duplikatów
 	/// </summary>
 	public void MoveAllPlayersToUniversal()
 	{
@@ -2924,49 +3169,81 @@ public partial class EOSManager : Node
 
 		GD.Print("🔄 Moving all players to Universal team...");
 
-		int movedCount = 0;
+		// KROK 1: Wyczyść WSZYSTKIE używane ikony - zaczynamy od zera
+		usedBlueIcons.Clear();
+		usedRedIcons.Clear();
+		GD.Print("🧹 Cleared all used icons");
+
+		// KROK 2: Zbierz wszystkich graczy do przeniesienia
+		var playersToMove = new System.Collections.Generic.List<(string userId, Team oldTeam)>();
+		
 		foreach (var member in currentLobbyMembers)
 		{
-			if (!member.ContainsKey("userId") || !member.ContainsKey("team"))
+			if (!member.ContainsKey("userId"))
 				continue;
 
 			string userId = member["userId"].ToString();
-			string teamStr = member["team"].ToString();
-			string displayName = member.ContainsKey("displayName") ? member["displayName"].ToString() : "Unknown";
-
-			// Jeśli team jest pusty, traktuj jako None
+			
+			// Pobierz obecny team
 			Team currentTeam = Team.None;
-			if (!string.IsNullOrEmpty(teamStr))
+			if (member.ContainsKey("team"))
 			{
-				if (!Enum.TryParse<Team>(teamStr, out currentTeam))
+				string teamStr = member["team"].ToString();
+				if (!string.IsNullOrEmpty(teamStr))
 				{
-					currentTeam = Team.None;
+					Enum.TryParse<Team>(teamStr, out currentTeam);
 				}
 			}
 
-			// Przenieś tylko graczy z Blue, Red lub None (nie Universal)
+			// Przenieś tylko graczy z Blue, Red lub None (nie tych już w Universal)
 			if (currentTeam == Team.Blue || currentTeam == Team.Red || currentTeam == Team.None)
 			{
-				// Zapisz poprzednią drużynę
-				SavePlayerPreviousTeam(userId, currentTeam);
-
-				// Przenieś do Universal
-				forcedTeamAssignments[userId] = Team.Universal;
-				SetLobbyAttribute($"{ForceTeamAttributePrefix}{userId}", Team.Universal.ToString());
-
-				// Jeśli to host - ustaw też jego MEMBER attribute
-				bool isLocalPlayer = userId == localProductUserId.ToString();
-				if (isLocalPlayer)
-				{
-					SetMemberAttribute("Team", Team.Universal.ToString());
-					GD.Print($"✅ Host moved to Universal team");
-				}
-
-				movedCount++;
+				playersToMove.Add((userId, currentTeam));
 			}
 		}
 
-		GD.Print($"✅ Moved {movedCount} players to Universal team");
+		// KROK 3: Przypisz ikony PO KOLEI każdemu graczowi (host kontroluje)
+		int iconCounter = 1;
+		foreach (var (userId, oldTeam) in playersToMove)
+		{
+			string shortUserId = userId.Length > 8 ? userId.Substring(userId.Length - 8) : userId;
+			
+			// Zapisz poprzednią drużynę
+			SavePlayerPreviousTeam(userId, oldTeam);
+
+			// Przypisz ikonę sekwencyjnie (1, 2, 3, 4, 5)
+			int assignedIcon = iconCounter;
+			if (iconCounter <= MaxProfileIconsPerTeam)
+			{
+				usedBlueIcons.Add(iconCounter);
+				iconCounter++;
+			}
+			else
+			{
+				assignedIcon = 0; // Brak dostępnych ikon
+				GD.PrintErr($"❌ No more icons available for {shortUserId}");
+			}
+
+			// Ustaw ForceTeam i ForceIcon dla tego gracza
+			forcedTeamAssignments[userId] = Team.Universal;
+			forcedIconAssignments[userId] = assignedIcon;
+			
+			SetLobbyAttribute($"{ForceTeamAttributePrefix}{userId}", Team.Universal.ToString());
+			SetLobbyAttribute($"{ForceIconAttributePrefix}{userId}", assignedIcon.ToString());
+			
+			GD.Print($"  🎯 {shortUserId}: oldTeam={oldTeam} → Universal, icon={assignedIcon}");
+
+			// Jeśli to host - ustaw od razu swoje MEMBER attributes
+			bool isLocalPlayer = userId == localProductUserId.ToString();
+			if (isLocalPlayer)
+			{
+				SetMemberAttribute("Team", Team.Universal.ToString());
+				SetMemberAttribute("ProfileIcon", assignedIcon.ToString());
+				GD.Print($"✅ Host set own attributes: Universal, icon {assignedIcon}");
+			}
+		}
+
+		GD.Print($"✅ Assigned icons to {playersToMove.Count} players (icons used: {string.Join(",", usedBlueIcons)})");
 
 		// Wyślij wszystkie zmiany atrybutów
 		FlushPendingLobbyAttributes();
@@ -2979,6 +3256,7 @@ public partial class EOSManager : Node
 	/// <summary>
 	/// Przywraca wszystkich graczy z Universal do ich poprzednich drużyn
 	/// Wywoływane gdy host zmienia tryb gry z AI vs Human na AI Master
+	/// Host przypisuje ikony WSZYSTKIM graczom centralnie aby uniknąć duplikatów
 	/// </summary>
 	public void RestorePlayersFromUniversal()
 	{
@@ -2990,74 +3268,109 @@ public partial class EOSManager : Node
 
 		GD.Print("🔄 Restoring players from Universal...");
 
-		int restoredCount = 0;
+		// KROK 1: Wyczyść WSZYSTKIE używane ikony - zaczynamy od zera
+		usedBlueIcons.Clear();
+		usedRedIcons.Clear();
+		GD.Print("🧹 Cleared all used icons");
+
+		// KROK 2: Zbierz wszystkich graczy do przywrócenia i ich poprzednie drużyny
+		var playersToRestore = new System.Collections.Generic.List<(string userId, Team previousTeam, bool isLocal)>();
+		
 		foreach (var member in currentLobbyMembers)
 		{
-			if (!member.ContainsKey("userId") || !member.ContainsKey("team"))
+			if (!member.ContainsKey("userId"))
 				continue;
 
 			string userId = member["userId"].ToString();
-			string teamStr = member["team"].ToString();
-
-			// Jeśli team jest pusty, traktuj jako None
+			bool isLocalPlayer = userId == localProductUserId.ToString();
+			
+			// Pobierz obecny team
 			Team currentTeam = Team.None;
-			if (!string.IsNullOrEmpty(teamStr))
+			if (member.ContainsKey("team"))
 			{
-				if (!Enum.TryParse<Team>(teamStr, out currentTeam))
+				string teamStr = member["team"].ToString();
+				if (!string.IsNullOrEmpty(teamStr))
 				{
-					currentTeam = Team.None;
+					Enum.TryParse<Team>(teamStr, out currentTeam);
 				}
 			}
-
-			bool isLocalPlayer = userId == localProductUserId.ToString();
 
 			// Przywróć tylko graczy z Universal
 			if (currentTeam == Team.Universal)
 			{
-				// Odczytaj poprzednią drużynę
 				Team previousTeam = GetPlayerPreviousTeam(userId);
-
-				// Jeśli nie ma zapisanej poprzedniej drużyny lub była None/Universal
-				if (previousTeam == Team.None || previousTeam == Team.Universal)
-				{
-					// Ustaw ForceTeam_ na None dla wszystkich graczy
-					forcedTeamAssignments[userId] = Team.None;
-					SetLobbyAttribute($"{ForceTeamAttributePrefix}{userId}", "");
-
-					// Dodatkowo dla hosta - ustaw MEMBER attribute bezpośrednio
-					if (isLocalPlayer)
-					{
-						SetMemberAttribute("Team", "");
-						GD.Print($"✅ Host restored to None team (ForceTeam_ set)");
-					}
-					else
-					{
-						GD.Print($"📋 Player {GetShortUserId(userId)} ForceTeam_ set to None");
-					}
-
-					ClearPlayerPreviousTeam(userId);
-					restoredCount++;
-					continue;
-				}
-
-				// Przenieś do poprzedniej drużyny (Blue lub Red)
-				forcedTeamAssignments[userId] = previousTeam;
-				SetLobbyAttribute($"{ForceTeamAttributePrefix}{userId}", previousTeam.ToString());
-
-				// Jeśli to host - ustaw też jego MEMBER attribute
-				if (isLocalPlayer)
-				{
-					SetMemberAttribute("Team", previousTeam.ToString());
-					GD.Print($"✅ Host restored to {previousTeam} team");
-				}
-
-				// Wyczyść zapisaną poprzednią drużynę
-				ClearPlayerPreviousTeam(userId);
-
-				restoredCount++;
+				playersToRestore.Add((userId, previousTeam, isLocalPlayer));
 			}
 		}
-		GD.Print($"✅ Restored {restoredCount} players from Universal team");
+
+		// KROK 3: Przypisz ikony PO KOLEI każdemu graczowi według poprzedniej drużyny
+		int blueIconCounter = 1;
+		int redIconCounter = 1;
+		
+		foreach (var (userId, previousTeam, isLocalPlayer) in playersToRestore)
+		{
+			string shortUserId = userId.Length > 8 ? userId.Substring(userId.Length - 8) : userId;
+			
+			int assignedIcon = 0;
+			Team targetTeam = previousTeam;
+			
+			// Jeśli nie ma zapisanej poprzedniej drużyny lub była None/Universal - ustaw None
+			if (previousTeam == Team.None || previousTeam == Team.Universal)
+			{
+				targetTeam = Team.None;
+				assignedIcon = 0;
+			}
+			else if (previousTeam == Team.Blue)
+			{
+				if (blueIconCounter <= MaxProfileIconsPerTeam)
+				{
+					assignedIcon = blueIconCounter;
+					usedBlueIcons.Add(blueIconCounter);
+					blueIconCounter++;
+				}
+			}
+			else if (previousTeam == Team.Red)
+			{
+				if (redIconCounter <= MaxProfileIconsPerTeam)
+				{
+					assignedIcon = redIconCounter;
+					usedRedIcons.Add(redIconCounter);
+					redIconCounter++;
+				}
+			}
+
+			// Ustaw ForceTeam i ForceIcon (lub wyczyść ForceIcon dla None)
+			forcedTeamAssignments[userId] = targetTeam;
+			string teamValue = (targetTeam == Team.None) ? "" : targetTeam.ToString();
+			SetLobbyAttribute($"{ForceTeamAttributePrefix}{userId}", teamValue);
+			
+			if (targetTeam == Team.None)
+			{
+				// Wyczyść ForceIcon
+				forcedIconAssignments.Remove(userId);
+				SetLobbyAttribute($"{ForceIconAttributePrefix}{userId}", "");
+			}
+			else
+			{
+				forcedIconAssignments[userId] = assignedIcon;
+				SetLobbyAttribute($"{ForceIconAttributePrefix}{userId}", assignedIcon.ToString());
+			}
+			
+			GD.Print($"  🎯 {shortUserId}: Universal → {targetTeam}, icon={assignedIcon}");
+
+			// Jeśli to host - ustaw od razu swoje MEMBER attributes
+			if (isLocalPlayer)
+			{
+				SetMemberAttribute("Team", teamValue);
+				SetMemberAttribute("ProfileIcon", assignedIcon.ToString());
+				GD.Print($"✅ Host set own attributes: {targetTeam}, icon {assignedIcon}");
+			}
+
+			// Wyczyść zapisaną poprzednią drużynę
+			ClearPlayerPreviousTeam(userId);
+		}
+
+		GD.Print($"✅ Restored {playersToRestore.Count} players (Blue icons: {string.Join(",", usedBlueIcons)}, Red icons: {string.Join(",", usedRedIcons)})");
 
 		// Wyślij wszystkie zmiany atrybutów
 		FlushPendingLobbyAttributes();
@@ -3116,17 +3429,88 @@ public partial class EOSManager : Node
 		}
 
 		string localUserId = localProductUserId.ToString();
-
-		if (forcedTeamAssignments.TryGetValue(localUserId, out Team forcedTeam))
+	
+	if (forcedTeamAssignments.TryGetValue(localUserId, out Team forcedTeam))
 		{
-			Team currentTeam = GetTeamForUser(localUserId);
-
-			if (currentTeam != forcedTeam)
+			// Pobierz obecny zespół i ikonę gracza z currentLobbyMembers (NIE z GetTeamForUser!)
+			Team currentTeam = Team.None;
+			int currentIcon = 0;
+			
+			foreach (var member in currentLobbyMembers)
 			{
-				GD.Print($"🎯 Host forced you to switch to {forcedTeam}");
+				if (member.ContainsKey("isLocalPlayer") && (bool)member["isLocalPlayer"])
+				{
+					// Pobierz team
+					if (member.ContainsKey("team"))
+					{
+						string teamStr = member["team"].ToString();
+						if (!string.IsNullOrEmpty(teamStr))
+						{
+							Enum.TryParse(teamStr, out currentTeam);
+						}
+					}
+					
+					// Pobierz icon
+					if (member.ContainsKey("profileIcon"))
+					{
+						try
+						{
+							currentIcon = member["profileIcon"].As<int>();
+						}
+						catch
+						{
+							int.TryParse(member["profileIcon"].ToString(), out currentIcon);
+						}
+					}
+					break;
+				}
+			}
+			
+			// Sprawdź czy host przypisał wymuszoną ikonę
+			int forcedIcon = 0;
+			bool hasForcedIcon = forcedIconAssignments.TryGetValue(localUserId, out forcedIcon);
+			
+			// Jeśli już jestem w tym zespole z poprawną ikoną, nie rób nic
+			if (currentTeam == forcedTeam && currentIcon > 0)
+			{
+				// Ale sprawdź czy ikona się zgadza z wymuszoną
+				if (!hasForcedIcon || currentIcon == forcedIcon)
+				{
+					GD.Print($"🔄 Already in forced team {forcedTeam} with icon {currentIcon}, skipping reassignment");
+					return;
+				}
+			}
+
+			// Jeśli zmienia się zespół LUB mam wymuszoną ikonę inną niż obecna
+			bool iconMismatch = hasForcedIcon && forcedIcon > 0 && currentIcon != forcedIcon;
+			if (currentTeam != forcedTeam || iconMismatch)
+			{
+				GD.Print($"🎯 Host forced you to switch to {forcedTeam} (currentTeam={currentTeam}, currentIcon={currentIcon}, forcedIcon={forcedIcon})");
+				
+				// Użyj wymuszonej ikony jeśli jest, w przeciwnym razie przypisz nową
+				int newIcon;
+				if (hasForcedIcon && forcedIcon > 0)
+				{
+					newIcon = forcedIcon;
+					GD.Print($"🖼️ Using forced icon from host: {newIcon}");
+				}
+				else if (forcedTeam == Team.Blue || forcedTeam == Team.Red || forcedTeam == Team.Universal)
+				{
+					// Fallback - przypisz ikonę samodzielnie (nie powinno się zdarzyć)
+					RebuildUsedIcons();
+					newIcon = AssignProfileIcon(forcedTeam);
+					GD.Print($"⚠️ No forced icon, assigned new: {newIcon}");
+				}
+				else
+				{
+					newIcon = 0;
+				}
+				
 				// Gdy forcedTeam == None, ustaw pusty string (nie "None")
 				string teamValue = (forcedTeam == Team.None) ? "" : forcedTeam.ToString();
 				SetMemberAttribute("Team", teamValue);
+				SetMemberAttribute("ProfileIcon", newIcon.ToString());
+				GD.Print($"✅ Applied forced team {forcedTeam} with icon {newIcon}");
 			}
 		}
 
@@ -3253,6 +3637,7 @@ public partial class EOSManager : Node
 				// Pobierz Nickname i Team z atrybutów członka
 				string displayName = null;
 				string team = ""; // "Blue", "Red", lub pusty string (nie przypisany)
+				int profileIcon = 0; // Numer ikony profilowej (0 = brak)
 				bool foundNickname = false;
 
 				// Iteruj po wszystkich atrybutach członka
@@ -3282,6 +3667,12 @@ public partial class EOSManager : Node
 						if (keyStr != null && keyStr.Equals("Team", StringComparison.OrdinalIgnoreCase))
 						{
 							team = valueStr;
+						}
+
+						// Pobierz ProfileIcon
+						if (keyStr != null && keyStr.Equals("ProfileIcon", StringComparison.OrdinalIgnoreCase))
+						{
+							int.TryParse(valueStr, out profileIcon);
 						}
 					}
 				}
@@ -3323,10 +3714,12 @@ public partial class EOSManager : Node
 					{ "displayName", displayName },
 					{ "isOwner", isOwner },
 					{ "isLocalPlayer", isLocalPlayer },
-					{ "team", team }
+					{ "team", team },
+					{ "profileIcon", profileIcon }
 				};
 
 				membersList.Add(memberData);
+				GD.Print($"  ✅ Added member: {displayName}, team={team}, icon={profileIcon}");
 			}
 		}
 
@@ -3357,6 +3750,9 @@ public partial class EOSManager : Node
 
 		// Zapisz do cache
 		currentLobbyMembers = membersList;
+
+		// Odbuduj listę używanych ikon na podstawie członków
+		RebuildUsedIcons();
 
 		// Sprawdź czy lokalny gracz jest właścicielem (dla automatycznej promocji)
 		bool wasOwner = isLobbyOwner;
