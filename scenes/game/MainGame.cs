@@ -97,6 +97,34 @@ public partial class MainGame : Control
             GD.Print("Starting team (CLIENT TEMP): " + startingTeam.ToString());
         }
 
+        var p2p = GetNode<P2PNetworkManager>("P2PNetworkManager");
+
+        GD.Print($"[MainGame] localProductUserIdString={eosManager.localProductUserIdString}");
+
+        if (isHost)
+        {
+            p2p.StartAsHost(
+                eosManager.CurrentGameSession.SessionId,
+                eosManager.localProductUserIdString,
+                Array.Empty<string>()
+            );
+        }
+        else
+        {
+            var hostPuid = eosManager.GetLobbyOwnerPuidString();
+            GD.Print($"[MainGame] hostPuid(from lobby owner)={hostPuid}");
+
+
+            p2p.StartAsClient(
+                eosManager.CurrentGameSession.SessionId,
+                eosManager.localProductUserIdString,
+                hostPuid
+            );
+        }
+
+
+
+
         // Assing initianl points and turn
         if (startingTeam == Team.Blue)
         {
