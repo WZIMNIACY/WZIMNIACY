@@ -39,6 +39,13 @@ public partial class PasteDetector : Node
     /// </summary>
     [Export]
     public int MinPasteLength { get; set; } = 3;
+
+    /// <summary>
+    /// Maksymalny czas (w sekundach) pomiędzy zmianami tekstu aby uznać za paste
+    /// </summary>
+    [Export]
+    public float MaxPasteTime { get; set; } = 0.02f;
+
     private string previousText = "";
     private double lastChangeTime = 0;
     private Action<string> onPasteCallback;
@@ -51,6 +58,29 @@ public partial class PasteDetector : Node
         {
             Target.TextChanged += OnTextChanged;
             lastChangeTime = Time.GetTicksMsec() / 1000.0;
+        }
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        base._Input(@event);
+
+        if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
+        {
+            bool isPasteShortcut = keyEvent.Keycode == Key.V &&
+                                   (keyEvent.CtrlPressed || keyEvent.MetaPressed);
+
+            if (isPasteShortcut && Target != null && Target.HasFocus())
+            {
+                // Opóźnij wykonanie callbacku do następnej klatki
+                GetTree().CreateTimer(0.05).Timeout += () =>
+                {
+                    if (Target != null)
+                    {
+                        onPasteCallback?.Invoke(Target.Text);
+                    }
+                };
+            }
         }
     }
 
@@ -74,8 +104,9 @@ public partial class PasteDetector : Node
         // Oblicz różnicę w długości tekstu
         int lengthDiff = newText.Length - previousText.Length;
 
-        // Polegamy tylko na długości zmiany tekstu
-        bool isPaste = lengthDiff >= MinPasteLength;
+        // Wykryj paste
+        bool isPaste = (timeDiff < MaxPasteTime && newText.Length >= MinPasteLength && lengthDiff >= -1) ||
+                       lengthDiff >= MinPasteLength;
 
         if (isPaste)
         {
