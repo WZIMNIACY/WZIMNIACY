@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using System;
 
@@ -103,17 +104,33 @@ public partial class MainGame : Control
 
         if (isHost)
         {
+            // Lista peerów (klientów) z lobby – potrzebna, żeby host wysłał pierwszy pakiet na SocketId
+            // i uniknął błędu EOS: "unknown socket".
+            var members = eosManager.GetCurrentLobbyMembers();
+            var clientPuids = new List<string>();
+            foreach (var member in members)
+            {
+                if (member == null || !member.ContainsKey("userId"))
+                {
+                    continue;
+                }
+
+                string puid = member["userId"].ToString();
+                if (!string.IsNullOrEmpty(puid) && puid != eosManager.localProductUserIdString)
+                {
+                    clientPuids.Add(puid);
+                }
+            }
+
             p2p.StartAsHost(
                 eosManager.CurrentGameSession.SessionId,
                 eosManager.localProductUserIdString,
-                Array.Empty<string>()
+                clientPuids.ToArray()
             );
         }
         else
         {
             var hostPuid = eosManager.GetLobbyOwnerPuidString();
-            GD.Print($"[MainGame] hostPuid(from lobby owner)={hostPuid}");
-
 
             p2p.StartAsClient(
                 eosManager.CurrentGameSession.SessionId,
@@ -121,6 +138,7 @@ public partial class MainGame : Control
                 hostPuid
             );
         }
+
 
 
 
