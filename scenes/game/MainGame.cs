@@ -1,10 +1,11 @@
 using Godot;
 using System;
-
+using AI;
 
 public partial class MainGame : Control
 {
     [Signal] public delegate void GameReadyEventHandler();
+    [Signal] public delegate void NewTurnStartEventHandler();
 
     [Export] public EndGameScreen endGameScreen;
     [Export] Panel menuPanel;
@@ -17,13 +18,17 @@ public partial class MainGame : Control
     [Export] Label turnLabel;
     [Export] Control settingsScene;
     [Export] Control helpScene;
+    [Export] CardManager cardManager;
+
     private EOSManager eosManager;
 
+    private ILLM llm;
+
     // Określa czy lokalny gracz jest hostem (właścicielem lobby EOS) - wartość ustawiana dynamicznie na podstawie EOSManager.IsLobbyOwner
-    public bool isHost = false; 
+    public bool isHost = false;
 
     private Team playerTeam;
-    
+
     private int pointsBlue;
     public int PointsBlue
     {
@@ -40,7 +45,7 @@ public partial class MainGame : Control
     private int blueOpponentFound = 0;
     private int redOpponentFound = 0;
 
-    private int currentStreak = 0; 
+    private int currentStreak = 0;
     private int blueMaxStreak = 0;
     private int redMaxStreak = 0;
 
@@ -59,7 +64,7 @@ public partial class MainGame : Control
     }
     Team currentTurn;
 
-    
+
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
@@ -71,7 +76,7 @@ public partial class MainGame : Control
         menuPanel.Visible = false;
         settingsScene.Visible = false;
         helpScene.Visible = false;
-        
+
         // Ustalanie czy lokalny gracz jest hostem na podstawie właściciela lobby EOS
         isHost = eosManager != null && eosManager.isLobbyOwner;
 
@@ -81,7 +86,7 @@ public partial class MainGame : Control
 
         if (isHost)
         {
-            // Host losuje drużynę rozpoczynającą grę - na razie losowanie 
+            // Host losuje drużynę rozpoczynającą grę - na razie losowanie
             startingTeam = (Team)Random.Shared.Next(0, 2);
             GD.Print("Starting team (HOST): " + startingTeam.ToString());
 
@@ -115,10 +120,11 @@ public partial class MainGame : Control
         UpdatePointsDisplay();
         UpdateTurnDisplay();
 
+        NewTurnStart += OnNewTurnStart;
+
         if (gameInputPanel != null)
         {
             gameInputPanel.HintGiven += OnCaptainHintReceived;
-            StartCaptainPhase();
         }
         else
         {
@@ -136,16 +142,28 @@ public partial class MainGame : Control
         {
             gameRightPanel.DisableSkipButton();
         }
-        
+
+        if (eosManager.currentAIType == EOSManager.AIType.LocalLLM)
+        {
+            llm = new LocalLLM();
+        }
+        else
+        {
+            var apiKey = eosManager.GetAPIKey();
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                throw new Exception("Got into game without settings API key");
+            }
+
+            llm = new DeepSeekLLM(apiKey);
+        }
 
         EmitSignal(SignalName.GameReady);
+        EmitSignal(SignalName.NewTurnStart);
     }
 
     private void StartCaptainPhase()
     {
-        currentStreak = 0;
-
-        GD.Print($"Początek tury {(currentTurn == Team.Blue ? "BLUE" : "RED")}");
         if(gameInputPanel != null)
         {
             gameInputPanel.SetupTurn(currentTurn == Team.Blue);
@@ -167,10 +185,19 @@ public partial class MainGame : Control
 
         UpdateMaxStreak();
 
-        if(gameRightPanel != null)
-            gameRightPanel.CommitToHistory();
         TurnChange();
+    }
+
+    private async void OnNewTurnStart()
+    {
+        GD.Print($"Początek tury {(currentTurn == Team.Blue ? "BLUE" : "RED")}");
+
+        currentStreak = 0;
+
+        gameRightPanel.CommitToHistory();
         StartCaptainPhase();
+
+        await gameRightPanel.GenerateAndUpdateHint(llm, cardManager.Deck, currentTurn);
     }
 
     private void UpdateMaxStreak()
@@ -258,13 +285,13 @@ public partial class MainGame : Control
         GD.Print("Point removed from team blue...");
         pointsBlue--;
 
-        if (currentTurn == Team.Blue) 
+        if (currentTurn == Team.Blue)
         {
             currentStreak++;
-        } 
-        else 
+        }
+        else
         {
-            redOpponentFound++; 
+            redOpponentFound++;
         }
 
         UpdatePointsDisplay();
@@ -277,7 +304,7 @@ public partial class MainGame : Control
         GD.Print("Point removed from team red...");
         pointsRed--;
 
-        if (currentTurn == Team.Red) 
+        if (currentTurn == Team.Red)
         {
             currentStreak++;
         }
@@ -293,12 +320,15 @@ public partial class MainGame : Control
 
     public void TurnChange()
     {
+        gameRightPanel.CancelHintGeneration();
         turnCounter++;
         UpdateTurnDisplay();
         if (currentTurn == Team.Blue)
             SetTurnRed();
         else
             SetTurnBlue();
+
+        EmitSignal(SignalName.NewTurnStart);
     }
 
     public void SetTurnBlue()
@@ -306,7 +336,7 @@ public partial class MainGame : Control
         GD.Print("Turn blue...");
         currentTurn = Team.Blue;
         if(playerTeam == currentTurn)
-            gameRightPanel.EnableSkipButton();    
+            gameRightPanel.EnableSkipButton();
         else
             gameRightPanel.DisableSkipButton();
         scoreContainerBlue.SetDiodeOn();
@@ -320,7 +350,7 @@ public partial class MainGame : Control
         GD.Print("Turn red...");
         currentTurn = Team.Red;
         if(playerTeam == currentTurn)
-            gameRightPanel.EnableSkipButton();    
+            gameRightPanel.EnableSkipButton();
         else
             gameRightPanel.DisableSkipButton();
         scoreContainerBlue.SetDiodeOff();
@@ -360,6 +390,7 @@ public partial class MainGame : Control
 
     public void EndGame(Team winner)
     {
+        gameRightPanel.CancelHintGeneration();
         GD.Print($"Koniec gry! Wygrywa: {winner}");
         UpdateMaxStreak();
 
