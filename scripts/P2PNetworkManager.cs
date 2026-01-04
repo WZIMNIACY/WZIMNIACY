@@ -1,7 +1,9 @@
+// P2PNetworkManager.cs
 using Godot;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using Epic.OnlineServices;
 using Epic.OnlineServices.P2P;
 
@@ -10,8 +12,7 @@ public partial class P2PNetworkManager : Node
     // Zgodnie z Twoim planem: handshake + gra na tym samym kanale 0
     private const byte Channel = 0;
 
-
-    // Handshake messages
+    // Handshake messages (PLAIN TEXT, NIE JSON)
     private const string MsgClientHello = "CLIENT_HELLO";
     private const string MsgHostWelcome = "HOST_WELCOME";
     private const string MsgHostPing = "HOST_PING";
@@ -39,6 +40,37 @@ public partial class P2PNetworkManager : Node
     private bool clientHandshakeComplete = false;
     private readonly HashSet<string> hostWelcomedClients = new();
 
+    // === JSON RPC (PUBLICZNE MODELE) ===
+    public sealed class NetMessage
+    {
+        public string kind { get; set; }    // "rpc"
+        public string type { get; set; }    // np. "card_selected"
+        public JsonElement payload { get; set; } // dowolny obiekt payload
+    }
+
+    // === HANDLERY PAKIETÓW (router) ===
+    // Handler zwraca true jeśli "zjada" pakiet (czyli był obsłużony)
+    public delegate bool PacketHandler(NetMessage packet, ProductUserId fromPeer);
+
+    public event PacketHandler PacketHandlers;
+
+    // --- Przydatne property (do użycia w MainGame / innych plikach) ---
+    public bool IsHost => isHost;
+    public bool Started => started;
+    public bool ClientHandshakeComplete => clientHandshakeComplete; // tylko sensowne po stronie klienta
+    public string SessionId => sessionId;
+    public ProductUserId LocalPuid => localPuid;
+    public ProductUserId HostPuid => hostPuid;
+
+    // === HANDSHAKE EVENT (DODANE) ===
+    public event Action HandshakeCompleted;
+
+    private void FireHandshakeCompletedOnce()
+    {
+        HandshakeCompleted?.Invoke();
+    }
+    // ===============================
+
     public override void _Ready()
     {
         eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
@@ -47,8 +79,6 @@ public partial class P2PNetworkManager : Node
             GD.PrintErr("[P2PNetworkManager] ❌ Nie znaleziono /root/EOSManager");
             return;
         }
-
-
 
         p2pInterface = eosManager.PlatformInterface.GetP2PInterface();
 
@@ -189,10 +219,71 @@ public partial class P2PNetworkManager : Node
         SendRaw(hostPuid, MsgClientHello);
     }
 
+    // ============================================================
+    //  RPC SEND (OPCJA B) - GENERYCZNE METODY
+    // ============================================================
+
+    public bool SendRpcToHost(string type, object payloadObj)
+    {
+        if (!started || isHost) return false;
+        if (!clientHandshakeComplete) return false;
+        if (hostPuid == null || !hostPuid.IsValid()) return false;
+
+        string json = BuildRpcJson(type, payloadObj);
+        SendRaw(hostPuid, json);
+        return true;
+    }
+
+    public bool SendRpcToPeer(ProductUserId peer, string type, object payloadObj)
+    {
+        if (!started) return false;
+        if (peer == null || !peer.IsValid()) return false;
+
+        string json = BuildRpcJson(type, payloadObj);
+        SendRaw(peer, json);
+        return true;
+    }
+
+    public int SendRpcToAllClients(string type, object payloadObj)
+    {
+        if (!started || !isHost) return 0;
+
+        string json = BuildRpcJson(type, payloadObj);
+        int sent = 0;
+
+        foreach (var kv in hostClients)
+        {
+            var peer = kv.Value;
+            if (peer != null && peer.IsValid())
+            {
+                SendRaw(peer, json);
+                sent++;
+            }
+        }
+
+        return sent;
+    }
+
+    private static string BuildRpcJson(string type, object payloadObj)
+    {
+        var wrapper = new
+        {
+            kind = "rpc",
+            type = type,
+            payload = payloadObj
+        };
+
+        return JsonSerializer.Serialize(wrapper);
+    }
+
+    // ============================================================
+    //  RECEIVE + ROUTING
+    // ============================================================
+
     private void HandlePacket(ProductUserId peer, string socketName, byte channel, byte[] payload)
     {
-        if (socketName != sessionId) return;     // ignoruj inne sockety
-        if (channel != Channel) return;          // trzymamy się kanału 0
+        if (socketName != sessionId) return; // ignoruj inne sockety
+        if (channel != Channel) return;      // trzymamy się kanału 0
 
         string msg = Encoding.UTF8.GetString(payload);
 
@@ -223,20 +314,25 @@ public partial class P2PNetworkManager : Node
                 return;
             }
 
-            // Tu później podepniesz RPC gameplay (Twoje message types)
+            // JSON RPC -> do handlerów
+            if (TryDispatchJsonRpc(msg, peer))
+                return;
+
             GD.Print($"[P2PNetworkManager] HOST <- {msg} from {peer}");
         }
         else
         {
             // Client dostaje WELCOME -> koniec retry HELLO
-            if(clientHandshakeComplete)
-            {
-                return;
-            }
             if (msg == MsgHostWelcome)
             {
+                if (clientHandshakeComplete) return; // ignoruj duplikat welcome
                 clientHandshakeComplete = true;
                 GD.Print($"[P2PNetworkManager] CLIENT <- WELCOME (handshake done)");
+
+                // === HANDSHAKE EVENT (DODANE) ===
+                FireHandshakeCompletedOnce();
+                // ===============================
+
                 return;
             }
 
@@ -246,9 +342,71 @@ public partial class P2PNetworkManager : Node
                 return;
             }
 
+            // JSON RPC -> do handlerów
+            if (TryDispatchJsonRpc(msg, peer))
+                return;
+
             GD.Print($"[P2PNetworkManager] CLIENT <- {msg} from {peer}");
         }
     }
+
+    private bool TryDispatchJsonRpc(string msg, ProductUserId fromPeer)
+    {
+        // szybki filtr, żeby nie próbować parsować zwykłych stringów
+        if (string.IsNullOrEmpty(msg) || msg[0] != '{')
+            return false;
+
+        NetMessage parsed;
+        try
+        {
+            parsed = JsonSerializer.Deserialize<NetMessage>(msg);
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[P2PNetworkManager] JSON parse error: {e.Message}");
+            return false;
+        }
+
+        if (parsed == null) return false;
+        if (parsed.kind != "rpc") return false;
+
+        // (4) Opcja 2: bez bufora.
+        // Jeśli nikt nie słucha -> nie ma co robić
+        if (PacketHandlers == null)
+        {
+            GD.Print($"[P2PNetworkManager] RPC dropped (no handlers): type={parsed.type} from={fromPeer}");
+            return true; // "zjedzone" żeby nie spamować fallback logiem
+        }
+
+        bool consumed = false;
+
+        foreach (PacketHandler handler in PacketHandlers.GetInvocationList())
+        {
+            try
+            {
+                if (handler(parsed, fromPeer))
+                {
+                    consumed = true;
+                    break;
+                }
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[P2PNetworkManager] Handler exception for type={parsed.type}: {e.Message}");
+            }
+        }
+
+        if (!consumed)
+        {
+            GD.Print($"[P2PNetworkManager] RPC not handled: type={parsed.type} from={fromPeer} json={msg}");
+        }
+
+        return true; // JSON zawsze "zjadamy" (obsłużone albo świadomie pominięte)
+    }
+
+    // ============================================================
+    //  RAW SEND
+    // ============================================================
 
     private void SendRaw(ProductUserId remote, string text)
     {
@@ -272,6 +430,10 @@ public partial class P2PNetworkManager : Node
             GD.PrintErr($"[P2PNetworkManager] SendPacket failed: {r} (to={remote} msg={text})");
         }
     }
+
+    // ============================================================
+    //  RECEIVE (EOS)
+    // ============================================================
 
     private struct ReceivedPacket
     {
