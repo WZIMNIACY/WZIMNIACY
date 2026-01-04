@@ -80,10 +80,6 @@ public partial class CardManager : GridContainer
 		HideAllCards();
 
         string cardName = card.cardInfo.Word;
-        foreach (var crd in Deck.Cards)
-        {
-            GD.Print(crd);
-        }
         GD.Print($"About to delete {cardName} card from deck");
         for (var i = 0; i < Deck.Cards.Count; i++)
         {
