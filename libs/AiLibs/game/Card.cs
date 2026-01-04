@@ -10,18 +10,14 @@ namespace game
     {
         public string Word { get; init; }
         public List<double>? Vector { get; init; }
-        public string Team { get; init; }
+        public Team Team { get; init; }
 
-        public Card(string word, List<double>? vector, string team)
+        public Card(string word, List<double>? vector, Team team)
         {
             Word = word ?? throw new ArgumentNullException(nameof(word));
             Vector = vector;
-            Team = team ?? throw new ArgumentNullException(nameof(team));
+            Team = team;
         }
-
-        
-        
-
 
         public string fullWordInfo()
         {
@@ -64,7 +60,17 @@ namespace game
 
         public static Card fromJson(string json)
         {
-            return System.Text.Json.JsonSerializer.Deserialize<Card>(json)!;
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                    WriteIndented = true,
+                    ReadCommentHandling = JsonCommentHandling.Skip,
+                    AllowTrailingCommas = true,
+                    PropertyNameCaseInsensitive = true,
+                    NumberHandling = JsonNumberHandling.AllowReadingFromString,
+                    Converters = { new JsonStringEnumConverter() }
+            };
+
+            return System.Text.Json.JsonSerializer.Deserialize<Card>(json, options)!;
         }
 
     }

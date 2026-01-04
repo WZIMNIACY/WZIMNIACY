@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 
 namespace game
 {
+
     public enum Team
     {
         Blue,
@@ -26,7 +27,7 @@ namespace game
         {
         }
 
-        public static Deck CreateFromDictionary(Dictionary<string, List<double>> dictionary, Random? rng = null)
+        public static Deck CreateFromDictionary(Dictionary<string, List<double>> dictionary, Team startingTeam, Random? rng = null)
         {
             if (dictionary is null)
             {
@@ -46,7 +47,6 @@ namespace game
             var selectedKeys = keys.Take(25).ToList();
 
             // Determine starting team: randomly Blue or Red
-            var startingTeam = rng.Next(2) == 0 ? Team.Blue : Team.Red;
             var otherTeam = startingTeam == Team.Blue ? Team.Red : Team.Blue;
 
             const int totalCards = 25;
@@ -76,7 +76,7 @@ namespace game
                 // Copy vector to avoid external mutation
                 var vector = new List<double>(dictionary[word]);
                 var team = assignments[i];
-                cards.Add(new Card(word, vector, team.ToString()));
+                cards.Add(new Card(word, vector, team));
             }
 
             // Optionally shuffle final deck (cards already in random order due to assignments shuffle but shuffle again)
@@ -97,7 +97,7 @@ namespace game
 
         public static Deck FromJson(string json)
         {
-           
+
 
             if (string.IsNullOrWhiteSpace(json))
                 throw new InvalidOperationException("Input jsonFormat is null or whitespace.");

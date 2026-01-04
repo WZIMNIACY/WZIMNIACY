@@ -11,7 +11,7 @@ namespace Reaction
     public static class Reaction
     {
 
-        public static string create(ILLM llm, Hint hint, Card pickedCard, bool KapitnBomba, string actualTour)
+        public static string create(ILLM llm, Hint hint, Card pickedCard, bool KapitnBomba, Team actualTour)
         {
 
             string hintPromptPath;
