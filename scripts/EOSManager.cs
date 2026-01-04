@@ -160,6 +160,9 @@ public partial class EOSManager : Node
 	public string currentLobbyId = null;
 	public bool isLobbyOwner = false;
 
+	// Czy trwa proces dołączania do lobby
+	public bool isJoiningLobby = false;
+
 	// Custom Lobby ID
 	public string currentCustomLobbyId = "";
 
@@ -1451,6 +1454,9 @@ public partial class EOSManager : Node
 
 		GD.Print($"🚪 Joining lobby: {lobbyId}");
 
+		// Ustaw flagę że trwa dołączanie do lobby
+		isJoiningLobby = true;
+
 		// Automatycznie wygeneruj unikalny nick zwierzaka! ^w^
 		pendingNickname = GenerateUniqueAnimalNickname();
 		GD.Print($"🦊 Twój nick: {pendingNickname}");
@@ -1542,6 +1548,7 @@ public partial class EOSManager : Node
 							GetTree().CreateTimer(0.3).Timeout += () =>
 							{
 								GD.Print("✅ [STEP 5/5] All synchronization complete, emitting LobbyJoined signal");
+								isJoiningLobby = false; // Zakończono dołączanie
 								EmitSignal(SignalName.LobbyJoined, currentLobbyId);
 							};
 						};
@@ -1555,6 +1562,9 @@ public partial class EOSManager : Node
 		else
 		{
 			GD.PrintErr($"❌ Failed to join lobby: {data.ResultCode}");
+
+			// Wyczyść flagę dołączania
+			isJoiningLobby = false;
 
 			// Wyślij sygnał o błędzie do UI
 			string errorMessage = data.ResultCode switch

@@ -36,6 +36,8 @@ public partial class LobbyMenu : Control
     [Export] private Label lobbyStatusLabel;
     [Export] private Label lobbyStatusCounter;
 
+    private LobbyLeaveConfirmation leaveConfirmation;
+    private EscapeBackHandler escapeBackHandler;
     // Custom tooltip
     private CustomTooltip customTooltip;
     private string lobbyReadyTooltip = "";
@@ -74,6 +76,10 @@ public partial class LobbyMenu : Control
         // Pobierz EOSManager z autoload
         eosManager = GetNode<EOSManager>("/root/EOSManager");
 
+        // Inicjalizuj LobbyLeaveConfirmation
+        leaveConfirmation = GetNode<LobbyLeaveConfirmation>("LobbyLeaveConfirmation");
+        escapeBackHandler = GetNode<EscapeBackHandler>("EscapeBackHandler");
+        escapeBackHandler.LeaveConfirmation = leaveConfirmation;
         // Sprawdź VRAM i uzupełnij w tle
         if (HardwareResources.VRAMDetectionStatus == VRAMStatus.NotDetected)
         {
@@ -1429,30 +1435,18 @@ public partial class LobbyMenu : Control
 
     private void OnBackButtonPressed()
     {
-        GD.Print("Returning to main menu...");
-
-        // Opuść lobby jeśli jesteś w jakimś
-        if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
+        if (leaveConfirmation != null)
         {
-            GD.Print("🚪 Leaving lobby before returning to menu...");
-            eosManager.LeaveLobby();
+            leaveConfirmation.ShowConfirmation();
         }
-
-        GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
     }
 
     private void OnLeaveLobbyPressed()
     {
-        GD.Print("Returning to main menu...");
-
-        // Opuść lobby jeśli jesteś w jakimś
-        if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
+        if (leaveConfirmation != null)
         {
-            GD.Print("🚪 Leaving lobby before returning to menu...");
-            eosManager.LeaveLobby();
+            leaveConfirmation.ShowConfirmation();
         }
-
-        GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
     }
 
     private async void CreateLobbyWithRetry(int attempt = 0)
