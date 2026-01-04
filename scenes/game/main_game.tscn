@@ -92,7 +92,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene")]
+[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -100,6 +100,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_o6v7o")
+endGameScreen = NodePath("EndGameScreen")
 menuPanel = NodePath("MenuPanel")
 scoreContainerBlue = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/BlueScoreContainer")
 scoreContainerRed = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer")
@@ -325,7 +326,7 @@ cardManager = NodePath("..")
 layout_mode = 2
 cardManager = NodePath("..")
 
-[node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll")]
+[node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll", "skipButton")]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("1_s3esy")
@@ -334,6 +335,7 @@ script = ExtResource("8_cn0rj")
 currentWordLabel = NodePath("VRightPanel/PasswordContainer/MarginContainer/HBoxContainer/CurentWordLabel")
 historyList = NodePath("VRightPanel/HintBoxContainer/HistoryScroll/MarginContainer/HistoryList")
 historyScroll = NodePath("VRightPanel/HintBoxContainer/HistoryScroll")
+skipButton = NodePath("VRightPanel/SkipTurnContainer/PanelContainer/Button")
 
 [node name="VRightPanel" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel"]
 custom_minimum_size = Vector2(313.033, 0)
