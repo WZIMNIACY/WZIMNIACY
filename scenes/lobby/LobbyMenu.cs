@@ -40,6 +40,7 @@ public partial class LobbyMenu : Control
     private EscapeBackHandler escapeBackHandler;
     // Custom tooltip
     private CustomTooltip customTooltip;
+    private PasteDetector apiKeyPasteDetector;
     private string lobbyReadyTooltip = "";
     private string apiKeyErrorMessage = "";
     private string apiKeyInputTooltip = "Wprowadź klucz API od DeepSeek i zatwierdź enterem";
@@ -174,6 +175,14 @@ public partial class LobbyMenu : Control
             aiAPIKeyInput.MouseFilter = MouseFilterEnum.Stop;
             aiAPIKeyInput.MouseEntered += OnAPIKeyInputTooltipMouseEntered;
             aiAPIKeyInput.MouseExited += OnAPIKeyInputTooltipMouseExited;
+
+            // Konfiguruj PasteDetector dla automatycznego zatwierdzania po wklejeniu
+            apiKeyPasteDetector = GetNodeOrNull<PasteDetector>("PasteDetector");
+            if (apiKeyPasteDetector != null)
+            {
+                apiKeyPasteDetector.Target = aiAPIKeyInput;
+                apiKeyPasteDetector.RegisterPasteCallback(OnAPIKeySubmitted);
+            }
         }
 
         // WAŻNE: Podłącz sygnał z EOSManager do aktualizacji drużyn
