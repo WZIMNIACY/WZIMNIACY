@@ -42,6 +42,8 @@ public partial class LobbyMenu : Control
     private CustomTooltip customTooltip;
     private string lobbyReadyTooltip = "";
     private string apiKeyErrorMessage = "";
+    private string apiKeyInputTooltip = "Wprowadź klucz API od DeepSeek i zatwierdź enterem";
+    private string apiKeyInfoTooltip = "Jak uzyskać klucz API?\n\n1. Przejdź na stronę: platform.deepseek.com\n2. Zaloguj się lub załóż konto\n3. Przejdź do sekcji API Keys\n4. Wygeneruj nowy klucz\n5. Skopiuj i wklej tutaj";
 
     private string currentLobbyCode = "";
     private const int LobbyCodeLength = 6;
@@ -118,6 +120,9 @@ public partial class LobbyMenu : Control
         if (apiKeyHelpButton != null)
         {
             apiKeyHelpButton.Pressed += OnAPIKeyHelpButtonPressed;
+            apiKeyHelpButton.MouseFilter = MouseFilterEnum.Stop;
+            apiKeyHelpButton.MouseEntered += OnAPIKeyInfoTooltipMouseEntered;
+            apiKeyHelpButton.MouseExited += OnAPIKeyInfoTooltipMouseExited;
         }
 
         if (startGameButton != null)
@@ -166,6 +171,9 @@ public partial class LobbyMenu : Control
         {
             aiAPIKeyInput.TextSubmitted += OnAPIKeySubmitted;
             aiAPIKeyInput.TextChanged += OnAPIKeyTextChanged;
+            aiAPIKeyInput.MouseFilter = MouseFilterEnum.Stop;
+            aiAPIKeyInput.MouseEntered += OnAPIKeyInputTooltipMouseEntered;
+            aiAPIKeyInput.MouseExited += OnAPIKeyInputTooltipMouseExited;
         }
 
         // WAŻNE: Podłącz sygnał z EOSManager do aktualizacji drużyn
@@ -1524,6 +1532,38 @@ public partial class LobbyMenu : Control
         }
     }
 
+    private void OnAPIKeyInputTooltipMouseEntered()
+    {
+        if (customTooltip != null && !string.IsNullOrEmpty(apiKeyInputTooltip))
+        {
+            customTooltip.Show(apiKeyInputTooltip);
+        }
+    }
+
+    private void OnAPIKeyInputTooltipMouseExited()
+    {
+        if (customTooltip != null)
+        {
+            customTooltip.Hide();
+        }
+    }
+
+    private void OnAPIKeyInfoTooltipMouseEntered()
+    {
+        if (customTooltip != null && !string.IsNullOrEmpty(apiKeyInfoTooltip))
+        {
+            customTooltip.Show(apiKeyInfoTooltip);
+        }
+    }
+
+    private void OnAPIKeyInfoTooltipMouseExited()
+    {
+        if (customTooltip != null)
+        {
+            customTooltip.Hide();
+        }
+    }
+
     private void OnLeaveTeamButtonPressed()
     {
         TryLeftTeam();
@@ -1871,6 +1911,14 @@ public partial class LobbyMenu : Control
         {
             aiAPIKeyInput.TextSubmitted -= OnAPIKeySubmitted;
             aiAPIKeyInput.TextChanged -= OnAPIKeyTextChanged;
+            aiAPIKeyInput.MouseEntered -= OnAPIKeyInputTooltipMouseEntered;
+            aiAPIKeyInput.MouseExited -= OnAPIKeyInputTooltipMouseExited;
+        }
+
+        if (apiKeyHelpButton != null)
+        {
+            apiKeyHelpButton.MouseEntered -= OnAPIKeyInfoTooltipMouseEntered;
+            apiKeyHelpButton.MouseExited -= OnAPIKeyInfoTooltipMouseExited;
         }
 
         if (startGameButton != null)
