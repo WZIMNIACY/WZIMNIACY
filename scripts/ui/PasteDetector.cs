@@ -39,13 +39,6 @@ public partial class PasteDetector : Node
     /// </summary>
     [Export]
     public int MinPasteLength { get; set; } = 3;
-
-    /// <summary>
-    /// Maksymalny czas (w sekundach) pomiędzy zmianami tekstu aby uznać za paste
-    /// </summary>
-    [Export]
-    public float MaxPasteTime { get; set; } = 0.1f;
-
     private string previousText = "";
     private double lastChangeTime = 0;
     private Action<string> onPasteCallback;
@@ -76,21 +69,13 @@ public partial class PasteDetector : Node
     private void OnTextChanged(string newText)
     {
         double currentTime = Time.GetTicksMsec() / 1000.0;
-
-        // Jeśli to pierwsza zmiana (pole było puste), zresetuj czas
-        if (string.IsNullOrEmpty(previousText))
-        {
-            lastChangeTime = currentTime;
-        }
-
         double timeDiff = currentTime - lastChangeTime;
 
         // Oblicz różnicę w długości tekstu
         int lengthDiff = newText.Length - previousText.Length;
 
-
-        // Wykryj paste
-        bool isPaste = lengthDiff >= MinPasteLength && timeDiff < MaxPasteTime;
+        // Polegamy tylko na długości zmiany tekstu
+        bool isPaste = lengthDiff >= MinPasteLength;
 
         if (isPaste)
         {
