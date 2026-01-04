@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using Epic.OnlineServices;
 using Epic.OnlineServices.P2P;
 
@@ -38,6 +39,26 @@ public partial class P2PNetworkManager : Node
     // Handshake state
     private bool clientHandshakeComplete = false;
     private readonly HashSet<string> hostWelcomedClients = new();
+
+    // === JSON RPC (DODANE) ===
+    private sealed class NetMessage
+    {
+        public string kind { get; set; }   // "rpc"
+        public string type { get; set; }   // np. "card_selected"
+        public JsonElement payload { get; set; } // dowolny obiekt payload
+    }
+
+    private sealed class CardSelectedPayload
+    {
+        public int cardId { get; set; }
+        public string by { get; set; }     // np. localPuid.ToString()
+    }
+    // =========================
+
+    // === JSON TEST (DODANE) ===
+    private bool jsonTestSent = false;           // klient wyśle tylko raz po handshake
+    private int jsonTestTick = 0;                // licznik testów na hoście
+    // ==========================
 
     public override void _Ready()
     {
@@ -137,6 +158,10 @@ public partial class P2PNetworkManager : Node
         clientHandshakeComplete = false;
         helloRetryAccumulator = 0.0;
 
+        // === JSON TEST (DODANE) ===
+        jsonTestSent = false;
+        // ==========================
+
         GD.Print($"[P2PNetworkManager] StartAsClient sessionId={sessionId} local={localPuidString} host={hostPuidString}");
 
         // Wyślij od razu pierwszy HELLO
@@ -189,6 +214,30 @@ public partial class P2PNetworkManager : Node
         SendRaw(hostPuid, MsgClientHello);
     }
 
+    // === JSON RPC (DODANE) ===
+    public void SendCardSelectedToHost(int cardId)
+    {
+        if (!started || isHost) return;
+        if (!clientHandshakeComplete) return;
+        if (hostPuid == null || !hostPuid.IsValid()) return;
+
+        var payload = new CardSelectedPayload
+        {
+            cardId = cardId,
+            by = localPuid.ToString()
+        };
+
+        var wrapper = new
+        {
+            kind = "rpc",
+            type = "card_selected",
+            payload = payload
+        };
+
+        SendRaw(hostPuid, JsonSerializer.Serialize(wrapper));
+    }
+    // =========================
+
     private void HandlePacket(ProductUserId peer, string socketName, byte channel, byte[] payload)
     {
         if (socketName != sessionId) return;     // ignoruj inne sockety
@@ -223,20 +272,36 @@ public partial class P2PNetworkManager : Node
                 return;
             }
 
+            // === JSON RPC (DODANE) ===
+            if (msg.Length > 0 && msg[0] == '{')
+            {
+                if (TryHandleJsonRpcHost(peer, msg))
+                    return;
+            }
+            // =========================
+
             // Tu później podepniesz RPC gameplay (Twoje message types)
             GD.Print($"[P2PNetworkManager] HOST <- {msg} from {peer}");
         }
         else
         {
             // Client dostaje WELCOME -> koniec retry HELLO
-            if(clientHandshakeComplete)
-            {
-                return;
-            }
             if (msg == MsgHostWelcome)
             {
+                if (clientHandshakeComplete) return;   // ignoruj duplikat welcome
                 clientHandshakeComplete = true;
                 GD.Print($"[P2PNetworkManager] CLIENT <- WELCOME (handshake done)");
+
+                // === JSON TEST (DODANE) ===
+                if (!jsonTestSent)
+                {
+                    jsonTestSent = true;
+                    int testCardId = 777;
+                    GD.Print($"[P2PNetworkManager] JSON_TEST CLIENT -> SendCardSelectedToHost cardId={testCardId}");
+                    SendCardSelectedToHost(testCardId);
+                }
+                // ==========================
+
                 return;
             }
 
@@ -246,9 +311,87 @@ public partial class P2PNetworkManager : Node
                 return;
             }
 
+            // === JSON TEST (DODANE) ===
+            if (msg.Length > 0 && msg[0] == '{')
+            {
+                if (TryHandleJsonRpcClient(peer, msg))
+                    return;
+            }
+            // ==========================
+
             GD.Print($"[P2PNetworkManager] CLIENT <- {msg} from {peer}");
         }
     }
+
+    // === JSON RPC (DODANE) ===
+    private bool TryHandleJsonRpcHost(ProductUserId peer, string json)
+    {
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<NetMessage>(json);
+            if (parsed == null) return false;
+            if (parsed.kind != "rpc") return false;
+
+            if (parsed.type == "card_selected")
+            {
+                var payload = parsed.payload.Deserialize<CardSelectedPayload>();
+                GD.Print($"[P2PNetworkManager] HOST <- RPC card_selected cardId={payload.cardId} by={payload.by} from={peer}");
+
+                // === JSON TEST (DODANE) ===
+                jsonTestTick++;
+                GD.Print($"[P2PNetworkManager] JSON_TEST HOST OK #{jsonTestTick} (received card_selected)");
+
+                var ack = new
+                {
+                    kind = "rpc",
+                    type = "json_test_ack",
+                    payload = new { ok = true, tick = jsonTestTick, gotCardId = payload.cardId }
+                };
+
+                string ackJson = JsonSerializer.Serialize(ack);
+                GD.Print($"[P2PNetworkManager] JSON_TEST HOST -> send json_test_ack to={peer} json={ackJson}");
+                SendRaw(peer, ackJson);
+                // ==========================
+
+                // TODO: tutaj wywołasz logikę gry u hosta, np. MainGame.OnCardSelected(...)
+                return true;
+            }
+
+            // inne typy RPC w przyszłości
+            return false;
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[P2PNetworkManager] HOST JSON parse error: {e.Message}");
+            return false;
+        }
+    }
+    // =========================
+
+    // === JSON TEST (DODANE) ===
+    private bool TryHandleJsonRpcClient(ProductUserId peer, string json)
+    {
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<NetMessage>(json);
+            if (parsed == null) return false;
+            if (parsed.kind != "rpc") return false;
+
+            if (parsed.type == "json_test_ack")
+            {
+                GD.Print($"[P2PNetworkManager] JSON_TEST CLIENT <- ACK from={peer} json={json}");
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[P2PNetworkManager] CLIENT JSON parse error: {e.Message}");
+            return false;
+        }
+    }
+    // ==========================
 
     private void SendRaw(ProductUserId remote, string text)
     {
