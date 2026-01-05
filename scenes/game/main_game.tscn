@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3 uid="uid://bqfm3bpx8hfit"]
+[gd_scene load_steps=33 format=3 uid="uid://bqfm3bpx8hfit"]
 
 [ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://assets/themes/main_game.tres" id="1_s3esy"]
@@ -18,6 +18,7 @@
 [ext_resource type="PackedScene" uid="uid://bfxpcutxox0tt" path="res://scenes/settings/Settings.tscn" id="15_eixuh"]
 [ext_resource type="PackedScene" uid="uid://b6bdhq5ktk0vo" path="res://scenes/components/main_game/end_game_screen.tscn" id="16_eixuh"]
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="16_v72ow"]
+[ext_resource type="Script" uid="uid://d355aol0ujbg" path="res://scripts/P2PNetworkManager.cs" id="19_stils"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -110,6 +111,7 @@ gameInputPanel = NodePath("Panel/InputPanel")
 turnLabel = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/TurnCounterContainer/Label")
 settingsScene = NodePath("Settings")
 helpScene = NodePath("HelpScene")
+metadata/_edit_horizontal_guides_ = [-92.0]
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
@@ -576,6 +578,9 @@ layout_mode = 1
 [node name="EndGameScreen" parent="." instance=ExtResource("16_eixuh")]
 visible = false
 layout_mode = 1
+
+[node name="P2PNetworkManager" type="Node" parent="."]
+script = ExtResource("19_stils")
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
 [connection signal="pressed" from="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer/Button" to="." method="OnSkipTurnPressed"]
