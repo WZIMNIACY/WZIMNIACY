@@ -1,8 +1,9 @@
 using Godot;
 using System;
 
+[Tool]
 public partial class SoundManager : Node
-{
+{	
 	// Ścieżki do plików audio
 	private const string AUDIO_HOVER_PATH = "res://assets/sounds/Hover.ogg";
 	private const string AUDIO_BUTTON_PATH = "res://assets/sounds/Button.ogg";
@@ -20,6 +21,7 @@ public partial class SoundManager : Node
 
 	public override void _Ready()
 	{
+		if (Engine.IsEditorHint()) return;
 		// 1. Dźwięki działają w pauzie
 		ProcessMode = ProcessModeEnum.Always;
 
