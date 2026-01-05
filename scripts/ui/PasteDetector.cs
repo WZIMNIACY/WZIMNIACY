@@ -44,7 +44,7 @@ public partial class PasteDetector : Node
     /// Maksymalny czas (w sekundach) pomiędzy zmianami tekstu aby uznać za paste
     /// </summary>
     [Export]
-    public float MaxPasteTime { get; set; } = 0.1f;
+    public float MaxPasteTime { get; set; } = 0.02f;
 
     private string previousText = "";
     private double lastChangeTime = 0;
@@ -58,6 +58,29 @@ public partial class PasteDetector : Node
         {
             Target.TextChanged += OnTextChanged;
             lastChangeTime = Time.GetTicksMsec() / 1000.0;
+        }
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        base._Input(@event);
+
+        if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
+        {
+            bool isPasteShortcut = keyEvent.Keycode == Key.V &&
+                                   (keyEvent.CtrlPressed || keyEvent.MetaPressed);
+
+            if (isPasteShortcut && Target != null && Target.HasFocus())
+            {
+                // Opóźnij wykonanie callbacku do następnej klatki
+                GetTree().CreateTimer(0.05).Timeout += () =>
+                {
+                    if (Target != null)
+                    {
+                        onPasteCallback?.Invoke(Target.Text);
+                    }
+                };
+            }
         }
     }
 
@@ -76,21 +99,14 @@ public partial class PasteDetector : Node
     private void OnTextChanged(string newText)
     {
         double currentTime = Time.GetTicksMsec() / 1000.0;
-
-        // Jeśli to pierwsza zmiana (pole było puste), zresetuj czas
-        if (string.IsNullOrEmpty(previousText))
-        {
-            lastChangeTime = currentTime;
-        }
-
         double timeDiff = currentTime - lastChangeTime;
 
         // Oblicz różnicę w długości tekstu
         int lengthDiff = newText.Length - previousText.Length;
 
-
         // Wykryj paste
-        bool isPaste = lengthDiff >= MinPasteLength && timeDiff < MaxPasteTime;
+        bool isPaste = (timeDiff < MaxPasteTime && newText.Length >= MinPasteLength && lengthDiff >= -1) ||
+                       lengthDiff >= MinPasteLength;
 
         if (isPaste)
         {
