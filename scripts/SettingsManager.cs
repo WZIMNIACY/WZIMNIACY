@@ -27,9 +27,7 @@ public partial class SettingsManager : Node
 	public class VideoSettings
 	{
 		public WindowMode DisplayMode { get; set; } = WindowMode.Windowed;
-		
 		public Vector2I Resolution { get; set; } = new Vector2I(1920, 1080);
-		
 		public float UiScale { get; set; } = 1.0f;
 		public bool VSync    { get; set; } = true;
 	}
@@ -37,9 +35,10 @@ public partial class SettingsManager : Node
 	public SoundSettings Sound { get; private set; } = new SoundSettings();
 	public VideoSettings Video { get; private set; } = new VideoSettings();
 
-	private int _busIndexMaster;
-	private int _busIndexMusic;
-	private int _busIndexSfx;
+	// POPRAWKA: Usunięto "_" z nazw zmiennych, aby zadowolić kompilator na GitHubie
+	private int busIndexMaster;
+	private int busIndexMusic;
+	private int busIndexSfx;
 
 	public readonly List<Vector2I> AvailableResolutions = new List<Vector2I>
 	{
@@ -60,14 +59,12 @@ public partial class SettingsManager : Node
 		Instance = this;
 		ProcessMode = ProcessModeEnum.Always;
 
-		_busIndexMaster = AudioServer.GetBusIndex("Master");
-		_busIndexMusic  = AudioServer.GetBusIndex("Music");
-		_busIndexSfx    = AudioServer.GetBusIndex("SFX");
+		busIndexMaster = AudioServer.GetBusIndex("Master");
+		busIndexMusic  = AudioServer.GetBusIndex("Music");
+		busIndexSfx    = AudioServer.GetBusIndex("SFX");
 
 		AddNativeResolution();
-
 		LoadConfig();
-
 		ApplyAllSettings();
 
 		GD.Print("✅ SettingsManager gotowy.");
@@ -76,9 +73,7 @@ public partial class SettingsManager : Node
 	private void AddNativeResolution()
 	{
 		Vector2I screenRes = DisplayServer.ScreenGetSize();
-
 		if (AvailableResolutions.Contains(screenRes)) return;
-
 
 		bool inserted = false;
 		for (int i = 0; i < AvailableResolutions.Count; i++)
@@ -98,7 +93,6 @@ public partial class SettingsManager : Node
 		{
 			AvailableResolutions.Add(screenRes);
 		}
-
 		GD.Print($"🖥️ Wstawiono natywną rozdzielczość gracza: {screenRes}");
 	}
 	
@@ -138,7 +132,6 @@ public partial class SettingsManager : Node
 				return res == 0 ? b.Y.CompareTo(a.Y) : res;
 			});
 		}
-
 		GD.Print("📂 Ustawienia załadowane z pliku.");
 	}
 
@@ -146,18 +139,14 @@ public partial class SettingsManager : Node
 	{
 		var config = new ConfigFile();
 
-		// Sound
 		config.SetValue("Sound", "MasterVolume", Sound.MasterVolume);
 		config.SetValue("Sound", "MusicVolume",  Sound.MusicVolume);
 		config.SetValue("Sound", "SfxVolume",    Sound.SfxVolume);
 		config.SetValue("Sound", "Muted",        Sound.Muted);
 
-		// Video
 		config.SetValue("Video", "DisplayMode",      (int)Video.DisplayMode);
-		
 		config.SetValue("Video", "ResolutionWidth",  Video.Resolution.X);
 		config.SetValue("Video", "ResolutionHeight", Video.Resolution.Y);
-		
 		config.SetValue("Video", "UiScale",          Video.UiScale);
 		config.SetValue("Video", "VSync",            Video.VSync);
 
@@ -165,30 +154,29 @@ public partial class SettingsManager : Node
 		GD.Print("💾 Ustawienia zapisane na dysku.");
 	}
 
-	// --- AUDIO ---
 	public void SetMasterVolume(float linear)
 	{
 		Sound.MasterVolume = linear;
-		ApplyVolume(_busIndexMaster, linear);
+		ApplyVolume(busIndexMaster, linear);
 	}
 
 	public void SetMusicVolume(float linear)
 	{
 		Sound.MusicVolume = linear;
-		ApplyVolume(_busIndexMusic, linear);
+		ApplyVolume(busIndexMusic, linear);
 	}
 
 	public void SetSfxVolume(float linear)
 	{
 		Sound.SfxVolume = linear;
-		ApplyVolume(_busIndexSfx, linear);
+		ApplyVolume(busIndexSfx, linear);
 	}
 
 	public void SetMuted(bool muted)
 	{
 		Sound.Muted = muted;
-		if (_busIndexMaster != -1)
-			AudioServer.SetBusMute(_busIndexMaster, muted);
+		if (busIndexMaster != -1)
+			AudioServer.SetBusMute(busIndexMaster, muted);
 	}
 
 	private void ApplyVolume(int busIndex, float linear)
@@ -198,7 +186,6 @@ public partial class SettingsManager : Node
 		AudioServer.SetBusVolumeDb(busIndex, db);
 	}
 
-	// --- VIDEO ---
 	public void SetDisplayMode(WindowMode mode)
 	{
 		Video.DisplayMode = mode;
@@ -240,13 +227,11 @@ public partial class SettingsManager : Node
 
 	public void ApplyAllSettings()
 	{
-		// Audio
 		SetMasterVolume(Sound.MasterVolume);
 		SetMusicVolume(Sound.MusicVolume);
 		SetSfxVolume(Sound.SfxVolume);
 		SetMuted(Sound.Muted);
 
-		// Video
 		SetUiScale(Video.UiScale);
 		SetVSync(Video.VSync);
 		ApplyWindowMode();
@@ -276,7 +261,6 @@ public partial class SettingsManager : Node
 	
 	private void SetWindowSizeAndCenter()
 	{
-		// Ustawiamy rozmiar tylko w trybach okienkowych
 		DisplayServer.WindowSetSize(Video.Resolution);
 		CenterWindow();
 	}
