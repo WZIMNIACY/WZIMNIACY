@@ -18,3 +18,9 @@ mono_crash.*.json
 
 # Visual studio ignores
 .vs/
+
+#MacOS specific ignores
+.DS_Store
+
+**/obj/
+**/bin/
