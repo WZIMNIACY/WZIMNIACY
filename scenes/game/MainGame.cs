@@ -22,6 +22,11 @@ public partial class MainGame : Control
     [Export] Control settingsScene;
     [Export] Control helpScene;
     [Export] CardManager cardManager;
+    [Export] Loadingscreen loadingScreen;
+
+
+    private bool isGameStarted = false;
+    private readonly Dictionary<int, string> playerPuidByIndex = new();
 
     private EOSManager eosManager;
 
@@ -98,6 +103,14 @@ public partial class MainGame : Control
         settingsScene.Visible = false;
         helpScene.Visible = false;
 
+        isGameStarted = false;
+
+        if (loadingScreen != null)
+        {
+            loadingScreen.Visible = true;
+            loadingScreen.MouseFilter = Control.MouseFilterEnum.Stop;
+        }
+
         // Ustalanie czy lokalny gracz jest hostem na podstawie właściciela lobby EOS
         isHost = eosManager != null && eosManager.isLobbyOwner;
 
@@ -125,6 +138,8 @@ public partial class MainGame : Control
         {
             // Podpinamy handler JAK NAJWCZEŚNIEJ (bez bufora)
             p2pNet.PacketHandlers += HandlePackets;
+            p2pNet.PacketHandlers += HandleGameStartPacket;
+
 
             if (!isHost)
             {
@@ -231,8 +246,6 @@ public partial class MainGame : Control
             }
         }
 
-        EmitSignal(SignalName.GameReady);
-        EmitSignal(SignalName.NewTurnStart);
     }
 
     // === P2P (DODANE) ===
@@ -241,6 +254,7 @@ public partial class MainGame : Control
         if (p2pNet != null)
         {
             p2pNet.PacketHandlers -= HandlePackets;
+            p2pNet.PacketHandlers -= HandleGameStartPacket;
 
             if (!isHost)
             {
@@ -252,6 +266,8 @@ public partial class MainGame : Control
 
     private void OnP2PHandshakeCompletedTest()
     {
+        if (!isGameStarted) return;
+
         if (p2pNet == null) return;
         if (isHost) return;
         if (p2pJsonTestSent) return;
@@ -296,6 +312,12 @@ public partial class MainGame : Control
         // Przykład: "card_selected" ma sens tylko gdy jesteśmy hostem (host rozstrzyga)
         if (packet.type == "card_selected" && isHost)
         {
+            if (!isGameStarted)
+            {
+                GD.Print("[MainGame] Ignoring card_selected (game not started yet)");
+                return true;
+            }
+
             CardSelectedPayload payload;
             try
             {
@@ -333,10 +355,85 @@ public partial class MainGame : Control
         return false;
     }
 
+    private bool HandleGameStartPacket(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
+    {
+        if (packet.type != "game_start")
+        {
+            return false;
+        }
+
+        P2PNetworkManager.GameStartPayload payload;
+        try
+        {
+            payload = packet.payload.Deserialize<P2PNetworkManager.GameStartPayload>();
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[MainGame] game_start payload parse error: {e.Message}");
+            return true;
+        }
+
+        if (payload == null || payload.players == null || payload.players.Length == 0)
+        {
+            GD.PrintErr("[MainGame] game_start payload invalid (no players)");
+            return true;
+        }
+
+        if (!string.IsNullOrEmpty(payload.sessionId) && eosManager != null && eosManager.CurrentGameSession != null)
+        {
+            if (payload.sessionId != eosManager.CurrentGameSession.SessionId)
+            {
+                GD.PrintErr($"[MainGame] game_start ignored (session mismatch): {payload.sessionId} != {eosManager.CurrentGameSession.SessionId}");
+                return true;
+            }
+        }
+
+        ApplyGameStart(payload);
+        return true;
+    }
+
+    private void ApplyGameStart(P2PNetworkManager.GameStartPayload payload)
+    {
+        if (isGameStarted)
+        {
+            GD.Print("[MainGame] ApplyGameStart ignored (already started)");
+            return;
+        }
+
+        isGameStarted = true;
+
+        playerPuidByIndex.Clear();
+        foreach (var p in payload.players)
+        {
+            if (p == null) continue;
+            if (string.IsNullOrEmpty(p.puid)) continue;
+
+            playerPuidByIndex[p.index] = p.puid;
+        }
+
+        GD.Print($"[MainGame] GAME START: players={playerPuidByIndex.Count} sessionId={payload.sessionId}");
+
+        if (loadingScreen != null)
+        {
+            loadingScreen.Visible = false;
+            loadingScreen.MouseFilter = Control.MouseFilterEnum.Ignore;
+        }
+
+        EmitSignal(SignalName.GameReady);
+        EmitSignal(SignalName.NewTurnStart);
+    }
+
+    private bool CanInteractWithGame()
+    {
+        return isGameStarted;
+    }
+
     // Opcjonalny przykład wysyłki (np. lokalny gracz kliknął kartę)
     // W praktyce wywołasz to z UI / CardManager / AgentCard
     public void SendCardSelectedRpc_ToHost(int cardId)
     {
+        if (!CanInteractWithGame()) return;
+
         if (p2pNet == null) return;
 
         var payload = new
@@ -369,6 +466,8 @@ public partial class MainGame : Control
 
     public void OnSkipTurnPressed()
     {
+        if (!CanInteractWithGame()) return;
+
         GD.Print("Koniec tury");
 
         UpdateMaxStreak();
@@ -411,6 +510,8 @@ public partial class MainGame : Control
 
     public void OnMenuButtonPressed()
     {
+        if (!CanInteractWithGame()) return;
+
         GD.Print("Menu button pressed");
         menuPanel.Visible = true;
     }
@@ -552,6 +653,8 @@ public partial class MainGame : Control
 
     public void CardConfirm(AgentCard card)
     {
+        if (!CanInteractWithGame()) return;
+
         switch (card.Type)
         {
             case CardManager.CardType.Blue:

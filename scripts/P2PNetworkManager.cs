@@ -40,6 +40,14 @@ public partial class P2PNetworkManager : Node
     private bool clientHandshakeComplete = false;
     private readonly HashSet<string> hostWelcomedClients = new();
 
+    // === HOST START GAME (timeout + game_start) ===
+    private const double HostStartTimeoutSeconds = 12.0;
+    private double hostStartElapsedSeconds = 0.0;
+    private bool hostStartCountdownActive = false;
+    private bool hostGameStartSent = false;
+    // =============================================
+
+
     // === JSON RPC (PUBLICZNE MODELE) ===
     public sealed class NetMessage
     {
@@ -47,6 +55,27 @@ public partial class P2PNetworkManager : Node
         public string type { get; set; }    // np. "card_selected"
         public JsonElement payload { get; set; } // dowolny obiekt payload
     }
+
+    // === GAME START RPC MODELS ===
+    public sealed class GameStartPlayer
+    {
+        public int index { get; set; }          // 0 = host, 1..N = klienci
+        public string puid { get; set; }        // ProductUserId jako string
+        public string name { get; set; }        // opcjonalnie (może być null)
+        public string team { get; set; }        // opcjonalnie (np. "Blue"/"Red")
+    }
+
+    public sealed class GameStartPayload
+    {
+        public string sessionId { get; set; }
+        public GameStartPlayer[] players { get; set; }
+    }
+
+    // Host może (opcjonalnie) zbudować payload z dodatkowymi danymi (name/team)
+    // żeby P2P nie znał EOSManager.    
+    public Func<GameStartPayload> HostBuildGameStartPayload;
+    // =============================
+
 
     // === HANDLERY PAKIETÓW (router) ===
     // Handler zwraca true jeśli "zjada" pakiet (czyli był obsłużony)
@@ -110,6 +139,21 @@ public partial class P2PNetworkManager : Node
                 SendClientHello();
             }
         }
+        // 3) Host: czekaj na wszystkich welcomed albo timeout -> start gry
+        if (isHost && hostStartCountdownActive && !hostGameStartSent)
+        {
+            hostStartElapsedSeconds += delta;
+
+            bool everyoneWelcomed = hostWelcomedClients.Count == hostClients.Count;
+            bool timeoutReached = hostStartElapsedSeconds >= HostStartTimeoutSeconds;
+
+            if (everyoneWelcomed || timeoutReached)
+            {
+                GD.Print($"[P2PNetworkManager] HOST start condition met. welcomed={hostWelcomedClients.Count}/{hostClients.Count} timeout={hostStartElapsedSeconds:0.00}s");
+                SendGameStartToWelcomedClients();
+            }
+        }
+
     }
 
     // HOST start
@@ -126,6 +170,11 @@ public partial class P2PNetworkManager : Node
 
         hostClients.Clear();
         hostWelcomedClients.Clear();
+
+        hostStartElapsedSeconds = 0.0;
+        hostStartCountdownActive = true;
+        hostGameStartSent = false;
+
 
         if (clientPuids != null)
         {
@@ -276,6 +325,91 @@ public partial class P2PNetworkManager : Node
         return JsonSerializer.Serialize(wrapper);
     }
 
+    private void SendGameStartToWelcomedClients()
+    {
+        if (!started || !isHost) return;
+        if (hostGameStartSent) return;
+
+        hostGameStartSent = true;
+        hostStartCountdownActive = false;
+
+        GameStartPayload payload = null;
+
+        // 1) Jeśli host dostarcza payload (np. z name/team/seed) -> użyj
+        if (HostBuildGameStartPayload != null)
+        {
+            try
+            {
+                payload = HostBuildGameStartPayload.Invoke();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[P2PNetworkManager] HostBuildGameStartPayload exception: {e.Message}");
+                payload = null;
+            }
+        }
+
+        // 2) Fallback: budujemy minimalny payload (index + puid)
+        if (payload == null)
+        {
+            payload = BuildDefaultGameStartPayload();
+        }
+
+        // Recipients = tylko welcomed
+        var welcomedSorted = new List<string>(hostWelcomedClients);
+        welcomedSorted.Sort(StringComparer.Ordinal);
+
+        int sent = 0;
+        foreach (string puidStr in welcomedSorted)
+        {
+            if (!hostClients.TryGetValue(puidStr, out var peer)) continue;
+            if (peer == null || !peer.IsValid()) continue;
+
+            bool ok = SendRpcToPeer(peer, "game_start", payload);
+            if (ok) sent++;
+        }
+
+        GD.Print($"[P2PNetworkManager] HOST sent game_start to welcomed clients: {sent}");
+        DispatchLocalRpc("game_start", payload);
+
+    }
+
+    private GameStartPayload BuildDefaultGameStartPayload()
+    {
+        var welcomedSorted = new List<string>(hostWelcomedClients);
+        welcomedSorted.Sort(StringComparer.Ordinal);
+
+        var players = new List<GameStartPlayer>();
+
+        // index 0 = host
+        players.Add(new GameStartPlayer
+        {
+            index = 0,
+            puid = localPuid != null ? localPuid.ToString() : "",
+            name = null,
+            team = null
+        });
+
+        int index = 1;
+        foreach (string puidStr in welcomedSorted)
+        {
+            players.Add(new GameStartPlayer
+            {
+                index = index,
+                puid = puidStr,
+                name = null,
+                team = null
+            });
+            index++;
+        }
+
+        return new GameStartPayload
+        {
+            sessionId = sessionId,
+            players = players.ToArray()
+        };
+    }
+
     // ============================================================
     //  RECEIVE + ROUTING
     // ============================================================
@@ -403,6 +537,42 @@ public partial class P2PNetworkManager : Node
 
         return true; // JSON zawsze "zjadamy" (obsłużone albo świadomie pominięte)
     }
+
+    private void DispatchLocalRpc(string type, object payloadObj)
+    {
+        if (PacketHandlers == null) return;
+
+        var msg = new NetMessage
+        {
+            kind = "rpc",
+            type = type,
+            payload = JsonSerializer.SerializeToElement(payloadObj)
+        };
+
+        bool consumed = false;
+
+        foreach (PacketHandler handler in PacketHandlers.GetInvocationList())
+        {
+            try
+            {
+                if (handler(msg, localPuid))
+                {
+                    consumed = true;
+                    break;
+                }
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[P2PNetworkManager] Local handler exception for type={type}: {e.Message}");
+            }
+        }
+
+        if (!consumed)
+        {
+            GD.Print($"[P2PNetworkManager] Local RPC not handled: type={type}");
+        }
+    }
+
 
     // ============================================================
     //  RAW SEND
