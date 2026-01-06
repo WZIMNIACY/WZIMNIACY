@@ -875,56 +875,28 @@ public partial class EOSManager : Node
 			return 0; // Brak ikony dla neutralnej drużyny
 		}
 
+		// Upewnij się, że mamy aktualną listę używanych ikon
+		RebuildUsedIcons();
+
 		// Universal team używa niebieskich ikon (AI vs Human mode)
 		var usedIcons = (team == Team.Blue || team == Team.Universal) ? usedBlueIcons : usedRedIcons;
 
 		GD.Print($"🔍 AssignProfileIcon for {team}: usedIcons = [{string.Join(", ", usedIcons)}]");
 
-	// Dodatkowo sprawdź currentLobbyMembers aby uniknąć duplikatów
-	HashSet<int> iconsInUse = new HashSet<int>(usedIcons);
-	foreach (var member in currentLobbyMembers)
-	{
-		if (!member.ContainsKey("profileIcon") || !member.ContainsKey("team"))
-			continue;
-
-		string memberTeamStr = member["team"].ToString();
-		if (string.IsNullOrEmpty(memberTeamStr))
-			continue;
-
-		if (Enum.TryParse<Team>(memberTeamStr, out Team memberTeam))
+		// Znajdź pierwszą wolną ikonę
+		for (int i = 1; i <= MaxProfileIconsPerTeam; i++)
 		{
-			// Sprawdź czy członek jest w tym samym zespole (lub Universal używa blue)
-			bool sameIconPool = (team == Team.Blue || team == Team.Universal) && (memberTeam == Team.Blue || memberTeam == Team.Universal) ||
-								(team == Team.Red && memberTeam == Team.Red);
-			
-			if (sameIconPool)
+			if (!usedIcons.Contains(i))
 			{
-				int iconNumber = 0;
-				try { iconNumber = member["profileIcon"].As<int>(); }
-				catch { int.TryParse(member["profileIcon"].ToString(), out iconNumber); }
-				
-				if (iconNumber > 0)
-				{
-					iconsInUse.Add(iconNumber);
-				}
+				usedIcons.Add(i);
+				GD.Print($"🖼️ Assigned profile icon {i} for {team} team (verified no duplicates)");
+				return i;
 			}
 		}
-	}
 
-	// Znajdź pierwszą wolną ikonę
-	for (int i = 1; i <= MaxProfileIconsPerTeam; i++)
-	{
-		if (!iconsInUse.Contains(i))
-		{
-			usedIcons.Add(i);
-			GD.Print($"🖼️ Assigned profile icon {i} for {team} team (verified no duplicates)");
-			return i;
-		}
+		GD.PrintErr($"❌ No available profile icons for {team} team! All icons used: [{string.Join(", ", usedIcons)}]");
+		return 0;
 	}
-
-	GD.PrintErr($"❌ No available profile icons for {team} team! All icons used: [{string.Join(", ", iconsInUse)}]");
-	return 0;
-}
 
 /// <summary>
 /// Zwalnia ikonę profilową gracza
@@ -2488,7 +2460,6 @@ public void CreateLobby(string customLobbyId, uint maxPlayers = 10, bool isPubli
 
 	public void SetGameMode(GameMode gameMode)
 	{
-		GameMode oldGameMode = currentGameMode;
 		currentGameMode = gameMode;
 		string gameModeStr = GetEnumDescription(gameMode);
 		SetLobbyAttribute("GameMode", gameModeStr);
