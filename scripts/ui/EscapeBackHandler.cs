@@ -2,35 +2,47 @@ using Godot;
 
 /// <summary>
 /// Obsługuje cofanie się do poprzedniej sceny za pomocą klawisza ESC.
-/// Nie działa gdy jakiś input jest aktywny (LineEdit, TextEdit, itp.)
+/// Nie działa gdy jakiś input jest aktywny (LineEdit, TextEdit, itp.).
+/// Może korzystać z <see cref="LobbyLeaveConfirmation"/> oraz opuszczać lobby przez <see cref="EOSManager.LeaveLobby"/>.
 /// </summary>
+/// <remarks>
+/// Wymaga autoloadu <see cref="EOSManager"/> i (opcjonalnie) instancji <see cref="LobbyLeaveConfirmation"/> w scenie; logika powinna działać w wątku głównym Godota i nie jest thread-safe.
+/// </remarks>
 public partial class EscapeBackHandler : Node
 {
     /// <summary>
     /// Ścieżka do sceny, do której ma wrócić po naciśnięciu ESC
     /// </summary>
+    /// <value>Pełna ścieżka pliku sceny docelowej.</value>
     [Export]
     public string PreviousScenePath { get; set; } = "res://scenes/menu/main.tscn";
 
     /// <summary>
     /// Czy ma opuścić lobby przed zmianą sceny (jeśli jesteśmy w lobby)
     /// </summary>
+    /// <value>Gdy <c>true</c>, przed zmianą sceny wywoła opuszczenie lobby.</value>
     [Export]
     public bool LeaveLobbyBeforeExit { get; set; } = false;
 
     /// <summary>
     /// Czy ma pokazać dialog potwierdzenia przed opuszczeniem (dla lobby)
     /// </summary>
+    /// <value><c>true</c> włącza dialog potwierdzenia opuszczenia.</value>
     [Export]
     public bool ShowConfirmDialog { get; set; } = false;
 
+    /// <summary>Autoload EOS używany do obsługi opuszczania lobby.</summary>
     private EOSManager eosManager;
 
     /// <summary>
-    /// Referencja do dialogu potwierdzenia
+    /// Referencja do dialogu potwierdzenia opuszczenia lobby, wykorzystywana przy obsłudze ESC.
     /// </summary>
+    /// <value>Instancja okna potwierdzenia; może być <c>null</c>.</value>
     public LobbyLeaveConfirmation LeaveConfirmation { get; set; }
 
+    /// <summary>
+    /// Inicjalizuje referencje i pobiera autoload <see cref="EOSManager"/>.
+    /// </summary>
     public override void _Ready()
     {
         base._Ready();
@@ -38,6 +50,12 @@ public partial class EscapeBackHandler : Node
         eosManager = GetNode<EOSManager>("/root/EOSManager");
     }
 
+    /// <summary>
+    /// Nasłuchuje klawisza ESC i klikania myszy, by obsłużyć cofnięcie lub zwolnić fokus z pól wejściowych; integruje się z <see cref="EOSManager"/> aby blokować ESC podczas dołączania do lobby.
+    /// </summary>
+    /// <param name="@event">Zdarzenie wejściowe przekazane przez Godot.</param>
+    /// <seealso cref="HandleEscapeBack"/>
+    /// <seealso cref="IsAnyInputActive"/>
     public override void _Input(InputEvent @event)
     {
         base._Input(@event);
@@ -83,7 +101,7 @@ public partial class EscapeBackHandler : Node
                 // Jeśli trwa dołączanie do lobby, zablokuj ESC
                 if (eosManager != null && eosManager.isJoiningLobby)
                 {
-                    GD.Print("⏳ ESC zablokowany - trwa dołączanie do lobby...");
+                    GD.Print("[EscapeBackHandler] ESC zablokowany - trwa dołączanie do lobby...");
                     viewport.SetInputAsHandled();
                     return;
                 }
@@ -108,8 +126,9 @@ public partial class EscapeBackHandler : Node
     }
 
     /// <summary>
-    /// Sprawdza czy jakikolwiek element input jest obecnie aktywny (ma focus)
+    /// Sprawdza czy jakikolwiek element input jest obecnie aktywny (ma focus).
     /// </summary>
+    /// <returns>True, jeśli focus posiada LineEdit/TextEdit/CodeEdit/SpinBox.</returns>
     private bool IsAnyInputActive()
     {
         var viewport = GetViewport();
@@ -132,8 +151,11 @@ public partial class EscapeBackHandler : Node
     }
 
     /// <summary>
-    /// Obsługuje cofnięcie się do poprzedniej sceny
+    /// Obsługuje cofnięcie się do poprzedniej sceny; opcjonalnie wywołuje <see cref="LobbyLeaveConfirmation"/> lub <see cref="EOSManager.LeaveLobby"/> przed zmianą sceny.
+    /// <exception>Metoda loguje błąd, gdy wymagane warunki opuszczenia lobby nie są spełnione.</exception>
     /// </summary>
+    /// <seealso cref="LobbyLeaveConfirmation.ShowConfirmation"/>
+    /// <seealso cref="EOSManager.LeaveLobby"/>
     private void HandleEscapeBack()
     {
         // Pokaż dialog (dialog sam obsłuży opuszczenie lobby i zmianę sceny)
@@ -168,7 +190,7 @@ public partial class EscapeBackHandler : Node
 
         if (ShowConfirmDialog && !LeaveLobbyBeforeExit)
         {
-            GD.PrintErr("You can not change scene without leaving lobby");
+            GD.PrintErr("[EscapeBackHandler] You can not change scene without leaving lobby");
             return;
         }
 

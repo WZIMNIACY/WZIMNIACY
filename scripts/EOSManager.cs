@@ -55,11 +55,11 @@ public partial class EOSManager : Node
 	[Signal]
 	public delegate void GameSessionStartRequestedEventHandler(string sessionId, string hostUserId, ulong seed);
 
-    [Signal]
-    public delegate void LobbyOwnerChangedEventHandler();
+	[Signal]
+	public delegate void LobbyOwnerChangedEventHandler();
 
-    // Stałe konfiguracyjne
-    private const int MinNicknameLength = 2;
+	// Stałe konfiguracyjne
+	private const int MinNicknameLength = 2;
 	private const int MaxNicknameLength = 20;
 	private const int UserIdDisplayLength = 8;
 	private const int RandomSuffixMax = 10000;
@@ -103,10 +103,14 @@ public partial class EOSManager : Node
 	// Nie wiem dlaczego projekt nie buduje się przez jakiś błąd związany z apikey więc daje quick fix, nie koniecznie poprawny
 	private string apiKey = "";
 	public string ApiKey => apiKey;
+	/// <summary>
+	/// Ustawia klucz API dla integracji z zewnętrznymi usługami pomocniczymi.
+	/// </summary>
+	/// <param name="newApiKey">Nowy klucz API; null zostanie zamieniony na pusty ciąg.</param>
 	public void SetAPIKey(string newApiKey)
 	{
 		apiKey = newApiKey ?? "";
-		GD.Print("[EOS] API key set");
+		GD.Print("[EOSManager:APIKey] API key set");
 	}
 
 
@@ -116,6 +120,10 @@ public partial class EOSManager : Node
 	// chroni przed wielokrotnym przejściem do sceny gry przy wielu update’ach lobby
 	private bool sessionStartHandled = false;
 
+	/// <summary>
+	/// Zwraca identyfikator ProductUserId właściciela bieżącego lobby lub pusty ciąg, gdy brak danych.
+	/// </summary>
+	/// <returns>Id właściciela lobby w formie string lub pusty ciąg.</returns>
 	public string GetLobbyOwnerPuidString()
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
@@ -135,22 +143,28 @@ public partial class EOSManager : Node
 
 
 	// Wywoływane przez hosta - zapisuje dane sesji do lobby i inicjuje start gry
+	/// <summary>
+	/// Wywoływane przez hosta: zapisuje parametry sesji w atrybutach lobby i rozpoczyna synchronizację startu gry.
+	/// </summary>
+	/// <seealso cref="GenerateSessionId"/>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
+	/// <exception>Gdy gracz nie jest w lobby, nie jest hostem lub nie ma ważnego ProductUserId.</exception>
 	public void RequestStartGameSession()
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot start session: not in lobby");
+			GD.PrintErr("[EOSManager:GameSession] Cannot start session: not in lobby");
 			return;
 		}
 
 		if (!isLobbyOwner)
 		{
-			GD.PrintErr("❌ Only host can start session");
+			GD.PrintErr("[EOSManager:GameSession] Only host can start session");
 			return;
 		}
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot start session: localProductUserId invalid (not logged in yet)");
+			GD.PrintErr("[EOSManager:GameSession] Cannot start session: localProductUserId invalid (not logged in yet)");
 			return;
 		}
 
@@ -177,7 +191,7 @@ public partial class EOSManager : Node
 
 		// host też powinien przejść dopiero po update lobby,
 		// więc NIE robimy tu ChangeScene.
-		GD.Print($"📤 Host requested session start: {sessionId}, seed={seed}");
+		GD.Print($"[EOSManager:GameSession] Host requested session start: {sessionId}, seed={seed}");
 	}
 
 	/// <summary>
@@ -264,6 +278,10 @@ public partial class EOSManager : Node
 	}
 
 	//Generuje krótki, czytelny identyfikator sesji gry (debug/ logi/ recconect) 
+	/// <summary>
+	/// Generuje 8-znakowy, czytelny identyfikator sesji gry używany w logach i debugowaniu.
+	/// </summary>
+	/// <returns>Losowy identyfikator sesji złożony z wielkich liter i cyfr.</returns>
 	private string GenerateSessionId()
 	{
 		const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
@@ -371,6 +389,11 @@ public partial class EOSManager : Node
 	}
 
 	// Metody do konwersji enum <-> string
+	/// <summary>
+	/// Zwraca opis z atrybutu <see cref="DescriptionAttribute"/> lub nazwę enum, gdy brak atrybutu.
+	/// </summary>
+	/// <param name="value">Wartość typu wyliczeniowego.</param>
+	/// <returns>Tekstowy opis wartości enum.</returns>
 	public static string GetEnumDescription(System.Enum value)
 	{
 		var field = value.GetType().GetField(value.ToString());
@@ -378,6 +401,13 @@ public partial class EOSManager : Node
 		return attribute?.Description ?? value.ToString();
 	}
 
+	/// <summary>
+	/// Parsuje opis (DescriptionAttribute) na wartość enum lub zwraca domyślną wartość.
+	/// </summary>
+	/// <typeparam name="T">Typ wyliczeniowy.</typeparam>
+	/// <param name="description">Tekst opisu z atrybutu Description.</param>
+	/// <param name="defaultValue">Wartość domyślna zwracana, gdy parsing się nie powiedzie.</param>
+	/// <returns>Wartość enum odpowiadająca opisowi lub domyślna.</returns>
 	public static T ParseEnumFromDescription<T>(string description, T defaultValue) where T : System.Enum
 	{
 		foreach (var field in typeof(T).GetFields())
@@ -392,6 +422,13 @@ public partial class EOSManager : Node
 	}
 
 	// Called when the node enters the scene tree for the first time.
+	/// <summary>
+	/// Inicjalizuje SDK EOS, konfiguruje logowanie, tworzy interfejsy i rozpoczyna logowanie P2P.
+	/// </summary>
+	/// <seealso cref="LoadAnimalNames"/>
+	/// <seealso cref="AddLobbyUpdateNotifications"/>
+	/// <seealso cref="LoginWithDeviceId_P2P"/>
+	/// <exception>Gdy inicjalizacja SDK, stworzenie interfejsów lub usuwanie DeviceId zwróci błąd.</exception>
 	public override void _Ready()
 	{
 		base._Ready();
@@ -415,7 +452,7 @@ public partial class EOSManager : Node
 			}
 		}
 
-		GD.Print("=== Starting EOS Initialization ===");
+		GD.Print("[EOSManager:Initialization] EOS Initialization");
 
 		// Wczytaj listę zwierzaków z pliku ^w^
 		LoadAnimalNames();
@@ -427,26 +464,24 @@ public partial class EOSManager : Node
 			ProductVersion = productVersion,
 		};
 
-		GD.Print($"Product: {productName} v{productVersion}");
+		GD.Print($"[EOSManager:Initialization] Product: {productName} v{productVersion}");
 
 		var initializeResult = PlatformInterface.Initialize(ref initializeOptions);
 		if (initializeResult != Result.Success)
 		{
-			GD.PrintErr("Failed to initialize EOS SDK: " + initializeResult);
+			GD.PrintErr("[EOSManager:Initialization] Failed to initialize EOS SDK: " + initializeResult);
 			return;
 		}
 
-		GD.Print("✅ EOS SDK initialized successfully.");
-
+		GD.Print("[EOSManager:Initialization] ✅ EOS SDK initialized successfully.");
 		// Krok 2: Konfiguracja logowania
 		LoggingInterface.SetLogLevel(LogCategory.AllCategories, LogLevel.VeryVerbose);
 		LoggingInterface.SetCallback((ref LogMessage logMessage) =>
 		{
-			GD.Print($"[EOS {logMessage.Category}] {logMessage.Message}");
+			GD.Print($"[EOSManager:Logging {logMessage.Category}] {logMessage.Message}");
 		});
 
-		GD.Print("✅ Logging configured.");
-
+		GD.Print("[EOSManager:Initialization] ✅ Logging configured.");
 		// Krok 3: Utworzenie platformy (PlatformHandle)
 		var createOptions = new Options()
 		{
@@ -465,23 +500,22 @@ public partial class EOSManager : Node
 			Flags = PlatformFlags.DisableOverlay | PlatformFlags.LoadingInEditor
 		};
 
-		GD.Print($"Creating platform with ProductId: {productId}");
-		GD.Print($"Sandbox: {sandboxId}, Deployment: {deploymentId}");
+		GD.Print($"[EOSManager:Initialization] Creating platform with ProductId: {productId}");
+		GD.Print($"[EOSManager:Initialization] Sandbox: {sandboxId}, Deployment: {deploymentId}");
 
 		platformInterface = PlatformInterface.Create(ref createOptions);
 		if (platformInterface == null)
 		{
-			GD.PrintErr("❌ Failed to create EOS Platform Interface!");
+			GD.PrintErr("[EOSManager:Initialization] ❌ Failed to create EOS Platform Interface!");
 			return;
 		}
 
-		GD.Print("✅ EOS Platform Interface created successfully.");
-
+		GD.Print("[EOSManager:Initialization] ✅ EOS Platform Interface created successfully.");
 		// Pobierz Auth Interface
 		authInterface = platformInterface.GetAuthInterface();
 		if (authInterface == null)
 		{
-			GD.PrintErr("Failed to get Auth Interface!");
+			GD.PrintErr("[EOSManager] Failed to get Auth Interface!");
 			return;
 		}
 
@@ -489,7 +523,7 @@ public partial class EOSManager : Node
 		connectInterface = platformInterface.GetConnectInterface();
 		if (connectInterface == null)
 		{
-			GD.PrintErr("Failed to get Connect Interface!");
+			GD.PrintErr("[EOSManager:Initialization] Failed to get Connect Interface!");
 			return;
 		}
 
@@ -497,19 +531,16 @@ public partial class EOSManager : Node
 		lobbyInterface = platformInterface.GetLobbyInterface();
 		if (lobbyInterface == null)
 		{
-			GD.PrintErr("Failed to get Lobby Interface!");
+			GD.PrintErr("[EOSManager:Initialization] Failed to get Lobby Interface!");
 			return;
 		}
 
 		// Dodaj nasłuchiwanie na zmiany w lobby (update członków)
 		AddLobbyUpdateNotifications();
 
-		// Stwórz timer do periodycznego odświeżania lobby
-		CreateLobbyRefreshTimer();
-
 		// USUWAMY ISTNIEJĄCY DEVICEID ŻEBY MÓGŁ STWORZYĆ FAKTYCZNIE NOWY, IDK CZY TO ABY NA PEWNO DZIAŁA PRAWIDŁOWO
 		// W PRZYPADKU TESTÓW NA JEDNYM URZĄDZENIU, ale na nie pozwala chyba także yippee
-		GD.Print("Deleting DeviceId...");
+		GD.Print("[EOSManager:Initialization] Deleting DeviceId...");
 
 		var deleteDeviceIdOptions = new DeleteDeviceIdOptions();
 
@@ -517,25 +548,19 @@ public partial class EOSManager : Node
 		{
 			if (data.ResultCode == Result.Success)
 			{
-				GD.Print("Successfully deleted existing DeviceId, DeviceId login will get a new one");
+				GD.Print("[EOSManager:Initialization] Successfully deleted existing DeviceId");
 				LoginWithDeviceId_P2P();
 			}
 			else if (data.ResultCode == Result.NotFound)
 			{
-				GD.Print("DeviceId for deletion was not found, DeviceId login will get a new one");
+				GD.Print("[EOSManager:Initialization] DeviceId for deletion was not found");
 				LoginWithDeviceId_P2P();
 			}
 			else
 			{
-				GD.PrintErr("Unexpected error while deleting existing DeviceId, DeviceId login will not be called," + " Result: " + (int)data.ResultCode + ":" + data.ResultCode);
+				GD.PrintErr("[EOSManager:Initialization] Unexpected error while deleting existing DeviceId, Result: " + (int)data.ResultCode + ":" + data.ResultCode);
 			}
 		});
-
-		// Krok 4: Logowanie P2P (anonimowe, bez konta Epic)
-		// LoginWithDeviceId_P2P();
-
-		// Krok 4: Logowanie P2P (anonimowe, bez konta Epic)
-		// LoginWithDeviceId_P2P();
 	}
 
 	/// <summary>
@@ -555,15 +580,18 @@ public partial class EOSManager : Node
 		}
 	}
 
+	/// <summary>
+	/// Czyści lokalny stan i prezentuje komunikat, gdy gracz zostaje wyrzucony z lobby przez hosta.
+	/// </summary>
 	private void HandleKickedFromLobby()
 	{
-		GD.Print("🚪 Player was kicked from lobby - cleaning up and returning to main menu...");
+		GD.Print("[EOSManager:Lobby] Player was kicked from lobby");
 
 		// Zatrzymaj timer odświeżania jeśli jeszcze działa
 		if (lobbyRefreshTimer != null && lobbyRefreshTimer.TimeLeft > 0)
 		{
 			lobbyRefreshTimer.Stop();
-			GD.Print("🛑 Lobby refresh timer stopped (kicked)");
+			GD.Print("[EOSManager:Lobby] Lobby refresh timer stopped (kicked)");
 		}
 
 		// NIE wywołujemy LeaveLobby() - serwer EOS już zamknął połączenie websocket
@@ -624,27 +652,15 @@ public partial class EOSManager : Node
 		}
 	}
 
-	private void CreateLobbyRefreshTimer()
-	{
-		// USUNIĘTE: Automatyczne odświeżanie co 3 sekundy
-		// Powód: SearchLobbies() zwraca LobbyDetails z pustymi UserID członków
-		// Co powoduje błąd "Invalid member UserID!" i znikanie listy graczy
-		// Zamiast tego używamy:
-		// 1. Notyfikacji EOS (OnLobbyMemberUpdateReceived) - automatyczne aktualizacje gdy ktoś dołączy/wyjdzie
-		// 2. Ręczne odświeżanie gdy użytkownik kliknie "Refresh" lub "Join"
-
-		GD.Print("✅ Lobby notifications enabled (auto-refresh timer disabled)");
-	}
-
-	private void OnLobbyRefreshTimeout()
-	{
-		// WYŁĄCZONE - patrz komentarz w CreateLobbyRefreshTimer()
-	}
-
 	// Logowanie przez Device ID (Developer Tool - tylko do testów!)
+	/// <summary>
+	/// Loguje użytkownika przy użyciu Developer Auth (Device ID) – opcja testowa z DevAuthTool.
+	/// </summary>
+	/// <seealso cref="OnLoginComplete"/>
+	/// <seealso cref="LoginWithAccountPortal"/>
 	private void LoginWithDeviceId()
 	{
-		GD.Print("Starting Developer Auth login...");
+		GD.Print("[EOSManager:Login] Starting Developer Auth login...");
 
 		// UWAGA: Developer Auth wymaga Client Policy = "Trusted Server" w Epic Dev Portal
 		// Alternatywnie można użyć AccountPortal (otwiera przeglądarkę)
@@ -666,15 +682,18 @@ public partial class EOSManager : Node
 			ScopeFlags = AuthScopeFlags.BasicProfile | AuthScopeFlags.FriendsList | AuthScopeFlags.Presence
 		};
 
-		GD.Print($"Attempting Developer Auth login with DevTool at: {devToolHost}, User: {userName}");
-		GD.Print("NOTE: Developer Auth requires Client Policy = 'Trusted Server' in Epic Dev Portal!");
+		GD.Print($"[EOSManager:Login] Attempting Developer Auth login with DevTool at: {devToolHost}, User: {userName}");
 		authInterface.Login(ref loginOptions, null, OnLoginComplete);
 	}
 
 	// Logowanie przez Account Portal (otwiera przeglądarkę Epic)
+	/// <summary>
+	/// Rozpoczyna logowanie przez Epic Account Portal (otwiera przeglądarkę).
+	/// </summary>
+	/// <seealso cref="OnLoginComplete"/>
 	private void LoginWithAccountPortal()
 	{
-		GD.Print("Starting Account Portal login...");
+		GD.Print("[EOSManager] Starting Account Portal login...");
 
 		var loginOptions = new Epic.OnlineServices.Auth.LoginOptions()
 		{
@@ -687,15 +706,18 @@ public partial class EOSManager : Node
 			ScopeFlags = AuthScopeFlags.BasicProfile | AuthScopeFlags.FriendsList | AuthScopeFlags.Presence
 		};
 
-		GD.Print("Opening Epic Account login in browser...");
+		GD.Print("[EOSManager:Login] Opening Epic Account login in browser...");
 		authInterface.Login(ref loginOptions, null, OnLoginComplete);
 	}
 
 	// Logowanie przez Persistent Auth (używa zapamiętanych danych)
+	/// <summary>
+	/// Loguje użytkownika korzystając z zapisanych danych (Persistent Auth).
+	/// </summary>
+	/// <seealso cref="OnLoginComplete"/>
 	private void LoginWithPersistentAuth()
 	{
-		GD.Print("Starting Persistent Auth login...");
-		GD.Print("Trying to login with cached credentials...");
+		GD.Print("[EOSManager:Login] Starting Persistent Auth login...");
 
 		var loginOptions = new Epic.OnlineServices.Auth.LoginOptions()
 		{
@@ -716,14 +738,20 @@ public partial class EOSManager : Node
 	// ============================================
 
 
+	/// <summary>
+	/// Loguje użytkownika do warstwy Connect przy użyciu DeviceID (scenariusz P2P bez konta Epic).
+	/// </summary>
+	/// <seealso cref="GetOrCreateDeviceId"/>
+	/// <seealso cref="OnConnectLoginComplete"/>
+	/// <exception>Gdy utworzenie DeviceID lub logowanie Connect zwróci błąd.</exception>
 	private void LoginWithDeviceId_P2P()
 	{
-		GD.Print("🎮 Starting P2P login (no Epic account required)...");
+		GD.Print("[EOSManager:Login] Starting P2P login with DeviceID...");
 
 		// ON TEGO NIGDZIE NIE UŻYWA NAWET ._.
 		// Generuj unikalny DeviceID dla tego urządzenia
 		string deviceId = GetOrCreateDeviceId();
-		GD.Print($"Device ID: {deviceId}");
+		GD.Print($"[EOSManager:Login] Device ID: {deviceId}");
 
 		var createDeviceIdOptions = new CreateDeviceIdOptions()
 		{
@@ -736,7 +764,7 @@ public partial class EOSManager : Node
 			if (data.ResultCode == Result.Success || data.ResultCode == Result.DuplicateNotAllowed)
 			{
 				// DeviceID istnieje lub został utworzony - teraz zaloguj się
-				GD.Print("✅ DeviceID ready, logging in...");
+				GD.Print("[EOSManager:Login] DeviceID ready, logging in...");
 
 				// WAŻNE: Dla DeviceidAccessToken, Token MUSI być null!
 				var loginOptions = new Epic.OnlineServices.Connect.LoginOptions()
@@ -756,32 +784,42 @@ public partial class EOSManager : Node
 			}
 			else
 			{
-				GD.PrintErr($"❌ Failed to create DeviceID: {data.ResultCode}");
+				GD.PrintErr($"[EOSManager:Login] Failed to create DeviceID: {data.ResultCode}");
 			}
 		});
 	}
 
 	// Callback dla Connect Login (P2P)
+	/// <summary>
+	/// Callback logowania Connect (P2P); zapisuje ProductUserId i raportuje status logowania.
+	/// </summary>
+	/// <param name="data">Informacje zwrotne z logowania Connect.</param>
+	/// <seealso cref="LoginWithDeviceId_P2P"/>
+	/// <exception>Gdy logowanie Connect zakończy się błędem.</exception>
 	private void OnConnectLoginComplete(ref Epic.OnlineServices.Connect.LoginCallbackInfo data)
 	{
 		if (data.ResultCode == Result.Success)
 		{
-			GD.Print($"✅ P2P Login successful! ProductUser ID: {data.LocalUserId}");
+			GD.Print($"[EOSManager:Login] P2P Login successful! ProductUser ID: {data.LocalUserId}");
 			localProductUserId = data.LocalUserId;
 
 			// Gotowe do tworzenia lobby!
-			GD.Print("🎮 Ready to create/join lobbies!");
-
+			GD.Print("[EOSManager:Login] EOS READY");
 			// Teraz możesz wywołać funkcje lobby
 			// Przykład: CreateLobby("MyLobby", 4);
 		}
 		else
 		{
-			GD.PrintErr($"❌ P2P Login failed: {data.ResultCode}");
+			GD.PrintErr($"[EOSManager:Login] P2P Login failed: {data.ResultCode}");
 		}
 	}
 
 	// Generuj lub odczytaj DeviceID
+	/// <summary>
+	/// Generuje unikalny identyfikator urządzenia (z losowym sufiksem) lub zwraca istniejący.
+	/// </summary>
+	/// <returns>Identyfikator urządzenia używany do logowania DeviceID.</returns>
+	/// <seealso cref="LoginWithDeviceId_P2P"/>
 	private string GetOrCreateDeviceId()
 	{
 		// Dla testowania wielu instancji na tym samym PC, dodaj losowy suffix
@@ -797,8 +835,10 @@ public partial class EOSManager : Node
 	}
 
 	/// <summary>
-	/// Pobiera obecne Device ID
+	/// Pobiera obecne Device ID używane do logowania DeviceID.
 	/// </summary>
+	/// <returns>Identyfikator urządzenia dla bieżącej instancji.</returns>
+	/// <seealso cref="GetOrCreateDeviceId"/>
 	public string GetCurrentDeviceId()
 	{
 		return GetOrCreateDeviceId();
@@ -806,11 +846,12 @@ public partial class EOSManager : Node
 
 	/// <summary>
 	/// Resetuje Device ID - usuwa obecne i tworzy nowe
-	/// UWAGA: Wymaga ponownego logowania!
 	/// </summary>
+	/// <seealso cref="LoginWithDeviceId_P2P"/>
+	/// <exception>Gdy usuwanie istniejącego DeviceId zwróci błąd.</exception>
 	public void ResetDeviceId()
 	{
-		GD.Print("🔄 Resetting Device ID...");
+		GD.Print("[EOSManager:Login] Resetting Device ID...");
 
 		var deleteDeviceIdOptions = new DeleteDeviceIdOptions();
 
@@ -818,27 +859,34 @@ public partial class EOSManager : Node
 		{
 			if (data.ResultCode == Result.Success)
 			{
-				GD.Print("✅ Successfully deleted existing DeviceId, creating new one...");
+				GD.Print("[EOSManager:Login] Successfully deleted existing DeviceId.");
 				LoginWithDeviceId_P2P();
 			}
 			else if (data.ResultCode == Result.NotFound)
 			{
-				GD.Print("⚠️ DeviceId for deletion was not found, creating new one...");
+				GD.Print("[EOSManager:Login] DeviceId for deletion was not found");
 				LoginWithDeviceId_P2P();
 			}
 			else
 			{
-				GD.PrintErr($"❌ Unexpected error while deleting DeviceId: {data.ResultCode}");
+				GD.PrintErr($"[EOSManager:Login] Unexpected error while deleting DeviceId: {data.ResultCode}");
 			}
 		});
 	}
 
 	// Callback po zakończeniu logowania
+	/// <summary>
+	/// Callback logowania Auth; zapisuje EpicAccountId i pobiera token użytkownika.
+	/// </summary>
+	/// <param name="data">Informacje zwrotne z procesu logowania Auth.</param>
+	/// <seealso cref="LoginWithPersistentAuth"/>
+	/// <seealso cref="LoginWithAccountPortal"/>
+	/// <exception>Gdy logowanie Auth kończy się błędem innym niż InvalidUser.</exception>
 	private void OnLoginComplete(ref Epic.OnlineServices.Auth.LoginCallbackInfo data)
 	{
 		if (data.ResultCode == Result.Success)
 		{
-			GD.Print($"✅ Login successful! User ID: {data.LocalUserId}");
+			GD.Print($"[EOSManager:Login] Login successful! User ID: {data.LocalUserId}");
 			localEpicAccountId = data.LocalUserId;
 
 			// Pobierz dodatkowe informacje o użytkowniku
@@ -847,27 +895,32 @@ public partial class EOSManager : Node
 
 			if (result == Result.Success && authToken.HasValue)
 			{
-				GD.Print($"Account ID: {authToken.Value.AccountId}");
+				GD.Print($"[EOSManager:Login] Account ID: {authToken.Value.AccountId}");
 			}
 		}
 		else if (data.ResultCode == Result.InvalidUser)
 		{
 			// Brak zapisanych danych - przejdź na AccountPortal
-			GD.Print($"⚠️ PersistentAuth failed ({data.ResultCode}), trying AccountPortal...");
+			GD.Print($"[EOSManager:Login] PersistentAuth failed ({data.ResultCode}), trying AccountPortal...");
 			LoginWithAccountPortal();
 		}
 		else
 		{
-			GD.PrintErr($"❌ Login failed: {data.ResultCode}");
+			GD.PrintErr($"[EOSManager:Login] Login failed: {data.ResultCode}");
 		}
 	}
 
 	// Pobierz informacje o zalogowanym użytkowniku
+	/// <summary>
+	/// Kopiuje i wypisuje podstawowe informacje o zalogowanym użytkowniku Auth.
+	/// </summary>
+	/// <seealso cref="OnLoginComplete"/>
+	/// <exception>Gdy lokalne EpicAccountId jest nieważne.</exception>
 	private void GetUserInfo()
 	{
 		if (localEpicAccountId == null || !localEpicAccountId.IsValid())
 		{
-			GD.PrintErr("No valid user ID!");
+			GD.PrintErr("[EOSManager:Login] No valid user ID!");
 			return;
 		}
 
@@ -876,15 +929,20 @@ public partial class EOSManager : Node
 
 		if (result == Result.Success && authToken != null)
 		{
-			GD.Print("=== User Info ===");
-			GD.Print($"Account ID: {localEpicAccountId}");
-			GD.Print($"App: {authToken?.App}");
-			GD.Print($"Client ID: {authToken?.ClientId}");
-			GD.Print("================");
+
+			GD.Print("[EOSManager:Login] === User Info ===");
+			GD.Print($"[EOSManager:Login] Account ID: {localEpicAccountId}");
+			GD.Print($"[EOSManager:Login] App: {authToken?.App}");
+			GD.Print($"[EOSManager:Login] Client ID: {authToken?.ClientId}");
+			GD.Print("[EOSManager:Login] =================");
 		}
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
+	/// <summary>
+	/// Główny tick sceny – wywołuje Platform.Tick, aby obsłużyć sieć i callbacki EOS.
+	/// </summary>
+	/// <param name="delta">Czas od ostatniej klatki w sekundach.</param>
 	public override void _Process(double delta)
 	{
 		base._Process(delta);
@@ -897,6 +955,9 @@ public partial class EOSManager : Node
 	}
 
 	// Cleanup przy zamykaniu
+	/// <summary>
+	/// Zamyka sesję EOS: wylogowuje użytkownika, zwalnia PlatformInterface i wywołuje shutdown SDK.
+	/// </summary>
 	public override void _ExitTree()
 	{
 		base._ExitTree();
@@ -904,7 +965,7 @@ public partial class EOSManager : Node
 		// Wyloguj użytkownika przed zamknięciem (jeśli używamy Auth)
 		if (authInterface != null && localEpicAccountId != null && localEpicAccountId.IsValid())
 		{
-			GD.Print("Logging out user...");
+			GD.Print("[EOSManager:Logout] Logging out user...");
 			var logoutOptions = new Epic.OnlineServices.Auth.LogoutOptions()
 			{
 				LocalUserId = localEpicAccountId
@@ -914,26 +975,31 @@ public partial class EOSManager : Node
 
 		if (platformInterface != null)
 		{
-			GD.Print("Releasing EOS Platform Interface...");
+			GD.Print("[EOSManager] Releasing EOS Platform Interface...");
 			platformInterface.Release();
 			platformInterface = null;
 		}
 
 		PlatformInterface.Shutdown();
-		GD.Print("EOS SDK shutdown complete.");
+		GD.Print("[EOSManager] EOS SDK shutdown complete.");
 	}
 
 	// Callback po wylogowaniu
+	/// <summary>
+	/// Callback wylogowania z Auth, czyści lokalne ID konta po sukcesie.
+	/// </summary>
+	/// <param name="data">Informacje zwrotne z procesu wylogowania.</param>
+	/// <exception>Gdy wylogowanie nie powiedzie się.</exception>
 	private void OnLogoutComplete(ref Epic.OnlineServices.Auth.LogoutCallbackInfo data)
 	{
 		if (data.ResultCode == Result.Success)
 		{
-			GD.Print("✅ Logout successful!");
+			GD.Print("[EOSManager:Logout] Logout successful!");
 			localEpicAccountId = null;
 		}
 		else
 		{
-			GD.PrintErr($"❌ Logout failed: {data.ResultCode}");
+			GD.PrintErr($"[EOSManager:Logout] Logout failed: {data.ResultCode}");
 		}
 	}
 
@@ -942,8 +1008,9 @@ public partial class EOSManager : Node
 	// ============================================
 
 	/// <summary>
-	/// Sprawdza czy użytkownik jest zalogowany do EOS
+	/// Sprawdza czy użytkownik jest zalogowany do EOS.
 	/// </summary>
+	/// <returns>True, gdy lokalny ProductUserId istnieje i jest ważny.</returns>
 	public bool IsLoggedIn()
 	{
 		return localProductUserId != null && localProductUserId.IsValid();
@@ -956,20 +1023,22 @@ public partial class EOSManager : Node
 	/// <summary>
 	/// Wczytuje listę zwierzaków z pliku Animals.txt
 	/// </summary>
+	/// <exception cref="System.IO.FileNotFoundException">Gdy plik listy zwierząt nie istnieje.</exception>
+	/// <exception>Gdy pliku nie można otworzyć do odczytu.</exception>
 	private void LoadAnimalNames()
 	{
 		string filePath = "res://assets/nicknames/Animals_Old.txt";
 
 		if (!FileAccess.FileExists(filePath))
 		{
-			GD.PrintErr($"❌ Nie znaleziono pliku ze zwierzakami: {filePath}");
+			GD.PrintErr($"[EOSManager:Nicknames] File not found: {filePath}");
 			return;
 		}
 
 		using var file = FileAccess.Open(filePath, FileAccess.ModeFlags.Read);
 		if (file == null)
 		{
-			GD.PrintErr($"❌ Nie można otworzyć pliku: {filePath}");
+			GD.PrintErr($"[EOSManager:Nicknames] Cannot open file: {filePath}");
 			return;
 		}
 
@@ -983,17 +1052,19 @@ public partial class EOSManager : Node
 			}
 		}
 
-		GD.Print($"🦊 Wczytano {animalNames.Count} zwierzaków z listy! OwO");
+		GD.Print($"[EOSManager:Nicknames] Loaded {animalNames.Count} animal names from list");
 	}
 
 	/// <summary>
 	/// Losuje unikalny nick zwierzaka (sprawdza duplikaty w lobby) ^w^
 	/// </summary>
+	/// <returns>Wygenerowany, unikalny pseudonim; fallback przy braku dostępnych nazw.</returns>
+	/// <exception>Gdy lista zwierzaków jest pusta i używany jest fallback.</exception>
 	private string GenerateUniqueAnimalNickname()
 	{
 		if (animalNames.Count == 0)
 		{
-			GD.PrintErr("❌ Brak listy zwierzaków! Używam fallback...");
+			GD.PrintErr("[EOSManager:Nicknames] No animal names list found! Using fallback...");
 			return $"Animal_{GD.Randi() % FallbackAnimalRandomMax}";
 		}
 
@@ -1018,13 +1089,15 @@ public partial class EOSManager : Node
 		// Jeśli wszystkie próby się nie powiodły, dodaj losowy sufiks
 		string fallbackAnimal = animalNames[(int)(GD.Randi() % animalNames.Count)];
 		string uniqueNick = $"{fallbackAnimal}_{GD.Randi() % NicknameRandomMax}";
-		GD.Print($"⚠️ Nie udało się wylosować unikalnego, używam: {uniqueNick}");
+		GD.Print($"[EOSManager:Nicknames] Failed to roll a unique nickname, using fallback: {uniqueNick}");
 		return uniqueNick;
 	}
 
 	/// <summary>
-	/// Skraca userId do ostatnich N znaków dla czytelności logów
+	/// Skraca userId do ostatnich N znaków dla czytelności logów.
 	/// </summary>
+	/// <param name="userId">Pełny identyfikator użytkownika.</param>
+	/// <returns>Skrócony identyfikator lub "null" gdy przekazano pusty string.</returns>
 	private string GetShortUserId(string userId)
 	{
 		if (string.IsNullOrEmpty(userId)) return "null";
@@ -1041,7 +1114,7 @@ public partial class EOSManager : Node
 	{
 		if (string.IsNullOrWhiteSpace(nickname))
 		{
-			GD.Print("⚠️ Nickname is empty, will use fallback");
+			GD.Print("[EOSManager:Nicknames] Nickname is empty, will use fallback");
 			pendingNickname = "";
 			return;
 		}
@@ -1057,18 +1130,18 @@ public partial class EOSManager : Node
 
 		if (string.IsNullOrEmpty(sanitized))
 		{
-			GD.Print("⚠️ Nickname contains only invalid characters, will use fallback");
 			pendingNickname = "";
 			return;
 		}
 
 		pendingNickname = sanitized;
-		GD.Print($"✅ Pending nickname set to: {pendingNickname}");
+		GD.Print($"[EOSManager:Nicknames] Pending nickname set to: {pendingNickname}");
 	}
 
 	/// <summary>
-	/// Zwraca aktualnie ustawiony pending nickname (dla UI)
+	/// Zwraca aktualnie ustawiony pending nickname (dla UI).
 	/// </summary>
+	/// <returns>Nickname, który zostanie użyty przy dołączeniu lub tworzeniu lobby.</returns>
 	public string GetPendingNickname()
 	{
 		return pendingNickname;
@@ -1234,11 +1307,12 @@ public partial class EOSManager : Node
 
 	/// <param name="maxPlayers">Maksymalna liczba graczy (2-64)</param>
 	/// <param name="isPublic">Czy lobby jest publiczne (można wyszukać)?</param>
+	/// <exception>Gdy użytkownik nie jest zalogowany, już jest w lobby lub tworzenie lobby jest w toku.</exception>
 	public void CreateLobby(string customLobbyId, uint maxPlayers = 10, bool isPublic = true)
 	{
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot create lobby: User not logged in!");
+			GD.PrintErr("[EOSManager:LobbyCreate] Cannot create lobby: User not logged in!");
 			EmitSignal(SignalName.LobbyCreationFailed, "User not logged in");
 			return;
 		}
@@ -1246,9 +1320,9 @@ public partial class EOSManager : Node
 		// Sprawdź czy użytkownik już jest w lobby
 		if (!string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintRich("[color=yellow]❌ Cannot create lobby: You are already in a lobby!");
-			GD.PrintRich($"[color=yellow]   Current lobby: {currentLobbyId} (Owner: {isLobbyOwner})");
-			GD.PrintRich("[color=yellow]   Please leave the current lobby first.");
+			GD.PrintRich("[color=yellow][EOSManager:LobbyCreate] Cannot create lobby: You are already in a lobby!");
+			GD.PrintRich($"[color=yellow][EOSManager:LobbyCreate] Current lobby: {currentLobbyId} (Owner: {isLobbyOwner})");
+			GD.PrintRich("[color=yellow][EOSManager:LobbyCreate] Please leave the current lobby first.");
 			EmitSignal(SignalName.LobbyCreationFailed, "Already in a lobby");
 			return;
 		}
@@ -1256,21 +1330,21 @@ public partial class EOSManager : Node
 		// NOWE: Sprawdź czy lobby już jest tworzone
 		if (isCreatingLobby)
 		{
-			GD.PrintErr("❌ Cannot create lobby: Lobby creation already in progress!");
+			GD.PrintErr("[EOSManager:LobbyCreate] Cannot create lobby: Lobby creation already in progress!");
 			EmitSignal(SignalName.LobbyCreationFailed, "Lobby creation already in progress");
 			return;
 		}
 
 		// Zapisz custom lobby ID
 		currentCustomLobbyId = customLobbyId;
-		GD.Print($"🏗️ Creating lobby with custom ID: {customLobbyId}, Max players: {maxPlayers}, Public: {isPublic}");
+		GD.Print($"[EOSManager:LobbyCreate] Creating lobby with custom ID: {customLobbyId}, Max players: {maxPlayers}, Public: {isPublic}");
 
 		// Zablokuj tworzenie lobby
 		isCreatingLobby = true;
 
 		// Automatycznie wygeneruj unikalny nick zwierzaka! ^w^
 		pendingNickname = GenerateUniqueAnimalNickname();
-		GD.Print($"🦊 Twój nick: {pendingNickname}");
+		GD.Print($"[EOSManager:Nicknames] Your nickname: {pendingNickname}");
 
 		var createLobbyOptions = new CreateLobbyOptions()
 		{
@@ -1291,19 +1365,20 @@ public partial class EOSManager : Node
 	/// Pobiera wszystkie atrybuty lobby
 	/// </summary>
 	/// <returns>Dictionary z kluczami i wartościami atrybutów</returns>
+	/// <exception>Gdy nie ma aktywnego lobby, brak LobbyDetails lub uchwyt jest null.</exception>
 	public Godot.Collections.Dictionary GetAllLobbyAttributes()
 	{
 		var attributes = new Godot.Collections.Dictionary();
 
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot get lobby attributes: Not in any lobby!");
+			GD.PrintErr("[EOSManager:LobbyAttributes] Cannot get lobby attributes: Not in any lobby!");
 			return attributes;
 		}
 
 		if (!foundLobbyDetails.ContainsKey(currentLobbyId))
 		{
-			GD.PrintErr($"❌ Lobby details not found for ID: {currentLobbyId}");
+			GD.PrintErr($"[EOSManager:LobbyAttributes] Lobby details not found for ID: {currentLobbyId}");
 			return attributes;
 		}
 
@@ -1311,7 +1386,7 @@ public partial class EOSManager : Node
 
 		if (lobbyDetails == null)
 		{
-			GD.PrintErr("❌ Lobby details is null!");
+			GD.PrintErr("[EOSManager:LobbyAttributes] Lobby details is null!");
 			return attributes;
 		}
 
@@ -1319,7 +1394,7 @@ public partial class EOSManager : Node
 		var countOptions = new LobbyDetailsGetAttributeCountOptions();
 		uint attributeCount = lobbyDetails.GetAttributeCount(ref countOptions);
 
-		GD.Print($"📋 Getting {attributeCount} lobby attributes...");
+		GD.Print($"[EOSManager:LobbyAttributes] Getting {attributeCount} lobby attributes...");
 
 		// Iteruj po wszystkich atrybutach
 		for (uint i = 0; i < attributeCount; i++)
@@ -1337,19 +1412,28 @@ public partial class EOSManager : Node
 				string value = attribute.Value.Data.Value.Value.AsUtf8;
 
 				attributes[key] = value;
-				GD.Print($"  [{i}] {key} = '{value}'");
+				GD.Print($"[EOSManager:LobbyAttributes]  [{i}] {key} = '{value}'");
 			}
 		}
 
 		return attributes;
 	}
 
+	/// <summary>
+	/// Callback tworzenia lobby – zapisuje stan bieżącego lobby, ustawia atrybuty i emituje sygnały UI.
+	/// </summary>
+	/// <param name="data">Informacje zwrotne z operacji tworzenia lobby.</param>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
+	/// <seealso cref="SetMemberAttribute"/>
+	/// <seealso cref="GetLobbyMembers"/>
+	/// <exception>Gdy tworzenie lobby nie powiedzie się.</exception>
 	private void OnCreateLobbyComplete(ref CreateLobbyCallbackInfo data)
 	{
 		if (data.ResultCode == Result.Success)
 		{
-			GD.Print($"✅ Lobby created successfully! EOS Lobby ID: {data.LobbyId}");
-			GD.Print($"✅ Custom Lobby ID: {currentCustomLobbyId}");
+			GD.Print($"[EOSManager:LobbyCreate] Lobby created successfully! EOS Lobby ID: {data.LobbyId}");
+			GD.Print($"[EOSManager:LobbyCreate] Custom Lobby ID: {currentCustomLobbyId}");
 
 			// Zapisz obecne lobby
 			currentLobbyId = data.LobbyId.ToString();
@@ -1373,12 +1457,12 @@ public partial class EOSManager : Node
 			// Ustaw nickname i drużynę jako member attributes
 			if (!string.IsNullOrEmpty(pendingNickname))
 			{
-				GD.Print($"📝 Setting host nickname: {pendingNickname}");
+				GD.Print($"[EOSManager:Nicknames] Setting host nickname: {pendingNickname}");
 				SetMemberAttribute("Nickname", pendingNickname);
 
 				GetTree().CreateTimer(0.8).Timeout += () =>
 				{
-					GD.Print("🟡 Host assigning to Neutral team...");
+					GD.Print("[EOSManager:Nicknames] Assigning to Neutral team...");
 					SetMemberAttribute("Team", Team.None.ToString());
 
 					// Po ustawieniu nicku i drużyny, odśwież i DOPIERO zmień scenę
@@ -1388,7 +1472,7 @@ public partial class EOSManager : Node
 
 						GetTree().CreateTimer(0.3).Timeout += () =>
 						{
-							GD.Print("✅ Host setup complete, emitting LobbyCreated signal");
+							GD.Print("[EOSManager:LobbyCreate] Host setup complete, emitting LobbyCreated signal");
 							EmitSignal(SignalName.LobbyCreated, currentLobbyId);
 						};
 					};
@@ -1399,7 +1483,7 @@ public partial class EOSManager : Node
 				// Bez nicku - ustaw tylko drużynę, potem zmień scenę
 				GetTree().CreateTimer(0.5).Timeout += () =>
 				{
-					GD.Print("🟡 Host assigning to Neutral team...");
+					GD.Print("[EOSManager:Nicknames] Assigning to Neutral team...");
 					SetMemberAttribute("Team", Team.None.ToString());
 
 					// Po ustawieniu drużyny, odśwież i zmień scenę
@@ -1409,7 +1493,7 @@ public partial class EOSManager : Node
 
 						GetTree().CreateTimer(0.3).Timeout += () =>
 						{
-							GD.Print("✅ Host setup complete, emitting LobbyCreated signal");
+							GD.Print("[EOSManager:LobbyCreate] Host setup complete, emitting LobbyCreated signal");
 							EmitSignal(SignalName.LobbyCreated, currentLobbyId);
 						};
 					};
@@ -1439,12 +1523,10 @@ public partial class EOSManager : Node
 			currentLobbyMembers = tempMembersList;
 
 			EmitSignal(SignalName.LobbyMembersUpdated, tempMembersList);
-			GD.Print($"👥 Sent initial member list (1 member - you)");
 		}
 		else
 		{
-			GD.PrintErr($"❌ Failed to create lobby: {data.ResultCode}");
-
+			GD.PrintErr($"[EOSManager:LobbyCreate] Failed to create lobby: {data.ResultCode}");
 			// Wyślij sygnał o błędzie do UI
 			EmitSignal(SignalName.LobbyCreationFailed, data.ResultCode.ToString());
 		}
@@ -1456,16 +1538,16 @@ public partial class EOSManager : Node
 	/// <summary>
 	/// Wyszukuje dostępne lobby
 	/// </summary>
+	/// <exception>Gdy użytkownik nie jest zalogowany lub utworzenie wyszukiwania się nie powiedzie.</exception>
 	public void SearchLobbies()
 	{
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot search lobbies: User not logged in!");
+			GD.PrintErr("[EOSManager:LobbySearch] Cannot search lobbies: User not logged in!");
 			return;
 		}
 
-		GD.Print("🔍 Searching for lobbies...");
-
+		GD.Print("[EOSManager:LobbySearch] Searching for lobbies...");
 		// Utwórz wyszukiwanie
 		var createLobbySearchOptions = new CreateLobbySearchOptions()
 		{
@@ -1476,7 +1558,7 @@ public partial class EOSManager : Node
 
 		if (result != Result.Success || lobbySearch == null)
 		{
-			GD.PrintErr($"❌ Failed to create lobby search: {result}");
+			GD.PrintErr($"[EOSManager:LobbySearch] Failed to create lobby search: {result}");
 			return;
 		}
 
@@ -1505,7 +1587,6 @@ public partial class EOSManager : Node
 			{
 				var countOptions = new LobbySearchGetSearchResultCountOptions();
 				uint lobbyCount = lobbySearch.GetSearchResultCount(ref countOptions);
-				GD.Print($"✅ Found {lobbyCount} lobbies!");
 
 				// Wyczyść listę przed dodaniem nowych
 				foundLobbyIds.Clear();
@@ -1541,17 +1622,15 @@ public partial class EOSManager : Node
 							uint actualMemberCount = lobbyDetails.GetMemberCount(ref memberCountOptions);
 							int currentPlayers = (int)actualMemberCount;
 
-							GD.Print($"  [{i}] Lobby ID: {info.Value.LobbyId}, Players: {currentPlayers}/{info.Value.MaxMembers}");
-
 							// Dodaj do listy dla UI
 							var lobbyData = new Godot.Collections.Dictionary
-		{
-{ "index", (int)i },
-{ "lobbyId", info.Value.LobbyId.ToString() },
-{ "currentPlayers", currentPlayers },
-{ "maxPlayers", (int)info.Value.MaxMembers },
-{ "owner", info.Value.LobbyOwnerUserId?.ToString() ?? "Unknown" }
-		};
+											{
+												{ "index", (int)i },
+												{ "lobbyId", info.Value.LobbyId.ToString() },
+												{ "currentPlayers", currentPlayers },
+												{ "maxPlayers", (int)info.Value.MaxMembers },
+												{ "owner", info.Value.LobbyOwnerUserId?.ToString() ?? "Unknown" }
+											};
 							lobbyList.Add(lobbyData);
 						}
 						else
@@ -1566,7 +1645,7 @@ public partial class EOSManager : Node
 			}
 			else
 			{
-				GD.PrintErr($"❌ Lobby search failed: {findData.ResultCode}");
+				GD.PrintErr($"[EOSManager:LobbySearch] Lobby search failed: {findData.ResultCode}");
 			}
 
 			lobbySearch.Release();
@@ -1578,16 +1657,17 @@ public partial class EOSManager : Node
 	/// </summary>
 	/// <param name="customLobbyId">Custom ID lobby do wyszukania (np. "V5CGSP")</param>
 	/// <param name="onComplete">Callback wywoływany po zakończeniu (success: bool, lobbyId: string)</param>
+	/// <exception>Gdy użytkownik nie jest zalogowany lub wyszukiwanie/copy LobbyDetails zwraca błąd.</exception>
 	public void SearchLobbyByCustomId(string customLobbyId, Action<bool, string> onComplete = null)
 	{
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot search lobby: User not logged in!");
+			GD.PrintErr("[EOSManager:LobbySearch] Cannot search lobby: User not logged in!");
 			onComplete?.Invoke(false, "");
 			return;
 		}
 
-		GD.Print($"🔍 Searching for lobby with custom ID: {customLobbyId}...");
+		GD.Print($"[EOSManager:LobbySearch] Searching for lobby with custom ID: {customLobbyId}...");
 
 		// Utwórz wyszukiwanie
 		var createLobbySearchOptions = new CreateLobbySearchOptions()
@@ -1599,7 +1679,7 @@ public partial class EOSManager : Node
 
 		if (result != Result.Success || lobbySearch == null)
 		{
-			GD.PrintErr($"❌ Failed to create lobby search: {result}");
+			GD.PrintErr($"[EOSManager:LobbySearch] Failed to create lobby search: {result}");
 			onComplete?.Invoke(false, "");
 			return;
 		}
@@ -1629,7 +1709,6 @@ public partial class EOSManager : Node
 			{
 				var countOptions = new LobbySearchGetSearchResultCountOptions();
 				uint lobbyCount = lobbySearch.GetSearchResultCount(ref countOptions);
-				GD.Print($"✅ Found {lobbyCount} lobby with custom ID: {customLobbyId}");
 
 				if (lobbyCount > 0)
 				{
@@ -1656,8 +1735,6 @@ public partial class EOSManager : Node
 								foundLobbyDetails[foundLobbyId]?.Release();
 								foundLobbyDetails[foundLobbyId] = lobbyDetails;
 							}
-
-							GD.Print($"✅ Found lobby! EOS ID: {foundLobbyId}");
 							onComplete?.Invoke(true, foundLobbyId);
 						}
 						else
@@ -1668,19 +1745,19 @@ public partial class EOSManager : Node
 					}
 					else
 					{
-						GD.PrintErr("❌ Failed to copy lobby details");
+						GD.PrintErr("[EOSManager:LobbySearch] Failed to copy lobby details");
 						onComplete?.Invoke(false, "");
 					}
 				}
 				else
 				{
-					GD.Print($"⚠️ No lobby found with custom ID: {customLobbyId}");
+					GD.Print($"[EOSManager:LobbySearch] No lobby found with custom ID: {customLobbyId}");
 					onComplete?.Invoke(false, "");
 				}
 			}
 			else
 			{
-				GD.PrintErr($"❌ Lobby search failed: {findData.ResultCode}");
+				GD.PrintErr($"[EOSManager:LobbySearch] Lobby search failed: {findData.ResultCode}");
 				onComplete?.Invoke(false, "");
 			}
 
@@ -1692,18 +1769,21 @@ public partial class EOSManager : Node
 	/// Wyszukuje i dołącza do lobby po custom ID
 	/// </summary>
 	/// <param name="customLobbyId">Custom ID lobby (np. "V5CGSP")</param>
+	/// <seealso cref="SearchLobbyByCustomId"/>
+	/// <seealso cref="JoinLobby(string)"/>
+	/// <exception>Gdy lobby o podanym Custom ID nie zostanie znalezione.</exception>
 	public void JoinLobbyByCustomId(string customLobbyId)
 	{
 		SearchLobbyByCustomId(customLobbyId, (success, lobbyId) =>
 		{
 			if (success && !string.IsNullOrEmpty(lobbyId))
 			{
-				GD.Print($"🚪 Joining lobby with custom ID: {customLobbyId}");
+				GD.Print($"[EOSManager:LobbyJoin] Joining lobby with custom ID: {customLobbyId}");
 				JoinLobby(lobbyId);
 			}
 			else
 			{
-				GD.PrintErr($"❌ Cannot join: Lobby with custom ID '{customLobbyId}' not found!");
+				GD.PrintErr($"[EOSManager:LobbyJoin] Cannot join: Lobby with custom ID '{customLobbyId}' not found!");
 
 				// Wyślij sygnał o błędzie do UI
 				EmitSignal(SignalName.LobbyJoinFailed, $"Lobby '{customLobbyId}' nie istnieje");
@@ -1715,17 +1795,19 @@ public partial class EOSManager : Node
 	/// Dołącza do lobby po indeksie z ostatniego wyszukania
 	/// </summary>
 	/// <param name="lobbyIndex">Indeks lobby z listy (0, 1, 2...)</param>
+	/// <seealso cref="JoinLobby(string)"/>
+	/// <exception>Gdy użytkownik nie jest zalogowany lub indeks lobby jest nieprawidłowy.</exception>
 	public void JoinLobbyByIndex(int lobbyIndex)
 	{
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot join lobby: User not logged in!");
+			GD.PrintErr("[EOSManager:LobbyJoin] Cannot join lobby: User not logged in!");
 			return;
 		}
 
 		if (lobbyIndex < 0 || lobbyIndex >= foundLobbyIds.Count)
 		{
-			GD.PrintErr($"❌ Invalid lobby index: {lobbyIndex}. Found lobbies: {foundLobbyIds.Count}");
+			GD.PrintErr($"[EOSManager:LobbyJoin] Invalid lobby index: {lobbyIndex}. Found lobbies: {foundLobbyIds.Count}");
 			return;
 		}
 
@@ -1737,37 +1819,39 @@ public partial class EOSManager : Node
 	/// Dołącza do lobby po ID
 	/// </summary>
 	/// <param name="lobbyId">ID lobby do dołączenia</param>
+	/// <seealso cref="JoinLobbyByIndex"/>
+	/// <seealso cref="JoinLobbyByCustomId"/>
+	/// <seealso cref="OnJoinLobbyComplete"/>
+	/// <exception>Gdy użytkownik nie jest zalogowany, jest już w lobby lub brak LobbyDetails w cache.</exception>
 	public void JoinLobby(string lobbyId)
 	{
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot join lobby: User not logged in!");
+			GD.PrintErr("[EOSManager:LobbyJoin] Cannot join lobby: User not logged in!");
 			return;
 		}
 
 		// Sprawdź czy użytkownik już jest w lobby
 		if (!string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot join lobby: You are already in a lobby!");
-			GD.PrintErr($"   Current lobby: {currentLobbyId} (Owner: {isLobbyOwner})");
-			GD.PrintErr("   Please leave the current lobby first.");
+			GD.PrintErr("[EOSManager:LobbyJoin] Cannot join lobby: You are already in a lobby!");
 			return;
 		}
 
 		if (!foundLobbyDetails.ContainsKey(lobbyId))
 		{
-			GD.PrintErr($"❌ Lobby details not found for ID: {lobbyId}. Search for lobbies first!");
+			GD.PrintErr($"[EOSManager:LobbyJoin] Lobby details not found for ID: {lobbyId}");
 			return;
 		}
 
-		GD.Print($"🚪 Joining lobby: {lobbyId}");
+		GD.Print($"[EOSManager:LobbyJoin] Joining lobby: {lobbyId}");
 
 		// Ustaw flagę że trwa dołączanie do lobby
 		isJoiningLobby = true;
 
 		// Automatycznie wygeneruj unikalny nick zwierzaka! ^w^
 		pendingNickname = GenerateUniqueAnimalNickname();
-		GD.Print($"🦊 Twój nick: {pendingNickname}");
+		GD.Print($"[EOSManager:Nickname] Your nickname: {pendingNickname}");
 
 		var joinLobbyOptions = new JoinLobbyOptions()
 		{
@@ -1779,11 +1863,22 @@ public partial class EOSManager : Node
 		lobbyInterface.JoinLobby(ref joinLobbyOptions, null, OnJoinLobbyComplete);
 	}
 
+	/// <summary>
+	/// Callback dołączenia do lobby – aktualizuje bieżący stan, synchronizuje atrybuty oraz uruchamia sekwencję inicjalizacji gracza.
+	/// </summary>
+	/// <param name="data">Informacje zwrotne z operacji JoinLobby.</param>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="RefreshCurrentLobbyInfo"/>
+	/// <seealso cref="GetLobbyMembers"/>
+	/// <seealso cref="SetMemberAttribute"/>
+	/// <seealso cref="AssignToNeutralTeam"/>
+	/// <seealso cref="AssignToUniversalTeam"/>
+	/// <exception>Gdy JoinLobby zwróci błąd.</exception>
 	private void OnJoinLobbyComplete(ref JoinLobbyCallbackInfo data)
 	{
 		if (data.ResultCode == Result.Success)
 		{
-			GD.Print($"✅ Successfully joined lobby: {data.LobbyId}");
+			GD.Print($"[EOSManager:LobbyJoin] Successfully joined lobby: {data.LobbyId}");
 
 			// Zapisz obecne lobby
 			currentLobbyId = data.LobbyId.ToString();
@@ -1795,7 +1890,7 @@ public partial class EOSManager : Node
 			// KROK 2: Poczekaj na synchronizację danych z backendu (0.5s zamiast 1.5s)
 			GetTree().CreateTimer(0.5).Timeout += () =>
 			{
-				GD.Print("🔄 [STEP 1/5] Refreshing lobby info and CustomLobbyId...");
+				GD.Print("[EOSManager:LobbyJoin] [STEP 1/5] Refreshing lobby info and CustomLobbyId...");
 
 				// Odśwież handle aby mieć najświeższe dane
 				CacheCurrentLobbyDetailsHandle("refresh_after_join");
@@ -1806,24 +1901,24 @@ public partial class EOSManager : Node
 				// KROK 3: Pobierz członków NAJPIERW (żeby AutoAssignMyTeam miał dane)
 				GetTree().CreateTimer(0.3).Timeout += () =>
 				{
-					GD.Print("🔄 [STEP 2/5] Fetching current lobby members...");
+					GD.Print("[EOSManager:LobbyJoin] [STEP 2/5] Fetching current lobby members...");
 					GetLobbyMembers();
 
 					// KROK 4: Ustaw nickname i przypisz drużynę (teraz mamy już listę członków)
 					GetTree().CreateTimer(0.3).Timeout += () =>
 					{
-						GD.Print("🔄 [STEP 3/5] Setting nickname first...");
+						GD.Print("[EOSManager:LobbyJoin] [STEP 3/5] Setting nickname first...");
 
 						// Najpierw ustaw nickname (jeśli został ustawiony)
 						if (!string.IsNullOrEmpty(pendingNickname))
 						{
-							GD.Print($"📝 Setting nickname: {pendingNickname}");
+							GD.Print($"[EOSManager:LobbyJoin] Setting nickname: {pendingNickname}");
 							SetMemberAttribute("Nickname", pendingNickname);
 
 							// Odczekaj na propagację nicku, potem przypisz drużynę
 							GetTree().CreateTimer(0.5).Timeout += () =>
 							{
-								GD.Print("🔄 [STEP 3.5/5] Now assigning to neutral team...");
+								GD.Print("[EOSManager:LobbyJoin] [STEP 3.5/5] Now assigning to neutral team...");
 								if (currentGameMode == GameMode.AIvsHuman)
 								{
 									AssignToUniversalTeam();
@@ -1849,13 +1944,13 @@ public partial class EOSManager : Node
 						// KROK 5: Odczekaj na propagację atrybutów, potem pobierz członków ponownie
 						GetTree().CreateTimer(1.5).Timeout += () =>
 						{
-							GD.Print("🔄 [STEP 4/5] Refreshing members with team assignments...");
+							GD.Print("[EOSManager:LobbyJoin] [STEP 4/5] Refreshing members with team assignments...");
 							GetLobbyMembers();
 
 							// KROK 6: Wyślij sygnał do UI (zmień scenę)
 							GetTree().CreateTimer(0.3).Timeout += () =>
 							{
-								GD.Print("✅ [STEP 5/5] All synchronization complete, emitting LobbyJoined signal");
+								GD.Print("✅ [EOSManager:LobbyJoin] [STEP 5/5] All synchronization complete, emitting LobbyJoined signal");
 								isJoiningLobby = false; // Zakończono dołączanie
 								EmitSignal(SignalName.LobbyJoined, currentLobbyId);
 							};
@@ -1869,7 +1964,7 @@ public partial class EOSManager : Node
 		}
 		else
 		{
-			GD.PrintErr($"❌ Failed to join lobby: {data.ResultCode}");
+			GD.PrintErr($"[EOSManager:LobbyJoin] Failed to join lobby: {data.ResultCode}");
 
 			// Wyczyść flagę dołączania
 			isJoiningLobby = false;
@@ -1891,18 +1986,22 @@ public partial class EOSManager : Node
 	/// Wyszukuje lobby i odświeża info o obecnym lobby
 	/// FAKTYCZNIE wykonuje LobbySearch.Find() żeby pobrać świeże dane z backendu
 	/// </summary>
+	/// <seealso cref="RefreshCurrentLobbyInfo"/>
+	/// <seealso cref="GetLobbyMembers"/>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <exception>Gdy utworzenie wyszukiwania, ustawienie filtra lub kopia wyników się nie powiedzie.</exception>
 	private void SearchLobbiesAndRefresh()
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.Print("⚠️ Cannot refresh - no current lobby ID");
+			GD.Print("[EOSManager:LobbySearch] Cannot refresh - no current lobby ID");
 			return;
 		}
 
 		// Czekamy chwilę żeby backend zdążył zsynchronizować dane
 		GetTree().CreateTimer(1.5).Timeout += () =>
 		{
-			GD.Print($"🔍 Searching for current lobby {currentLobbyId} to get fresh data...");
+			GD.Print($"[EOSManager:LobbySearch] Searching for current lobby {currentLobbyId} to get fresh data...");
 
 			var createLobbySearchOptions = new Epic.OnlineServices.Lobby.CreateLobbySearchOptions
 			{
@@ -1912,7 +2011,7 @@ public partial class EOSManager : Node
 			var searchResult = lobbyInterface.CreateLobbySearch(ref createLobbySearchOptions, out var lobbySearchHandle);
 			if (searchResult != Epic.OnlineServices.Result.Success || lobbySearchHandle == null)
 			{
-				GD.PrintErr($"❌ Failed to create lobby search: {searchResult}");
+				GD.PrintErr($"[EOSManager:LobbySearch] Failed to create lobby search: {searchResult}");
 				return;
 			}
 
@@ -1925,7 +2024,7 @@ public partial class EOSManager : Node
 			var setIdResult = lobbySearchHandle.SetLobbyId(ref setLobbyIdOptions);
 			if (setIdResult != Epic.OnlineServices.Result.Success)
 			{
-				GD.PrintErr($"❌ Failed to set lobby ID filter: {setIdResult}");
+				GD.PrintErr($"[EOSManager:LobbySearch] Failed to set lobby ID filter: {setIdResult}");
 				return;
 			}
 
@@ -1939,7 +2038,7 @@ public partial class EOSManager : Node
 	{
 		if (data.ResultCode != Epic.OnlineServices.Result.Success)
 		{
-			GD.PrintErr($"❌ Lobby search failed: {data.ResultCode}");
+			GD.PrintErr($"[EOSManager:LobbySearch] Lobby search failed: {data.ResultCode}");
 			return;
 		}
 
@@ -1948,12 +2047,11 @@ public partial class EOSManager : Node
 
 		if (resultCount == 0)
 		{
-			GD.PrintErr("❌ Current lobby not found in search results");
+			GD.PrintErr("[EOSManager:LobbySearch] Current lobby not found in search results");
 			return;
 		}
 
-		GD.Print($"✅ Found current lobby, getting fresh LobbyDetails handle...");
-
+		GD.Print("[EOSManager:LobbySearch] Found current lobby, getting fresh LobbyDetails handle...");
 		// Pobierz ŚWIEŻY handle z wyników search
 		var copyResultOptions = new Epic.OnlineServices.Lobby.LobbySearchCopySearchResultByIndexOptions
 		{
@@ -1963,7 +2061,7 @@ public partial class EOSManager : Node
 		var copyResult = lobbySearchHandle.CopySearchResultByIndex(ref copyResultOptions, out var freshLobbyDetails);
 		if (copyResult != Epic.OnlineServices.Result.Success || freshLobbyDetails == null)
 		{
-			GD.PrintErr($"❌ Failed to copy search result: {copyResult}");
+			GD.PrintErr($"[EOSManager:LobbySearch] Failed to copy search result: {copyResult}");
 			return;
 		}
 
@@ -1972,7 +2070,7 @@ public partial class EOSManager : Node
 		if (!foundLobbyDetails.ContainsKey(currentLobbyId))
 		{
 			foundLobbyDetails[currentLobbyId] = freshLobbyDetails;
-			GD.Print("✅ LobbyDetails handle added from backend!");
+			GD.Print("[EOSManager:LobbySearch] LobbyDetails handle added from backend!");
 		}
 		else
 		{
@@ -1981,8 +2079,6 @@ public partial class EOSManager : Node
 			uint newCount = freshLobbyDetails.GetMemberCount(ref testOptions);
 			uint oldCount = foundLobbyDetails[currentLobbyId].GetMemberCount(ref testOptions);
 
-			GD.Print($"   Comparing handles: Old={oldCount} members, New={newCount} members");
-
 			// Testuj czy GetMemberByIndex działa na NOWYM handle
 			bool newHandleValid = false;
 			if (newCount > 0)
@@ -1990,7 +2086,7 @@ public partial class EOSManager : Node
 				var testMemberOptions = new LobbyDetailsGetMemberByIndexOptions() { MemberIndex = 0 };
 				ProductUserId testUserId = freshLobbyDetails.GetMemberByIndex(ref testMemberOptions);
 				newHandleValid = testUserId != null && testUserId.IsValid();
-				GD.Print($"   New handle validity test: UserID={(testUserId != null ? testUserId.ToString() : "NULL")} Valid={newHandleValid}");
+				GD.Print($"[EOSManager:LobbySearch] hHandle validity test: UserID={(testUserId != null ? testUserId.ToString() : "NULL")} Valid={newHandleValid}");
 			}
 
 			// Tylko zamień jeśli nowy handle FAKTYCZNIE działa
@@ -1998,12 +2094,12 @@ public partial class EOSManager : Node
 			{
 				foundLobbyDetails[currentLobbyId]?.Release();
 				foundLobbyDetails[currentLobbyId] = freshLobbyDetails;
-				GD.Print("✅ LobbyDetails handle refreshed from backend (validated)!");
+				GD.Print("[EOSManager:LobbySearch] LobbyDetails handle refreshed from backend (validated)!");
 			}
 			else
 			{
 				freshLobbyDetails?.Release();
-				GD.Print("⚠️ Keeping old handle (new handle invalid or has less data)");
+				GD.Print("[EOSManager:LobbySearch] Keeping old handle (new handle invalid or has less data)");
 			}
 		}
 
@@ -2015,17 +2111,16 @@ public partial class EOSManager : Node
 	}
 
 	/// <summary>
-	/// Opuszcza obecne lobby
+	/// Opuszcza obecne lobby, korzystając z zapisanego identyfikatora bieżącego lobby.
 	/// </summary>
-	/// <param name="lobbyId">ID lobby do opuszczenia</param>
-	/// <summary>
-	/// Opuszcza obecne lobby
-	/// </summary>
+	/// <seealso cref="LeaveLobby(string)"/>
+	/// <seealso cref="OnLeaveLobbyComplete"/>
+	/// <exception>Gdy brak aktywnego lobby do opuszczenia.</exception>
 	public void LeaveLobby()
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot leave lobby: Not in any lobby!");
+			GD.PrintErr("[EOSManager:LobbyLeave] Cannot leave lobby: Not in any lobby!");
 			return;
 		}
 
@@ -2033,18 +2128,20 @@ public partial class EOSManager : Node
 	}
 
 	/// <summary>
-	/// Opuszcza lobby po ID
+	/// Opuszcza wskazane lobby po jego identyfikatorze.
 	/// </summary>
+	/// <param name="lobbyId">ID lobby do opuszczenia.</param>
+	/// <seealso cref="OnLeaveLobbyComplete"/>
+	/// <exception>Gdy użytkownik nie jest zalogowany.</exception>
 	public void LeaveLobby(string lobbyId)
 	{
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot leave lobby: User not logged in!");
+			GD.PrintErr("[EOSManager:LobbyLeave] Cannot leave lobby: User not logged in!");
 			return;
 		}
 
-		GD.Print($"🚪 Leaving lobby: {lobbyId}");
-
+		GD.Print($"[EOSManager:LobbyLeave] Leaving lobby: {lobbyId}");
 		var leaveLobbyOptions = new LeaveLobbyOptions()
 		{
 			LobbyId = lobbyId,
@@ -2054,17 +2151,24 @@ public partial class EOSManager : Node
 		lobbyInterface.LeaveLobby(ref leaveLobbyOptions, null, OnLeaveLobbyComplete);
 	}
 
+	/// <summary>
+	/// Callback opuszczenia lobby – czyści lokalny stan, resetuje atrybuty i emituje sygnał UI.
+	/// </summary>
+	/// <param name="data">Informacje zwrotne z operacji LeaveLobby.</param>
+	/// <seealso cref="LeaveLobby()"/>
+	/// <seealso cref="LeaveLobby(string)"/>
+	/// <exception>Gdy opuszczenie lobby zakończy się błędem.</exception>
 	private void OnLeaveLobbyComplete(ref LeaveLobbyCallbackInfo data)
 	{
 		if (data.ResultCode == Result.Success)
 		{
-			GD.Print($"✅ Successfully left lobby: {data.LobbyId}");
+			GD.Print($"[EOSManager:LobbyLeave] Successfully left lobby: {data.LobbyId}");
 
 			// Zatrzymaj timer
 			if (lobbyRefreshTimer != null && lobbyRefreshTimer.TimeLeft > 0)
 			{
 				lobbyRefreshTimer.Stop();
-				GD.Print("🛑 Lobby refresh timer stopped");
+				GD.Print("[EOSManager:LobbyLeave] Lobby refresh timer stopped");
 			}
 
 			// Wyczyść obecne lobby
@@ -2100,35 +2204,36 @@ public partial class EOSManager : Node
 		}
 		else
 		{
-			GD.PrintErr($"❌ Failed to leave lobby: {data.ResultCode}");
+			GD.PrintErr($"[EOSManager:LobbyLeave] Failed to leave lobby: {data.ResultCode}");
 		}
 	}
 
 	/// <summary>
 	/// Wyrzuca gracza z lobby (tylko host może to zrobić!) >:3
 	/// </summary>
+	/// <seealso cref="OnKickMemberComplete"/>
+	/// <exception>Gdy nie ma aktywnego lobby, gracz nie jest hostem lub próbuje wyrzucić samego siebie.</exception>
 	public void KickPlayer(string targetUserId)
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot kick player: Not in any lobby!");
+			GD.PrintErr("[EOSManager:LobbyKick] Cannot kick player: Not in any lobby!");
 			return;
 		}
 
 		if (!isLobbyOwner)
 		{
-			GD.PrintErr("❌ Cannot kick player: You are not the host!");
+			GD.PrintErr("[EOSManager:LobbyKick] Cannot kick player: You are not the host!");
 			return;
 		}
 
 		if (targetUserId == localProductUserId.ToString())
 		{
-			GD.PrintErr("❌ Cannot kick yourself!");
+			GD.PrintErr("[EOSManager:LobbyKick] Cannot kick yourself!");
 			return;
 		}
 
-		GD.Print($"👢 Kicking player: {targetUserId} from lobby {currentLobbyId}");
-
+		GD.Print($"[EOSManager:LobbyKick] Kicking player: {targetUserId} from lobby {currentLobbyId}");
 		var kickMemberOptions = new KickMemberOptions()
 		{
 			LobbyId = currentLobbyId,
@@ -2139,11 +2244,19 @@ public partial class EOSManager : Node
 		lobbyInterface.KickMember(ref kickMemberOptions, null, OnKickMemberComplete);
 	}
 
+	/// <summary>
+	/// Callback wyrzucenia gracza – po sukcesie odświeża cache lobby i listę członków.
+	/// </summary>
+	/// <param name="data">Informacje zwrotne z operacji KickMember.</param>
+	/// <seealso cref="KickPlayer"/>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="GetLobbyMembers"/>
+	/// <exception>Gdy wyrzucenie gracza zwróci błąd.</exception>
 	private void OnKickMemberComplete(ref KickMemberCallbackInfo data)
 	{
 		if (data.ResultCode == Result.Success)
 		{
-			GD.Print($"✅ Successfully kicked player from lobby: {data.LobbyId}");
+			GD.Print($"[EOSManager:LobbyKick] Successfully kicked player from lobby: {data.LobbyId}");
 
 			// Odśwież cache i listę członków po kicku
 			GetTree().CreateTimer(0.3).Timeout += () =>
@@ -2157,35 +2270,36 @@ public partial class EOSManager : Node
 		}
 		else
 		{
-			GD.PrintErr($"❌ Failed to kick player: {data.ResultCode}");
+			GD.PrintErr($"[EOSManager:LobbyKick] Failed to kick player: {data.ResultCode}");
 		}
 	}
 
 	/// <summary>
 	/// Przekazuje rolę hosta innemu graczowi (tylko host może to zrobić!)
 	/// </summary>
+	/// <seealso cref="OnPromoteMemberComplete"/>
+	/// <exception>Gdy brak lobby, gracz nie jest hostem lub wskazuje samego siebie.</exception>
 	public void TransferLobbyOwnership(string targetUserId)
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot transfer ownership: Not in any lobby!");
+			GD.PrintErr("[EOSManager:LobbyOwnership] Cannot transfer ownership: Not in any lobby!");
 			return;
 		}
 
 		if (!isLobbyOwner)
 		{
-			GD.PrintErr("❌ Cannot transfer ownership: You are not the host!");
+			GD.PrintErr("[EOSManager:LobbyOwnership] Cannot transfer ownership: You are not the host!");
 			return;
 		}
 
 		if (targetUserId == localProductUserId.ToString())
 		{
-			GD.PrintErr("❌ Cannot transfer ownership to yourself!");
+			GD.PrintErr("[EOSManager:LobbyOwnership] Cannot transfer ownership to yourself!");
 			return;
 		}
 
-		GD.Print($"👑 Transferring lobby ownership to: {targetUserId}");
-
+		GD.Print($"[EOSManager:LobbyOwnership] Transferring lobby ownership to: {targetUserId}");
 		var promoteMemberOptions = new PromoteMemberOptions()
 		{
 			LobbyId = currentLobbyId,
@@ -2196,12 +2310,20 @@ public partial class EOSManager : Node
 		lobbyInterface.PromoteMember(ref promoteMemberOptions, null, OnPromoteMemberComplete);
 	}
 
+	/// <summary>
+	/// Callback przekazania hosta – aktualizuje stan własności i odświeża listę członków.
+	/// </summary>
+	/// <param name="data">Informacje zwrotne z operacji PromoteMember.</param>
+	/// <seealso cref="TransferLobbyOwnership"/>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="GetLobbyMembers"/>
+	/// <exception>Gdy przekazanie hosta się nie powiedzie.</exception>
 	private void OnPromoteMemberComplete(ref PromoteMemberCallbackInfo data)
 	{
 		if (data.ResultCode == Result.Success)
 		{
-			GD.Print($"✅ Successfully transferred ownership in lobby: {data.LobbyId}");
-			GD.Print($"👑 You are no longer the host!");
+			GD.Print($"[EOSManager:LobbyOwnership] Successfully transferred ownership in lobby: {data.LobbyId}");
+			GD.Print($"[EOSManager:LobbyOwnership] You are no longer the host!");
 
 			// Zaktualizuj lokalny stan - już nie jesteśmy hostem
 			isLobbyOwner = false;
@@ -2218,7 +2340,7 @@ public partial class EOSManager : Node
 		}
 		else
 		{
-			GD.PrintErr($"❌ Failed to transfer ownership: {data.ResultCode}");
+			GD.PrintErr($"[EOSManager:LobbyOwnership] Failed to transfer ownership: {data.ResultCode}");
 		}
 	}
 
@@ -2230,6 +2352,12 @@ public partial class EOSManager : Node
 	private ulong lobbyMemberUpdateNotificationId = 0;
 	private ulong lobbyMemberStatusNotificationId = 0;
 
+	/// <summary>
+	/// Rejestruje nasłuchiwanie zdarzeń lobby (zmiany atrybutów, statusu i członków).
+	/// </summary>
+	/// <seealso cref="OnLobbyUpdateReceived"/>
+	/// <seealso cref="OnLobbyMemberUpdateReceived"/>
+	/// <seealso cref="OnLobbyMemberStatusReceived"/>
 	private void AddLobbyUpdateNotifications()
 	{
 		// Nasłuchuj na zmiany w lobby (np. nowy gracz dołączył)
@@ -2244,12 +2372,19 @@ public partial class EOSManager : Node
 		var memberStatusOptions = new AddNotifyLobbyMemberStatusReceivedOptions();
 		lobbyMemberStatusNotificationId = lobbyInterface.AddNotifyLobbyMemberStatusReceived(ref memberStatusOptions, null, OnLobbyMemberStatusReceived);
 
-		GD.Print("✅ Lobby update notifications added");
+		GD.Print("[EOSManager:LobbyNotifications] Lobby update notifications added");
 	}
 
+	/// <summary>
+	/// Reaguje na ogólne aktualizacje lobby, odświeżając cache i atrybuty.
+	/// </summary>
+	/// <param name="data">Informacje o aktualizacji lobby.</param>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="RefreshCurrentLobbyInfo"/>
+	/// <seealso cref="ApplyForcedTeamAssignments"/>
 	private void OnLobbyUpdateReceived(ref LobbyUpdateReceivedCallbackInfo data)
 	{
-		GD.Print($"🔔 Lobby updated: {data.LobbyId}");
+		GD.Print($"[EOSManager:LobbyUpdate] Lobby updated: {data.LobbyId}");
 
 		// Jeśli to nasze lobby, odśwież info
 		if (currentLobbyId == data.LobbyId.ToString())
@@ -2265,12 +2400,18 @@ public partial class EOSManager : Node
 		}
 	}
 
+	/// <summary>
+	/// Obsługuje aktualizacje atrybutów członków lobby, odświeżając listę graczy.
+	/// </summary>
+	/// <param name="data">Informacje o aktualizacji atrybutów członka lobby.</param>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="GetLobbyMembers"/>
 	private void OnLobbyMemberUpdateReceived(ref LobbyMemberUpdateReceivedCallbackInfo data)
 	{
-		GD.Print($"🔔 Lobby member updated in: {data.LobbyId}, User: {data.TargetUserId}");
+		GD.Print($"[EOSManager:LobbyMemberUpdate] Lobby member updated in: {data.LobbyId}, User: {data.TargetUserId}");
 		if (currentLobbyId != data.LobbyId.ToString()) return;
 
-		GD.Print("  ℹ️ Member update detected - refreshing member list");
+		GD.Print("[EOSManager:LobbyMemberUpdate] Member update detected - refreshing member list");
 
 		// Odśwież LobbyDetails handle i listę członków
 		CacheCurrentLobbyDetailsHandle("member_update");
@@ -2282,9 +2423,16 @@ public partial class EOSManager : Node
 		};
 	}
 
+	/// <summary>
+	/// Obsługuje zmiany statusu członków (join/leave/kick/promote) i aktualizuje stan lokalny.
+	/// </summary>
+	/// <param name="data">Informacje o zmianie statusu członka lobby.</param>
+	/// <seealso cref="HandleKickedFromLobby"/>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="GetLobbyMembers"/>
 	private void OnLobbyMemberStatusReceived(ref LobbyMemberStatusReceivedCallbackInfo data)
 	{
-		GD.Print($"🔔 Lobby member status changed in: {data.LobbyId}, User: {data.TargetUserId}, Status: {data.CurrentStatus}");
+		GD.Print($"[EOSManager:LobbyMemberStatus] Lobby member status changed in: {data.LobbyId}, User: {data.TargetUserId}, Status: {data.CurrentStatus}");
 
 		// NAJPIERW sprawdź czy to MY zostaliśmy wyrzuceni (zanim sprawdzimy currentLobbyId!)
 		if (data.CurrentStatus == LobbyMemberStatus.Kicked &&
@@ -2299,13 +2447,13 @@ public partial class EOSManager : Node
 		if (data.CurrentStatus == LobbyMemberStatus.Promoted)
 		{
 			string promotedUserId = data.TargetUserId.ToString();
-			GD.Print($"  👑 Member PROMOTED to host: {GetShortUserId(promotedUserId)}");
-            EmitSignal(SignalName.LobbyOwnerChanged);
+			GD.Print($"  [EOSManager:LobbyMemberStatus] Member PROMOTED to host: {GetShortUserId(promotedUserId)}");
+			EmitSignal(SignalName.LobbyOwnerChanged);
 
-            // Jeśli to MY zostaliśmy awansowani
-            if (promotedUserId == localProductUserId.ToString())
+			// Jeśli to MY zostaliśmy awansowani
+			if (promotedUserId == localProductUserId.ToString())
 			{
-				GD.Print("  👑 ✅ YOU have been promoted to lobby owner!");
+				GD.Print("  [EOSManager:LobbyMemberStatus] ✅ YOU have been promoted to lobby owner!");
 				isLobbyOwner = true;
 
 				if (isLocalPlayerInLobbyView)
@@ -2316,7 +2464,7 @@ public partial class EOSManager : Node
 			}
 			else
 			{
-				GD.Print($"  👑 {GetShortUserId(promotedUserId)} is now the lobby owner");
+				GD.Print($"  [EOSManager:LobbyMemberStatus] {GetShortUserId(promotedUserId)} is now the lobby owner");
 				isLobbyOwner = false;
 			}
 		}
@@ -2329,7 +2477,7 @@ public partial class EOSManager : Node
 			// Obsługa KICKED - ktoś INNY został wyrzucony
 			if (data.CurrentStatus == LobbyMemberStatus.Kicked)
 			{
-				GD.Print($"  👢 Member KICKED: {GetShortUserId(userId)}");
+				GD.Print($"[EOSManager:LobbyMemberStatus] Member KICKED: {GetShortUserId(userId)}");
 			}
 
 			// Odśwież LobbyDetails handle (tylko jeśli nie zostaliśmy wyrzuceni)
@@ -2338,7 +2486,7 @@ public partial class EOSManager : Node
 			// JOINED, LEFT, KICKED lub PROMOTED - odśwież całą listę członków
 			if (data.CurrentStatus == LobbyMemberStatus.Joined)
 			{
-				GD.Print($"  ➕ Member JOINED: {GetShortUserId(userId)}");
+				GD.Print($"[EOSManager:LobbyMemberStatus] Member JOINED: {GetShortUserId(userId)}");
 
 				// Małe opóźnienie na synchronizację EOS
 				GetTree().CreateTimer(0.3).Timeout += () =>
@@ -2349,7 +2497,7 @@ public partial class EOSManager : Node
 			}
 			else if (data.CurrentStatus == LobbyMemberStatus.Left || data.CurrentStatus == LobbyMemberStatus.Kicked || data.CurrentStatus == LobbyMemberStatus.Promoted)
 			{
-				GD.Print($"  ➖ Member LEFT/KICKED/PROMOTED: {GetShortUserId(userId)}");
+				GD.Print($"[EOSManager:LobbyMemberStatus] Member LEFT/KICKED/PROMOTED: {GetShortUserId(userId)}");
 
 				// Małe opóźnienie na pełną synchronizację
 				GetTree().CreateTimer(0.3).Timeout += () =>
@@ -2365,16 +2513,18 @@ public partial class EOSManager : Node
 	/// Przypisuje nowego gracza do neutralnej drużyny (NeutralTeam)
 	/// Wywoływane przez gracza po dołączeniu do lobby
 	/// </summary>
+	/// <seealso cref="SetMemberAttribute"/>
+	/// <seealso cref="AssignToUniversalTeam"/>
+	/// <exception>Gdy brak aktywnego lobby.</exception>
 	public void AssignToNeutralTeam()
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot assign team: Not in any lobby!");
+			GD.PrintErr("[EOSManager:TeamAssign] Cannot assign team: Not in any lobby!");
 			return;
 		}
 
-		GD.Print($"🟡 Assigning new player to NeutralTeam (None)");
-
+		GD.Print("[EOSManager:TeamAssign] 🟡 Assigning new player to NeutralTeam (None)");
 		SetMemberAttribute("Team", Team.None.ToString());
 		SetMemberAttribute("ProfileIcon", "0"); // Brak ikony w Neutral
 	}
@@ -2383,22 +2533,25 @@ public partial class EOSManager : Node
 	/// Przypisuje nowego gracza do uniwersalnej drużyny (UniversalTeam)
 	/// Wywoływane przez gracza po dołączeniu do lobby jeśli tryb gry to AIvsHuman
 	/// </summary>
+	/// <seealso cref="SetMemberAttribute"/>
+	/// <seealso cref="AssignToNeutralTeam"/>
+	/// <exception>Gdy brak aktywnego lobby lub drużyna Universal jest pełna.</exception>
 	public void AssignToUniversalTeam()
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot assign team: Not in any lobby!");
+			GD.PrintErr("[EOSManager:TeamAssign] Cannot assign team: Not in any lobby!");
 			return;
 		}
 
 		// Sprawdź limit graczy w trybie AI vs Human
 		if (GetTeamPlayerCount(Team.Universal) >= MaxPlayersInAIvsHuman)
 		{
-			GD.PrintErr($"❌ Cannot join Universal team: Team is full ({MaxPlayersInAIvsHuman}/{MaxPlayersInAIvsHuman})");
+			GD.PrintErr($"[EOSManager:TeamAssign] Cannot join Universal team: Team is full ({MaxPlayersInAIvsHuman}/{MaxPlayersInAIvsHuman})");
 			return;
 		}
 
-		GD.Print($"🟣 Assigning new player to UniversalTeam (Universal)");
+		GD.Print("[EOSManager:TeamAssign] Assigning new player to UniversalTeam (Universal)");
 
 		// Przypisz niebieską ikonę dla Universal team
 		int newIcon = AssignProfileIcon(Team.Universal);
@@ -2407,17 +2560,18 @@ public partial class EOSManager : Node
 	}
 
 	/// <summary>
-	/// Ustawia member attribute dla określonego użytkownika
-	/// Tylko dla LOKALNEGO gracza - każdy ustawia swoje własne atrybuty
+	/// Ustawia drużynę dla lokalnego gracza, respektując limity miejsc w drużynach.
 	/// </summary>
-	/// <param name="key">Klucz atrybutu</param>
-	/// <param name="value">Wartość atrybutu</param>
+	/// <param name="teamName">Docelowa drużyna (Blue, Red, None, Universal).</param>
+	/// <seealso cref="SetMemberAttribute"/>
+	/// <seealso cref="GetTeamPlayerCount"/>
+	/// <exception>Gdy docelowa drużyna jest pełna.</exception>
 	public void SetMyTeam(Team teamName)
 	{
 
 		if ((teamName == Team.Blue || teamName == Team.Red) && GetTeamPlayerCount(teamName) >= MaxPlayersPerTeam)
 		{
-			GD.PrintErr($"❌ Cannot join team {teamName}: Team is full ({MaxPlayersPerTeam}/{MaxPlayersPerTeam})");
+			GD.PrintErr($"[EOSManager:Team] Cannot join team {teamName}: Team is full ({MaxPlayersPerTeam}/{MaxPlayersPerTeam})");
 			return;
 		}
 
@@ -2474,7 +2628,7 @@ public partial class EOSManager : Node
 
 		SetMemberAttribute("Team", teamName.ToString());
 		SetMemberAttribute("ProfileIcon", newIcon.ToString());
-		GD.Print($"✅ Set my team to: {teamName} with icon: {newIcon}");
+		GD.Print($"[EOSManager:Team] ✅ Set my team to: {teamName}");
 
 		//Sprawdzenie warunków dotyczących rozpoczęcia gry
 		EmitSignal(SignalName.CheckTeamsBalanceConditions);
@@ -2484,6 +2638,9 @@ public partial class EOSManager : Node
 	/// <summary>
 	/// Odświeża informacje o obecnym lobby i wysyła sygnał do UI
 	/// </summary>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="RefreshLobbyAttributes"/>
+	/// <exception>Gdy uchwyt LobbyDetails jest niedostępny lub null.</exception>
 	private void RefreshCurrentLobbyInfo()
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
@@ -2512,7 +2669,7 @@ public partial class EOSManager : Node
 				var memberCountOptions = new LobbyDetailsGetMemberCountOptions();
 				uint memberCount = lobbyDetails.GetMemberCount(ref memberCountOptions);
 
-				GD.Print($"📊 Lobby info refreshed: {currentLobbyId}, Players: {memberCount}/{info.Value.MaxMembers}");
+				GD.Print($"[EOSManager:LobbyInfo] Lobby info refreshed: {currentLobbyId}, Players: {memberCount}/{info.Value.MaxMembers}");
 
 				// Wyślij sygnał do UI
 				EmitSignal(SignalName.CurrentLobbyInfoUpdated,
@@ -2527,13 +2684,17 @@ public partial class EOSManager : Node
 		}
 		else
 		{
-			GD.PrintErr($"❌ Failed to refresh lobby info - lobby details is null");
+			GD.PrintErr($"[EOSManager:LobbyInfo] Failed to refresh lobby info - lobby details is null");
 		}
 	}
 
 	/// <summary>
-	/// Odświeża atrybuty lobby (CustomLobbyId, GameMode, AIType) z EOS
+	/// Odświeża atrybuty lobby (CustomLobbyId, GameMode, AIType, status sesji) z uchwytu LobbyDetails.
 	/// </summary>
+	/// <param name="lobbyDetails">Uchwyt LobbyDetails używany do odczytu atrybutów.</param>
+	/// <seealso cref="RefreshCurrentLobbyInfo"/>
+	/// <seealso cref="ApplyForcedTeamAssignments"/>
+	/// <exception>Gdy kluczowe atrybuty (np. CustomLobbyId) nie są dostępne w lobby.</exception>
 	private void RefreshLobbyAttributes(LobbyDetails lobbyDetails)
 	{
 		if (lobbyDetails == null) return;
@@ -2542,7 +2703,7 @@ public partial class EOSManager : Node
 		var attrCountOptions = new LobbyDetailsGetAttributeCountOptions();
 		uint attributeCount = lobbyDetails.GetAttributeCount(ref attrCountOptions);
 
-		GD.Print($"🔄 Refreshing lobby attributes from {attributeCount} attributes...");
+		GD.Print($"[EOSManager:LobbyAttributes] Refreshing lobby attributes from {attributeCount} attributes...");
 
 		bool customIdFound = false;
 		bool gameModeFound = false;
@@ -2575,7 +2736,7 @@ public partial class EOSManager : Node
 					if (currentCustomLobbyId != newCustomLobbyId)
 					{
 						currentCustomLobbyId = newCustomLobbyId;
-						GD.Print($"✅ CustomLobbyId refreshed: {currentCustomLobbyId}");
+						GD.Print($"[EOSManager:LobbyAttributes] CustomLobbyId refreshed: {currentCustomLobbyId}");
 						EmitSignal(SignalName.CustomLobbyIdUpdated, currentCustomLobbyId);
 					}
 					customIdFound = true;
@@ -2589,7 +2750,7 @@ public partial class EOSManager : Node
 					if (currentGameMode != newGameMode)
 					{
 						currentGameMode = newGameMode;
-						GD.Print($"✅ GameMode refreshed: {GetEnumDescription(currentGameMode)}");
+						GD.Print($"[EOSManager:LobbyAttributes] GameMode refreshed: {GetEnumDescription(currentGameMode)}");
 						EmitSignal(SignalName.GameModeUpdated, GetEnumDescription(currentGameMode));
 					}
 					gameModeFound = true;
@@ -2603,7 +2764,7 @@ public partial class EOSManager : Node
 					if (currentAIType != newAIType)
 					{
 						currentAIType = newAIType;
-						GD.Print($"✅ AIType refreshed: {GetEnumDescription(currentAIType)}");
+						GD.Print($"[EOSManager:LobbyAttributes] AIType refreshed: {GetEnumDescription(currentAIType)}");
 						EmitSignal(SignalName.AITypeUpdated, GetEnumDescription(currentAIType));
 					}
 					aiTypeFound = true;
@@ -2611,7 +2772,7 @@ public partial class EOSManager : Node
 				else if (keyStr != null && keyStr.Equals("ReadyToStart", StringComparison.OrdinalIgnoreCase))
 				{
 					bool isReady = valueStr == "true";
-					GD.Print($"✅ ReadyToStart status received: {isReady}");
+					GD.Print($"[EOSManager:LobbyAttributes] ReadyToStart status received: {isReady}");
 					EmitSignal(SignalName.LobbyReadyStatusUpdated, isReady);
 				}
 				else if (keyStr != null && keyStr.StartsWith(ForceTeamAttributePrefix, StringComparison.OrdinalIgnoreCase))
@@ -2622,13 +2783,13 @@ public partial class EOSManager : Node
 						// Pusty valueStr oznacza Team.None
 						if (string.IsNullOrEmpty(valueStr))
 						{
-							GD.Print($"🎯 Found ForceTeam request: {GetShortUserId(targetUserId)} → None");
+							GD.Print($"[EOSManager:LobbyAttributes] Found ForceTeam request: {GetShortUserId(targetUserId)} → None");
 							forcedTeamAssignments[targetUserId] = Team.None;
 						}
 						// Parsuj niepusty string na enum
 						else if (Enum.TryParse<Team>(valueStr, out Team parsedTeam))
 						{
-							GD.Print($"🎯 Found ForceTeam request: {GetShortUserId(targetUserId)} → {parsedTeam}");
+							GD.Print($"[EOSManager:LobbyAttributes] Found ForceTeam request: {GetShortUserId(targetUserId)} → {parsedTeam}");
 							forcedTeamAssignments[targetUserId] = parsedTeam;
 						}
 					}
@@ -2659,7 +2820,7 @@ public partial class EOSManager : Node
 						// Parsuj string na enum
 						if (Enum.TryParse<Team>(valueStr, out Team parsedTeam))
 						{
-							GD.Print($"💾 Found PreviousTeam: {GetShortUserId(targetUserId)} → {parsedTeam}");
+							GD.Print($"[EOSManager:LobbyAttributes] Found PreviousTeam: {GetShortUserId(targetUserId)} → {parsedTeam}");
 							previousTeamAssignments[targetUserId] = parsedTeam;
 						}
 					}
@@ -2667,7 +2828,7 @@ public partial class EOSManager : Node
 					{
 						// Pusty valueStr oznacza usunięcie poprzedniej drużyny
 						previousTeamAssignments.Remove(targetUserId);
-						GD.Print($"🧹 Cleared PreviousTeam for {GetShortUserId(targetUserId)}");
+						GD.Print($"[EOSManager:LobbyAttributes] Cleared PreviousTeam for {GetShortUserId(targetUserId)}");
 					}
 				}
 
@@ -2698,7 +2859,7 @@ public partial class EOSManager : Node
 		// Jeśli nie znaleziono CustomLobbyId
 		if (!customIdFound && (string.IsNullOrEmpty(currentCustomLobbyId) || currentCustomLobbyId == "Unknown"))
 		{
-			GD.PrintErr("⚠️ CustomLobbyId not found in lobby attributes");
+			GD.PrintErr("[EOSManager:LobbyAttributes] CustomLobbyId not found in lobby attributes");
 		}
 
 		// Jeśli nie znaleziono GameMode, ustaw domyślny
@@ -2706,14 +2867,14 @@ public partial class EOSManager : Node
 		{
 			currentGameMode = GameMode.AIMaster;
 			EmitSignal(SignalName.GameModeUpdated, GetEnumDescription(currentGameMode));
-			GD.Print("⚠️ GameMode not found, using default: AI Master");
+			GD.Print(" [EOSManager:LobbyAttributes] GameMode not found, using default: AI Master");
 		}
 		// Jeśli nie znaleziono AIType, ustaw domyślny
 		if (!aiTypeFound && currentAIType != AIType.API)
 		{
 			currentAIType = AIType.API;
 			EmitSignal(SignalName.AITypeUpdated, GetEnumDescription(currentAIType));
-			GD.Print("⚠️ AIType not found, using default: API");
+			GD.Print("[EOSManager:LobbyAttributes] AIType not found, using default: API");
 		}
 
 		// Jeśli sesja nie jest w stanie Starting, pozwól na ponowny start w przyszłości
@@ -2736,7 +2897,7 @@ public partial class EOSManager : Node
 			sessionStartHandled = true;
 
 
-			GD.Print($"🚀 Session start detected from lobby: {CurrentGameSession.SessionId}, seed={CurrentGameSession.Seed}");
+			GD.Print($"[EOSManager:Session] Session start detected from lobby: {CurrentGameSession.SessionId}, seed={CurrentGameSession.Seed}");
 			GD.Print($"[SESSION DEBUG] currentLobbyId={currentLobbyId} sessionLobbyId={CurrentGameSession.LobbyId} hostUserId={CurrentGameSession.HostUserId} localPuid={localProductUserIdString}");
 
 			EmitSignal(SignalName.GameSessionStartRequested,
@@ -2751,13 +2912,18 @@ public partial class EOSManager : Node
 	}
 
 	/// <summary>
-	/// Pobiera rzeczywistą liczbę członków w lobby (użyj po dołączeniu lub przy wyszukiwaniu)
+	/// Pobiera rzeczywistą liczbę członków w lobby (użyj po dołączeniu lub przy wyszukiwaniu).
 	/// </summary>
+	/// <param name="lobbyId">Identyfikator lobby, dla którego liczymy członków.</param>
+	/// <returns>Liczba członków lobby lub 0, gdy brak danych.</returns>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="GetLobbyMembers"/>
+	/// <exception>Gdy brak LobbyDetails dla wskazanego lobby.</exception>
 	public int GetLobbyMemberCount(string lobbyId)
 	{
 		if (!foundLobbyDetails.ContainsKey(lobbyId))
 		{
-			GD.PrintErr($"❌ Lobby details not found for ID: {lobbyId}");
+			GD.PrintErr($"[EOSManager:LobbyMembers] Lobby details not found for ID: {lobbyId}");
 			return 0;
 		}
 
@@ -2767,20 +2933,33 @@ public partial class EOSManager : Node
 		return (int)memberCount;
 	}
 
+	/// <summary>
+	/// Ustawia atrybut CustomLobbyId bieżącego lobby (tylko host).
+	/// </summary>
+	/// <param name="newCustomId">Nowy kod lobby widoczny w wyszukiwaniu.</param>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
+	/// <seealso cref="CustomLobbyIdUpdatedEventHandler"/>
 	public void SetCustomLobbyId(string newCustomId)
 	{
 		SetLobbyAttribute("CustomLobbyId", newCustomId);
 
-		GD.Print($"🆔 Setting CustomLobbyId to: {newCustomId}");
+		GD.Print($"[EOSManager:LobbyAttributes] Setting CustomLobbyId to: {newCustomId}");
 	}
 
+	/// <summary>
+	/// Ustawia tryb gry w atrybutach lobby i dostosowuje limit graczy.
+	/// </summary>
+	/// <param name="gameMode">Docelowy tryb gry.</param>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
+	/// <seealso cref="SetMaxLobbyMembers"/>
+	/// <seealso cref="GameModeUpdatedEventHandler"/>
 	public void SetGameMode(GameMode gameMode)
 	{
 		currentGameMode = gameMode;
 		string gameModeStr = GetEnumDescription(gameMode);
 		SetLobbyAttribute("GameMode", gameModeStr);
 
-		GD.Print($"🎮 Setting GameMode to: {gameModeStr}");
+		GD.Print($"[EOSManager:LobbyAttributes] Setting GameMode to: {gameModeStr}");
 
 		// Zmień limit graczy w zależności od trybu gry
 		uint maxMembers = gameMode == GameMode.AIvsHuman ? (uint)MaxPlayersInAIvsHuman : (uint)(MaxPlayersPerTeam * 2);
@@ -2789,35 +2968,44 @@ public partial class EOSManager : Node
 		EmitSignal(SignalName.GameModeUpdated, gameModeStr);
 	}
 
+	/// <summary>
+	/// Ustawia typ AI w atrybutach lobby i powiadamia UI.
+	/// </summary>
+	/// <param name="aiType">Wybrany typ AI.</param>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
+	/// <seealso cref="AITypeUpdatedEventHandler"/>
 	public void SetAIType(AIType aiType)
 	{
 		currentAIType = aiType;
 		string aiTypeStr = GetEnumDescription(aiType);
 		SetLobbyAttribute("AIType", aiTypeStr);
-		GD.Print($"🤖 Setting AIType to: {aiTypeStr}");
+		GD.Print($"[EOSManager:LobbyAttributes] Setting AIType to: {aiTypeStr}");
 
 		EmitSignal(SignalName.AITypeUpdated, aiTypeStr);
 	}
 
 	/// <summary>
-	/// Zmienia maksymalną liczbę graczy w lobby
+	/// Zmienia maksymalną liczbę graczy w lobby.
 	/// </summary>
+	/// <param name="maxMembers">Docelowy limit członków lobby.</param>
+	/// <seealso cref="SetGameMode"/>
+	/// <seealso cref="RefreshCurrentLobbyInfo"/>
+	/// <exception>Gdy bieżący gracz nie jest hostem, nie ma ważnego lobby lub modyfikacja się nie powiedzie.</exception>
 	public void SetMaxLobbyMembers(uint maxMembers)
 	{
 		if (!isLobbyOwner)
 		{
-			GD.PrintErr("❌ Only lobby owner can change max members");
+			GD.PrintErr("[EOSManager:LobbyAttributes] Only lobby owner can change max members");
 			return;
 		}
 
 		if (string.IsNullOrEmpty(currentLobbyId) || localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot change max members: Not in a valid lobby");
+			GD.PrintErr("[EOSManager:LobbyAttributes] Cannot change max members: Not in a valid lobby");
 			return;
 		}
 
-		GD.Print($"👥 Changing lobby max members to: {maxMembers}");
-
+		GD.Print($"[EOSManager:LobbyAttributes] Changing lobby max members to: {maxMembers}");
 		var modifyOptions = new UpdateLobbyModificationOptions()
 		{
 			LobbyId = currentLobbyId,
@@ -2828,7 +3016,7 @@ public partial class EOSManager : Node
 
 		if (result != Result.Success || lobbyModification == null)
 		{
-			GD.PrintErr($"❌ Failed to create lobby modification: {result}");
+			GD.PrintErr($"[EOSManager:LobbyAttributes] Failed to create lobby modification: {result}");
 			return;
 		}
 
@@ -2842,7 +3030,7 @@ public partial class EOSManager : Node
 
 		if (result != Result.Success)
 		{
-			GD.PrintErr($"❌ Failed to set max members: {result}");
+			GD.PrintErr($"[EOSManager:LobbyAttributes] Failed to set max members: {result}");
 			lobbyModification.Release();
 			return;
 		}
@@ -2857,11 +3045,11 @@ public partial class EOSManager : Node
 		{
 			if (data.ResultCode == Result.Success)
 			{
-				GD.Print($"✅ Lobby max members updated to: {maxMembers}");
+				GD.Print($"[EOSManager:LobbyAttributes] Lobby max members updated to: {maxMembers}");
 			}
 			else
 			{
-				GD.PrintErr($"❌ Failed to update max members: {data.ResultCode}");
+				GD.PrintErr($"[EOSManager:LobbyAttributes] Failed to update max members: {data.ResultCode}");
 			}
 
 			lobbyModification.Release();
@@ -2993,17 +3181,23 @@ public partial class EOSManager : Node
 	public void SetLobbyReadyStatus(bool isReady)
 	{
 		SetLobbyAttribute("ReadyToStart", isReady ? "true" : "false");
-		GD.Print($"✅ Setting ReadyToStart to: {isReady}");
+		GD.Print($"[EOSManager:LobbyAttributes] Setting ReadyToStart to: {isReady}");
 	}
 
 	/// <summary>
-	/// Zapisuje poprzednią drużynę gracza w atrybutach lobby (przed przeniesieniem do Universal)
+	/// Zapisuje poprzednią drużynę gracza w atrybutach lobby (przed przeniesieniem do Universal).
 	/// </summary>
+	/// <param name="userId">Id gracza, którego poprzednią drużynę zapisujemy.</param>
+	/// <param name="previousTeam">Drużyna, w której gracz był przed przeniesieniem.</param>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
+	/// <seealso cref="GetPlayerPreviousTeam"/>
+	/// <seealso cref="ClearPlayerPreviousTeam"/>
+	/// <exception>Gdy przekazano pusty userId.</exception>
 	public void SavePlayerPreviousTeam(string userId, Team previousTeam)
 	{
 		if (string.IsNullOrEmpty(userId))
 		{
-			GD.PrintErr("❌ Cannot save previous team: userId is empty");
+			GD.PrintErr("[EOSManager:LobbyAttributes] Cannot save previous team: userId is empty");
 			return;
 		}
 
@@ -3013,17 +3207,22 @@ public partial class EOSManager : Node
 		// Cache lokalnie
 		previousTeamAssignments[userId] = previousTeam;
 
-		GD.Print($"💾 Saved previous team for {GetShortUserId(userId)}: {previousTeam}");
+		GD.Print($"[EOSManager:LobbyAttributes] Saved previous team for {GetShortUserId(userId)}: {previousTeam}");
 	}
 
 	/// <summary>
-	/// Odczytuje poprzednią drużynę gracza z atrybutów lobby
+	/// Odczytuje poprzednią drużynę gracza z atrybutów lobby.
 	/// </summary>
+	/// <param name="userId">Id gracza, dla którego pobieramy poprzednią drużynę.</param>
+	/// <returns>Poprzednia drużyna lub Team.None, jeśli brak danych.</returns>
+	/// <seealso cref="SavePlayerPreviousTeam"/>
+	/// <seealso cref="ClearPlayerPreviousTeam"/>
+	/// <exception>Gdy przekazano pusty userId.</exception>
 	public Team GetPlayerPreviousTeam(string userId)
 	{
 		if (string.IsNullOrEmpty(userId))
 		{
-			GD.PrintErr("❌ Cannot get previous team: userId is empty");
+			GD.PrintErr("[EOSManager:LobbyAttributes] Cannot get previous team: userId is empty");
 			return Team.None;
 		}
 
@@ -3037,8 +3236,11 @@ public partial class EOSManager : Node
 	}
 
 	/// <summary>
-	/// Czyści zapisaną poprzednią drużynę gracza
+	/// Czyści zapisaną poprzednią drużynę gracza.
 	/// </summary>
+	/// <param name="userId">Id gracza, dla którego czyścimy poprzednią drużynę.</param>
+	/// <seealso cref="SavePlayerPreviousTeam"/>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
 	public void ClearPlayerPreviousTeam(string userId)
 	{
 		if (string.IsNullOrEmpty(userId))
@@ -3052,7 +3254,7 @@ public partial class EOSManager : Node
 		// Usuń z cache
 		previousTeamAssignments.Remove(userId);
 
-		GD.Print($"🧹 Cleared previous team for {GetShortUserId(userId)}");
+		GD.Print($"[EOSManager:LobbyAttributes] Cleared previous team for {GetShortUserId(userId)}");
 	}
 
 	// ============================================
@@ -3064,23 +3266,25 @@ public partial class EOSManager : Node
 	/// </summary>
 	/// <param name="key">Klucz atrybutu</param>
 	/// <param name="value">Wartość atrybutu</param>
+	/// <seealso cref="ScheduleAttributeBatchUpdate"/>
+	/// <exception>Gdy brak aktywnego lobby, użytkownik nie jest zalogowany lub nie jest hostem.</exception>
 	private void SetLobbyAttribute(string key, string value)
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot set lobby attribute: Not in any lobby!");
+			GD.PrintErr("[EOSManager:LobbyAttributes] Cannot set lobby attribute: Not in any lobby!");
 			return;
 		}
 
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot set lobby attribute: User not logged in!");
+			GD.PrintErr("[EOSManager:LobbyAttributes] Cannot set lobby attribute: User not logged in!");
 			return;
 		}
 
 		if (!isLobbyOwner)
 		{
-			GD.PrintErr($"❌ Cannot set lobby attribute '{key}': Not lobby owner!");
+			GD.PrintErr($"[EOSManager:LobbyAttributes] Cannot set lobby attribute '{key}': Not lobby owner!");
 			return;
 		}
 
@@ -3093,6 +3297,7 @@ public partial class EOSManager : Node
 	/// <summary>
 	/// Planuje wysłanie batch'a atrybutów lobby po krótkim opóźnieniu
 	/// </summary>
+	/// <seealso cref="FlushPendingLobbyAttributes"/>
 	private void ScheduleAttributeBatchUpdate()
 	{
 		// Jeśli timer już działa, zostaw go (zbieramy więcej zmian)
@@ -3109,6 +3314,9 @@ public partial class EOSManager : Node
 	/// <summary>
 	/// Wysyła wszystkie zebrane zmiany atrybutów lobby w jednym żądaniu
 	/// </summary>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle"/>
+	/// <seealso cref="RefreshCurrentLobbyInfo"/>
+	/// <exception>Gdy tworzenie lub aktualizacja modyfikacji lobby nie powiedzie się albo dodanie/usunięcie atrybutu zwróci błąd.</exception>
 	private void FlushPendingLobbyAttributes()
 	{
 		// Anuluj zaplanowany timer jeśli istnieje
@@ -3171,7 +3379,7 @@ public partial class EOSManager : Node
 
 			if (result != Result.Success)
 			{
-				GD.PrintErr($"❌ Failed to add lobby attribute '{kvp.Key}': {result}");
+				GD.PrintErr($"[EOSManager:LobbyAttributes] Failed to add lobby attribute '{kvp.Key}': {result}");
 			}
 		}
 
@@ -3187,7 +3395,7 @@ public partial class EOSManager : Node
 
 			if (result != Result.Success)
 			{
-				GD.PrintErr($"❌ Failed to remove lobby attribute '{key}': {result}");
+				GD.PrintErr($"[EOSManager:LobbyAttributes] Failed to remove lobby attribute '{key}': {result}");
 			}
 		}
 
@@ -3207,8 +3415,7 @@ public partial class EOSManager : Node
 		{
 			if (data.ResultCode == Result.Success)
 			{
-				GD.Print($"✅ Lobby batch update successful ({updatedKeys.Count} updates, {removedKeys.Count} removals)");
-
+				GD.Print($"[EOSManager:LobbyAttributes] Lobby batch update successful ({updatedKeys.Count} updates, {removedKeys.Count} removals)");
 				// Po udanym update lobby odśwież lokalny cache,
 				// aby klienci zobaczyli nowe atrybuty (np. GameSessionState = strarting)
 				GetTree().CreateTimer(0.1).Timeout += () =>
@@ -3222,30 +3429,37 @@ public partial class EOSManager : Node
 			}
 			else
 			{
-				GD.PrintErr($"❌ Failed to update lobby attributes batch: {data.ResultCode}");
+				GD.PrintErr($"[EOSManager:LobbyAttributes] Failed to update lobby attributes batch: {data.ResultCode}");
 			}
 
 			lobbyModification.Release();
 		});
 	}
 
+	/// <summary>
+	/// Kolejkuje usunięcie atrybutu lobby (wymaga bycia hostem bieżącego lobby).
+	/// </summary>
+	/// <param name="key">Nazwa atrybutu do usunięcia.</param>
+	/// <seealso cref="ScheduleAttributeBatchUpdate"/>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
+	/// <exception>Gdy brak aktywnego lobby, użytkownik nie jest zalogowany lub nie jest hostem.</exception>
 	private void RemoveLobbyAttribute(string key)
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot remove lobby attribute: Not in any lobby!");
+			GD.PrintErr("[EOSManager:LobbyAttributes] Cannot remove lobby attribute: Not in any lobby!");
 			return;
 		}
 
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot remove lobby attribute: User not logged in!");
+			GD.PrintErr("[EOSManager:LobbyAttributes] Cannot remove lobby attribute: User not logged in!");
 			return;
 		}
 
 		if (!isLobbyOwner)
 		{
-			GD.PrintErr($"❌ Cannot remove lobby attribute '{key}': Not lobby owner!");
+			GD.PrintErr($"[EOSManager:LobbyAttributes] Cannot remove lobby attribute '{key}': Not lobby owner!");
 			return;
 		}
 
@@ -3260,22 +3474,24 @@ public partial class EOSManager : Node
 	/// </summary>
 	/// <param name="key">Klucz atrybutu (np. "Nickname")</param>
 	/// <param name="value">Wartość atrybutu</param>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="GetLobbyMembers"/>
+	/// <exception>Gdy brak aktywnego lobby, użytkownik nie jest zalogowany lub modyfikacja członka kończy się błędem.</exception>
 	private void SetMemberAttribute(string key, string value)
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot set member attribute: Not in any lobby!");
+			GD.PrintErr("[EOSManager:MemberAttributes] Cannot set member attribute: Not in any lobby!");
 			return;
 		}
 
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot set member attribute: User not logged in!");
+			GD.PrintErr("[EOSManager:MemberAttributes] Cannot set member attribute: User not logged in!");
 			return;
 		}
 
-		GD.Print($"📝 Setting member attribute: {key} = '{value}'");
-
+		GD.Print($"[EOSManager:MemberAttributes] Setting member attribute: {key} = '{value}'");
 		var modifyOptions = new UpdateLobbyModificationOptions()
 		{
 			LobbyId = currentLobbyId,
@@ -3286,7 +3502,7 @@ public partial class EOSManager : Node
 
 		if (result != Result.Success || lobbyModification == null)
 		{
-			GD.PrintErr($"❌ Failed to create lobby modification: {result}");
+			GD.PrintErr($"[EOSManager:MemberAttributes] Failed to create lobby modification: {result}");
 			return;
 		}
 
@@ -3306,7 +3522,7 @@ public partial class EOSManager : Node
 
 		if (result != Result.Success)
 		{
-			GD.PrintErr($"❌ Failed to add member attribute '{key}': {result}");
+			GD.PrintErr($"[EOSManager:MemberAttributes] Failed to add member attribute '{key}': {result}");
 			lobbyModification.Release();
 			return;
 		}
@@ -3320,7 +3536,7 @@ public partial class EOSManager : Node
 		{
 			if (data.ResultCode == Result.Success)
 			{
-				GD.Print($"✅ Member attribute '{key}' set successfully: '{value}'");
+				GD.Print($"[EOSManager:MemberAttributes] Member attribute '{key}' set successfully: '{value}'");
 
 				// Natychmiastowe odświeżenie lokalnego cache i listy członków
 				GetTree().CreateTimer(0.1).Timeout += () =>
@@ -3334,47 +3550,56 @@ public partial class EOSManager : Node
 			}
 			else
 			{
-				GD.PrintErr($"❌ Failed to update member attribute '{key}': {data.ResultCode}");
+				GD.PrintErr($"[EOSManager:MemberAttributes] Failed to update member attribute '{key}': {data.ResultCode}");
 			}
 
 			lobbyModification.Release();
 		});
 	}
 
+	/// <summary>
+	/// Wymusza zmianę drużyny wskazanego gracza (host) i zapisuje to w atrybutach lobby.
+	/// </summary>
+	/// <param name="targetUserId">Id ProductUserId gracza do przeniesienia.</param>
+	/// <param name="teamName">Docelowa drużyna.</param>
+	/// <seealso cref="SetMyTeam"/>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
+	/// <seealso cref="ApplyForcedTeamAssignments"/>
+	/// <exception>Gdy brak lobby, bieżący gracz nie jest hostem, userId jest pusty lub docelowa drużyna jest pełna.</exception>
 	public void MovePlayerToTeam(string targetUserId, Team teamName)
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot move player: Not in any lobby!");
+			GD.PrintErr("[EOSManager:TeamManagement] Cannot move player: Not in any lobby!");
 			return;
 		}
 
 		if (!isLobbyOwner)
 		{
-			GD.PrintErr("❌ Cannot move player: Only lobby owner can change other players' teams!");
+			GD.PrintErr("[EOSManager:TeamManagement] Cannot move player: Only lobby owner can change other players' teams!");
 			return;
 		}
 
 		if (string.IsNullOrEmpty(targetUserId))
 		{
-			GD.PrintErr("❌ Cannot move player: Target userId is empty!");
+			GD.PrintErr("[EOSManager:TeamManagement] Cannot move player: Target userId is empty!");
 			return;
 		}
 
 		if ((teamName == Team.Blue || teamName == Team.Red) && GetTeamPlayerCount(teamName) >= MaxPlayersPerTeam)
 		{
-			GD.PrintErr($"❌ Cannot move player: Team {teamName} is full ({MaxPlayersPerTeam}/{MaxPlayersPerTeam})");
+			GD.PrintErr($"[EOSManager:TeamManagement] Cannot move player: Team {teamName} is full ({MaxPlayersPerTeam}/{MaxPlayersPerTeam})");
 			return;
 		}
 
 		if (targetUserId == localProductUserId.ToString())
 		{
-			GD.Print("ℹ️ Host requested to move themselves, delegating to SetMyTeam");
+			GD.Print("[EOSManager:TeamManagement] Host requested to move themselves");
 			SetMyTeam(teamName);
 			return;
 		}
 
-		GD.Print($"🔀 Host requesting player {GetShortUserId(targetUserId)} to join {teamName} team");
+		GD.Print($"[EOSManager:TeamManagement] Requesting player {GetShortUserId(targetUserId)} to join {teamName} team");
 		forcedTeamAssignments[targetUserId] = teamName;
 		SetLobbyAttribute($"{ForceTeamAttributePrefix}{targetUserId}", teamName.ToString());
 	}
@@ -3384,15 +3609,21 @@ public partial class EOSManager : Node
 	/// Wywoływane gdy host zmienia tryb gry na AI vs Human
 	/// Host przypisuje ikony WSZYSTKIM graczom centralnie aby uniknąć duplikatów
 	/// </summary>
+	/// <seealso cref="SavePlayerPreviousTeam"/>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
+	/// <seealso cref="SetMemberAttribute"/>
+	/// <seealso cref="FlushPendingLobbyAttributes"/>
+	/// <seealso cref="GetLobbyMembers"/>
+	/// <exception>Gdy operację wywoła użytkownik niebędący hostem.</exception>
 	public void MoveAllPlayersToUniversal()
 	{
 		if (!isLobbyOwner)
 		{
-			GD.PrintErr("❌ Only host can move all players to Universal team");
+			GD.PrintErr("[EOSManager:TeamManagement] Only host can move all players to Universal team");
 			return;
 		}
 
-		GD.Print("🔄 Moving all players to Universal team...");
+		GD.Print("[EOSManager:TeamManagement] Moving all players to Universal team...");
 
 		// KROK 1: Wyczyść WSZYSTKIE używane ikony - zaczynamy od zera
 		usedBlueIcons.Clear();
@@ -3483,11 +3714,18 @@ public partial class EOSManager : Node
 	/// Wywoływane gdy host zmienia tryb gry z AI vs Human na AI Master
 	/// Host przypisuje ikony WSZYSTKIM graczom centralnie aby uniknąć duplikatów
 	/// </summary>
+	/// <seealso cref="GetPlayerPreviousTeam"/>
+	/// <seealso cref="ClearPlayerPreviousTeam"/>
+	/// <seealso cref="SetLobbyAttribute(string, string)"/>
+	/// <seealso cref="SetMemberAttribute"/>
+	/// <seealso cref="FlushPendingLobbyAttributes"/>
+	/// <seealso cref="GetLobbyMembers"/>
+	/// <exception>Gdy operację wywoła użytkownik niebędący hostem.</exception>
 	public void RestorePlayersFromUniversal()
 	{
 		if (!isLobbyOwner)
 		{
-			GD.PrintErr("❌ Only host can restore players from Universal team");
+			GD.PrintErr("[EOSManager:TeamManagement] Only host can restore players from Universal team");
 			return;
 		}
 
@@ -3597,6 +3835,7 @@ public partial class EOSManager : Node
 
 		GD.Print($"✅ Restored {playersToRestore.Count} players (Blue icons: {string.Join(",", usedBlueIcons)}, Red icons: {string.Join(",", usedRedIcons)})");
 
+
 		// Wyślij wszystkie zmiany atrybutów
 		FlushPendingLobbyAttributes();
 		GetTree().CreateTimer(0.3).Timeout += () =>
@@ -3605,6 +3844,13 @@ public partial class EOSManager : Node
 		};
 	}
 
+	/// <summary>
+	/// Zwraca bieżącą drużynę gracza na podstawie cache członków lobby.
+	/// </summary>
+	/// <param name="userId">Id ProductUserId gracza.</param>
+	/// <returns>Drużyna gracza lub Team.None, gdy brak danych.</returns>
+	/// <seealso cref="GetCurrentLobbyMembers"/>
+	/// <seealso cref="ApplyForcedTeamAssignments"/>
 	public Team GetTeamForUser(string userId)
 	{
 		foreach (var member in currentLobbyMembers)
@@ -3627,8 +3873,13 @@ public partial class EOSManager : Node
 	}
 
 	/// <summary>
-	/// Zlicza ile graczy jest w danej drużynie
+	/// Zlicza ilu graczy w cache jest przypisanych do podanej drużyny.
 	/// </summary>
+	/// <param name="team">Drużyna, dla której wykonujemy zliczenie.</param>
+	/// <returns>Liczba graczy w drużynie.</returns>
+	/// <seealso cref="AssignToNeutralTeam"/>
+	/// <seealso cref="AssignToUniversalTeam"/>
+	/// <seealso cref="SetMyTeam"/>
 	private int GetTeamPlayerCount(Team team)
 	{
 		int count = 0;
@@ -3646,6 +3897,11 @@ public partial class EOSManager : Node
 		return count;
 	}
 
+	/// <summary>
+	/// Zastosowuje wymuszone przypisania drużyn dla lokalnego gracza i czyści spełnione żądania (gdy host).
+	/// </summary>
+	/// <seealso cref="SetMemberAttribute"/>
+	/// <seealso cref="TryResolveForcedTeamRequests"/>
 	private void ApplyForcedTeamAssignments()
 	{
 		if (localProductUserId == null || !localProductUserId.IsValid())
@@ -3745,6 +4001,10 @@ public partial class EOSManager : Node
 		}
 	}
 
+	/// <summary>
+	/// Host weryfikuje, czy wymuszone zmiany drużyn zostały zrealizowane i usuwa zbędne atrybuty ForceTeam_.
+	/// </summary>
+	/// <seealso cref="ClearForcedTeamAttribute"/>
 	private void TryResolveForcedTeamRequests()
 	{
 		if (!isLobbyOwner || forcedTeamAssignments.Count == 0)
@@ -3784,6 +4044,11 @@ public partial class EOSManager : Node
 		}
 	}
 
+	/// <summary>
+	/// Usuwa wymuszenie drużyny (ForceTeam_) dla wskazanego użytkownika.
+	/// </summary>
+	/// <param name="userId">Id ProductUserId, dla którego należy wyczyścić wymuszenie.</param>
+	/// <seealso cref="RemoveLobbyAttribute"/>
 	private void ClearForcedTeamAttribute(string userId)
 	{
 		if (string.IsNullOrEmpty(userId))
@@ -3793,40 +4058,44 @@ public partial class EOSManager : Node
 
 		forcedTeamAssignments.Remove(userId);
 		string attributeKey = $"{ForceTeamAttributePrefix}{userId}";
-		GD.Print($"🧹 Clearing forced team attribute for {GetShortUserId(userId)}");
+		GD.Print($"[EOSManager:TeamManagement] Clearing forced team attribute for {GetShortUserId(userId)}");
 		RemoveLobbyAttribute(attributeKey);
 	}
 
 	/// <summary>
-	/// Pobiera listę członków obecnego lobby i wysyła sygnał do UI
+	/// Zwraca aktualną, posortowaną listę członków lobby z lokalnego cache.
 	/// </summary>
-	/// <summary>
-	/// Zwraca aktualną listę członków lobby (cache)
-	/// </summary>
+	/// <returns>Lista słowników z danymi członków aktualnego lobby.</returns>
+	/// <seealso cref="GetLobbyMembers"/>
 	public Godot.Collections.Array<Godot.Collections.Dictionary> GetCurrentLobbyMembers()
 	{
 		return currentLobbyMembers;
 	}
 
+	/// <summary>
+	/// Pobiera członków bieżącego lobby z EOS, uaktualnia cache i emituje sygnały UI.
+	/// </summary>
+	/// <seealso cref="CacheCurrentLobbyDetailsHandle(string)"/>
+	/// <seealso cref="GetCurrentLobbyMembers"/>
+	/// <exception>Gdy brak aktywnego lobby, użytkownik nie jest zalogowany lub uchwyt LobbyDetails jest niedostępny/null.</exception>
 	public void GetLobbyMembers()
 	{
 		if (string.IsNullOrEmpty(currentLobbyId))
 		{
-			GD.PrintErr("❌ Cannot get lobby members: Not in any lobby!");
+			GD.PrintErr("[EOSManager:Lobby] Cannot get lobby members: Not in any lobby!");
 			return;
 		}
 
 		if (localProductUserId == null || !localProductUserId.IsValid())
 		{
-			GD.PrintErr("❌ Cannot get lobby members: User not logged in!");
+			GD.PrintErr("[EOSManager:Lobby] Cannot get lobby members: User not logged in!");
 			return;
 		}
 
 		// Sprawdź czy mamy lobby details w cache
 		if (!foundLobbyDetails.ContainsKey(currentLobbyId))
 		{
-			GD.PrintErr($"❌ Lobby details not found in cache for ID: {currentLobbyId}");
-			GD.Print($"   Available lobbies in cache: {string.Join(", ", foundLobbyDetails.Keys)}");
+			GD.PrintErr($"[EOSManager:Lobby] Lobby details not found in cache for ID: {currentLobbyId}");
 			return;
 		}
 
@@ -3834,15 +4103,13 @@ public partial class EOSManager : Node
 
 		if (lobbyDetails == null)
 		{
-			GD.PrintErr("❌ Lobby details is null!");
+			GD.PrintErr("[EOSManager:Lobby] Lobby details is null!");
 			return;
 		}
 
 		// Pobierz liczbę członków
 		var countOptions = new LobbyDetailsGetMemberCountOptions();
 		uint memberCount = lobbyDetails.GetMemberCount(ref countOptions);
-
-		GD.Print($"👥 Getting {memberCount} lobby members from lobby {currentLobbyId}...");
 
 		// Lista członków do wysłania do UI
 		var membersList = new Godot.Collections.Array<Godot.Collections.Dictionary>();
@@ -3956,8 +4223,6 @@ public partial class EOSManager : Node
 			}
 		}
 
-		GD.Print($"👥 Total members added to list: {membersList.Count}");
-
 		// SORTOWANIE: Posortuj po userId (Product User ID) aby wszyscy widzieli tę samą kolejność
 		// Host ma zawsze pierwszy/najniższy ID w lobby, więc będzie na górze
 		// Kolejni gracze będą dodawani w kolejności ich Product User ID
@@ -4003,7 +4268,7 @@ public partial class EOSManager : Node
 				// Jeśli staliśmy się właścicielem (awans po opuszczeniu przez hosta)
 				if (!wasOwner)
 				{
-					GD.Print("👑 ✅ You have been promoted to lobby owner!");
+					GD.Print("[EOSManager:Lobby] You have been promoted to lobby owner!");
 				}
 				break;
 			}
@@ -4016,12 +4281,18 @@ public partial class EOSManager : Node
 		EmitSignal(SignalName.CurrentLobbyInfoUpdated, currentLobbyId, membersList.Count, 10, isLobbyOwner);
 
 		TryResolveForcedTeamRequests();
-	}   /// <summary>
-		/// Ustawia DisplayName dla lokalnego gracza jako MEMBER ATTRIBUTE
-		/// Player A ustawia swoje atrybuty → Player B je odczytuje → wyświetla nick A
+	}
+
 	// ============================================
 	// NOWE: Bezpośrednie kopiowanie LobbyDetails handle
 	// ============================================
+
+	/// <summary>
+	/// Kopiuje i buforuje uchwyt LobbyDetails dla bieżącego lobby; opcjonalnie odświeża istniejący, aby mieć aktualne dane.
+	/// </summary>
+	/// <param name="reason">Powód odświeżenia, decyduje czy wymusić ponowne pobranie uchwytu.</param>
+	/// <seealso cref="RefreshCurrentLobbyInfo"/>
+	/// <seealso cref="GetLobbyMembers"/>
 	private void CacheCurrentLobbyDetailsHandle(string reason)
 	{
 		if (string.IsNullOrEmpty(currentLobbyId)) return;
@@ -4052,11 +4323,11 @@ public partial class EOSManager : Node
 		if (r == Result.Success && detailsHandle != null)
 		{
 			foundLobbyDetails[currentLobbyId] = detailsHandle;
-			GD.Print($"🔒 Cached LobbyDetails handle for lobby {currentLobbyId} (reason={reason})");
+			GD.Print($"[EOSManager:LobbyInfo] Cached LobbyDetails handle for lobby {currentLobbyId} (reason={reason})");
 		}
 		else
 		{
-			GD.Print($"❌ Failed to copy LobbyDetails handle (reason={reason}): {r}");
+			GD.Print($"[EOSManager:LobbyInfo] Failed to copy LobbyDetails handle (reason={reason}): {r}");
 		}
 	}
 }

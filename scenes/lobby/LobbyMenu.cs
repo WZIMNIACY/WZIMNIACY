@@ -5,65 +5,133 @@ using System.Collections.Generic;
 using AI;
 using Diagnostics;
 
+/// <summary>
+/// Główny ekran lobby odpowiedzialny za zarządzanie listą graczy, drużynami,
+/// trybem gry, typem AI, kluczem API oraz rozpoczęciem sesji gry. Integruje
+/// sygnały i wywołania z <see cref="EOSManager"/>, korzysta z detekcji sprzętu
+/// (<see cref="Diagnostics.HardwareResources"/>) oraz pokazuje podpowiedzi przez
+/// <see cref="CustomTooltip"/>.
+/// </summary>
+/// <remarks>
+/// Zakłada obecność autoloadu <see cref="EOSManager"/> oraz zainicjalizowanych węzłów sceny (przypięte exporty).
+/// Operacje powinny być wywoływane w wątku głównym Godota; nie jest thread-safe.
+/// </remarks>
+/// <summary>
+/// Główny ekran lobby odpowiedzialny za zarządzanie listą graczy, drużynami,
+/// trybem gry, typem AI, kluczem API oraz rozpoczęciem sesji gry. Integruje
+/// sygnały z <see cref="EOSManager"/> i prezentuje stan lobby w UI.
+/// </summary>
 public partial class LobbyMenu : Control
 {
+    /// <summary>Referencja do autoloadu EOS obsługującego lobby.</summary>
     private EOSManager eosManager;
+    /// <summary>Przycisk powrotu do poprzedniej sceny.</summary>
     [Export] private Button backButton;
+    /// <summary>Przycisk opuszczenia lobby.</summary>
     [Export] private Button leaveLobbyButton;
+    /// <summary>Lista graczy w drużynie Niebieskich.</summary>
     [Export] private ItemList blueTeamList;
+    /// <summary>Lista graczy w drużynie Czerwonych.</summary>
     [Export] private ItemList redTeamList;
+    /// <summary>Lista graczy nieprzypisanych (Neutral).</summary>
     [Export] private ItemList neutralTeamList;
+    /// <summary>Lista graczy w drużynie Uniwersalnej (AI vs Human).</summary>
     [Export] private ItemList universalTeamList;
+    /// <summary>Kontener dla drużyn Blue/Red.</summary>
     [Export] private HBoxContainer teamsContainer;
+    /// <summary>Kontener widoku drużyny Uniwersalnej.</summary>
     [Export] private PanelContainer universalTeamContainer;
+    /// <summary>Kontener listy Neutral.</summary>
     [Export] private PanelContainer neutralTeamContainer;
+    /// <summary>Przycisk dołączenia do Niebieskich.</summary>
     [Export] private Button blueTeamJoinButton;
+    /// <summary>Przycisk dołączenia do Czerwonych.</summary>
     [Export] private Button redTeamJoinButton;
+    /// <summary>Etykieta licznika drużyny Niebieskich.</summary>
     [Export] private Label blueTeamCountLabel;
+    /// <summary>Etykieta licznika drużyny Czerwonych.</summary>
     [Export] private Label redTeamCountLabel;
+    /// <summary>Etykieta licznika drużyny Uniwersalnej.</summary>
     [Export] private Label universalTeamCountLabel;
+    /// <summary>Pole tekstowe z aktualnym kodem lobby.</summary>
     [Export] private LineEdit lobbyIdInput;
+    /// <summary>Przycisk kopiowania kodu lobby.</summary>
     [Export] private Button copyIdButton;
+    /// <summary>Przycisk generowania nowego kodu lobby.</summary>
     [Export] private Button generateNewIdButton;
+    /// <summary>Przycisk rozpoczęcia gry (tylko host).</summary>
     [Export] private Button startGameButton;
+    /// <summary>Lista wyboru trybu gry.</summary>
     [Export] private OptionButton gameModeList;
+    /// <summary>Kontener na ustawienia API AI.</summary>
     [Export] private HBoxContainer aiAPIBox;
+    /// <summary>Lista wyboru typu AI.</summary>
     [Export] private OptionButton aiTypeList;
+    /// <summary>Etykieta prezentująca tryb gry dla graczy (gdy nie są hostami).</summary>
     [Export] private Label gameModeSelectedLabel;
+    /// <summary>Etykieta prezentująca wybrany typ AI dla graczy.</summary>
     [Export] private Label aiTypeSelectedLabel;
+    /// <summary>Pole na klucz API (pokazywane tylko hostowi dla AI typu API).</summary>
     [Export] private LineEdit aiAPIKeyInput;
+    /// <summary>Przycisk pomocy dot. pozyskania klucza API.</summary>
     [Export] private Button apiKeyHelpButton;
+    /// <summary>Etykieta głównego statusu lobby.</summary>
     [Export] private Label lobbyStatusLabel;
+    /// <summary>Licznik/etykieta agregująca niespełnione warunki startu.</summary>
     [Export] private Label lobbyStatusCounter;
 
+    /// <summary>Dialog potwierdzenia opuszczenia lobby.</summary>
     private LobbyLeaveConfirmation leaveConfirmation;
+    /// <summary>Handler ESC do cofania się ze sceny.</summary>
     private EscapeBackHandler escapeBackHandler;
-    // Custom tooltip
+    /// <summary>Wspólny tooltip dla podpowiedzi w UI.</summary>
     private CustomTooltip customTooltip;
     private PopupSystem popupSystem;
     private PasteDetector apiKeyPasteDetector;
+    /// <summary>Tekst tooltipa z warunkami gotowości.</summary>
     private string lobbyReadyTooltip = "";
+    /// <summary>Ostatni komunikat błędu klucza API.</summary>
     private string apiKeyErrorMessage = "";
+    /// <summary>Podpowiedź dla pola klucza API.</summary>
     private string apiKeyInputTooltip = "Wprowadź klucz API od DeepSeek i zatwierdź enterem";
+    /// <summary>Tooltip informacyjny przy przycisku pomocy API.</summary>
     private string apiKeyInfoTooltip = "Jak uzyskać klucz API?\n\n1. Przejdź na stronę: platform.deepseek.com\n2. Zaloguj się lub załóż konto\n3. Przejdź do sekcji API Keys\n4. Wygeneruj nowy klucz\n5. Skopiuj i wklej tutaj";
 
+    /// <summary>Bieżący kod lobby ustawiony przez hosta.</summary>
     private string currentLobbyCode = "";
+    /// <summary>Długość kodu lobby (bez liter O i I).</summary>
     private const int LobbyCodeLength = 6;
+    /// <summary>Maksymalna liczba graczy w lobby.</summary>
     private const int LobbyMaxPlayers = 10;
+    /// <summary>Maksymalna liczba ponowień tworzenia lobby przy braku logowania.</summary>
     private const int MaxRetryAttempts = 10;
+    /// <summary>Opóźnienie (s) między próbami utworzenia lobby.</summary>
     private const float RetryDelay = 0.5f;
+    /// <summary>Maksymalna liczba graczy w jednej drużynie.</summary>
     private const int MaxPlayersPerTeam = 5;
+    /// <summary>Czas blokady przycisków/cooldownu w sekundach.</summary>
     private const float CooldownTime = 5.0f;
+    /// <summary>Flaga blokująca zmianę drużyny podczas cooldownu.</summary>
     private bool isTeamChangeCooldownActive = false;
+    /// <summary>Cooldowny per gracz dla przenoszenia między drużynami.</summary>
     private Dictionary<string, bool> playerMoveCooldowns = new Dictionary<string, bool>();
 
+    /// <summary>
+    /// Stan gotowości lobby agregujący ustawienia hosta i warunki startu gry.
+    /// </summary>
     private static class LobbyStatus
     {
+        /// <summary>Czy wybrano typ AI.</summary>
         public static bool aiTypeSet { get; set; } = false;
+        /// <summary>Czy wybrano tryb gry.</summary>
         public static bool gameModeSet { get; set; } = false;
+        /// <summary>Czy którakolwiek drużyna przekracza limit.</summary>
         public static bool isAnyTeamFull { get; set; } = false;
+        /// <summary>Czy wymagana liczba drużyn zawiera graczy.</summary>
         public static bool isTeamNotEmpty { get; set; } = false;
+        /// <summary>Czy lista Neutral jest pusta.</summary>
         public static bool isNeutralTeamEmpty { get; set; } = true;
+        /// <summary>Czy klucz API został poprawnie ustawiony/zweryfikowany.</summary>
         public static bool isAPIKeySet { get; set; } = false;
         public static bool allPlayersInLobbyView { get; set; } = true;
 
@@ -74,6 +142,14 @@ public partial class LobbyMenu : Control
 
     }
 
+    /// <summary>
+    /// Inicjalizuje referencje, podpina sygnały UI oraz EOSManager, wczytuje tooltips
+    /// i wykonuje początkowe odświeżenie stanu lobby (drużyny, tryb gry, AI, klucz API).
+    /// <exception>Loguje błąd, gdy autoload <see cref="EOSManager"/> jest niedostępny lub scena nie ma aktywnego lobby.</exception>
+    /// </summary>
+    /// <seealso cref="UpdateUIVisibility"/>
+    /// <seealso cref="RefreshLobbyMembers"/>
+    /// <seealso cref="UpdateHostReadyStatus"/>
     public override void _Ready()
     {
         base._Ready();
@@ -217,12 +293,10 @@ public partial class LobbyMenu : Control
             // Game session: odbieramy sygnał startu sesji z EOSManager (ustawiany na podstawie atrybutów lobby)
             eosManager.GameSessionStartRequested += OnGameSessionStartRequested;
 
-            GD.Print("✅ Connected to LobbyMembersUpdated, CustomLobbyIdUpdated, GameModeUpdated, AITypeUpdated, CheckTeamsBalanceConditions and LobbyReadyStatusUpdated signals");
-
             // Sprawdź obecną wartość CustomLobbyId
             if (!string.IsNullOrEmpty(eosManager.currentCustomLobbyId))
             {
-                GD.Print($"🆔 Current CustomLobbyId in EOSManager: '{eosManager.currentCustomLobbyId}'");
+                GD.Print($"[Lobby:Attributes] Current CustomLobbyId in EOSManager: '{eosManager.currentCustomLobbyId}'");
                 OnCustomLobbyIdUpdated(eosManager.currentCustomLobbyId);
             }
 
@@ -234,13 +308,13 @@ public partial class LobbyMenu : Control
         }
         else
         {
-            GD.PrintErr("❌ EOSManager is null, cannot connect to signal!");
+            GD.PrintErr("[Lobby] EOSManager is null, cannot connect to signals");
         }
 
         // Sprawdź czy jesteśmy w lobby (powinniśmy być, bo MainMenu/Join już je utworzyło/dołączyło)
         if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
         {
-            GD.Print($"✅ Already in lobby: {eosManager.currentLobbyId}");
+            GD.Print($"[Lobby] Already in lobby: {eosManager.currentLobbyId}");
 
             // Wywołaj początkową aktualizację UI na podstawie obecnego stanu
             CallDeferred(nameof(UpdateUIVisibility));
@@ -255,7 +329,7 @@ public partial class LobbyMenu : Control
         }
         else
         {
-            GD.PrintErr("⚠️ Entered lobby scene but not in any lobby!");
+            GD.PrintErr("[Lobby] Entered lobby scene but not in any lobby");
         }
 
         // Domyślnie odblokuj przyciski dołączania zanim spłyną dane z EOS
@@ -303,14 +377,19 @@ public partial class LobbyMenu : Control
     // Chroni przed wielokrotną zmianą sceny, gdy przyjdzie kilka eventów/odświeżeń lobby
     private bool alreadySwitchedToGame = false;
 
-    // Game Session: wszyscy gracze przechodzą do sceny gry dopiero, gdy lobby ogłosi stan "Starting"
+    /// <summary>
+    /// Reaguje na sygnał <see cref="EOSManager.GameSessionStartRequested"/> i przełącza wszystkich graczy do sceny gry.
+    /// </summary>
+    /// <param name="sessionId">Identyfikator rozpoczynanej sesji gry.</param>
+    /// <param name="hostUserId">Identyfikator hosta sesji.</param>
+    /// <param name="seed">Ziarno synchronizujące rozgrywkę.</param>
     private void OnGameSessionStartRequested(string sessionId, string hostUserId, ulong seed)
     {
         if (alreadySwitchedToGame) return;
 
         alreadySwitchedToGame = true;
 
-        GD.Print($"🎮 Switching to game. Session={sessionId}, Host={hostUserId}, Seed={seed}");
+        GD.Print($"[Lobby] Starting game session: {sessionId}");
 
         // Oznacz gracza jako nieobecnego w widoku lobby (przechodzi do gry)
         if (eosManager != null)
@@ -323,7 +402,7 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Helper do odświeżenia listy członków lobby
+    /// Żąda z <see cref="EOSManager.GetLobbyMembers"/> aktualizacji listy członków lobby, aby odświeżyć UI.
     /// </summary>
     private void RefreshLobbyMembers()
     {
@@ -333,6 +412,10 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Generuje sześciocyfrowy kod lobby bez liter O i I, aby uniknąć pomyłek.
+    /// </summary>
+    /// <returns>Nowo wygenerowany kod lobby.</returns>
     private string GenerateLobbyIDCode()
     {
         //Bez liter O i I
@@ -349,18 +432,24 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// NOWA METODA: Obsługuje aktualizacje listy członków z EOSManager
-    /// Rozdziela graczy na drużyny WEDŁUG ATRYBUTU "team"
+    /// Aktualizuje listy drużyn i liczników na podstawie danych z <see cref="EOSManager"/>.
+    /// Rozdziela graczy według atrybutu <c>team</c>, oznacza hosta i lokalnego gracza,
+    /// a następnie synchronizuje widoczność UI oraz warunki startu gry.
     /// </summary>
+    /// <exception>Loguje błąd, gdy listy drużyn nie są zainicjalizowane.</exception>
+    /// <param name="members">Lista członków lobby wraz z atrybutami (displayName, team, isOwner, isLocalPlayer) z <see cref="EOSManager"/>.</param>
+    /// <seealso cref="UpdateUIVisibility"/>
+    /// <seealso cref="UpdateTeamButtonsState"/>
+    /// <seealso cref="OnCheckTeamsBalanceConditions"/>
     private void OnLobbyMembersUpdated(Godot.Collections.Array<Godot.Collections.Dictionary> members)
     {
         if (blueTeamList == null || redTeamList == null || neutralTeamList == null || universalTeamList == null)
         {
-            GD.PrintErr("❌ Team lists not found!");
+            GD.PrintErr("[Lobby:Teams] Team lists not initialized");
             return;
         }
 
-        GD.Print($"🔄 Updating team lists with {members.Count} members");
+        GD.Print($"[Lobby:Teams] Updating team lists with {members.Count} members");
 
         // Wyczyść wszystkie drużyny
         blueTeamList.Clear();
@@ -512,11 +601,10 @@ public partial class LobbyMenu : Control
                     { "team", team.ToString() },
                     { "profileIcon", profileIcon }
                 });
-                GD.Print($"  ➕ Neutral: {displayName}");
             }
         }
 
-        GD.Print($"✅ Teams updated: Blue={blueTeamList.ItemCount}, Red={redTeamList.ItemCount}, Neutral={neutralTeamList.ItemCount}, Universal={universalTeamList.ItemCount}");
+        GD.Print($"[Lobby:Teams] Updated - Blue:{blueTeamList.ItemCount} Red:{redTeamList.ItemCount} Neutral:{neutralTeamList.ItemCount} Universal:{universalTeamList.ItemCount}");
 
         // Aktualizuj liczniki drużyn
         if (blueTeamCountLabel != null)
@@ -543,7 +631,8 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Aktualizuje widoczność przycisków w zależności od tego czy jesteśmy hostem
+    /// Ustawia widoczność i dostępność elementów UI w zależności od roli hosta,
+    /// wybranego trybu gry oraz typu AI (np. pole klucza API tylko dla hosta w AI API) na podstawie stanu w <see cref="EOSManager"/>.
     /// </summary>
     private void UpdateUIVisibility()
     {
@@ -635,23 +724,18 @@ public partial class LobbyMenu : Control
             gameModeSelectedLabel.Visible = !isHost;
         }
 
-        GD.Print($"🔧 UI visibility updated: isHost={isHost}");
+        GD.Print($"[Lobby:UI] Visibility updated - isHost:{isHost}");
     }
 
     /// <summary>
-    /// Callback wywoływany gdy CustomLobbyId zostanie zaktualizowany w EOSManager
+    /// Aktualizuje wyświetlany kod lobby po zmianie w <see cref="EOSManager.CustomLobbyIdUpdated"/>.
     /// </summary>
+    /// <exception>Loguje błąd, gdy pole lobbyIdInput jest puste lub gdy otrzymano nieprawidłowy identyfikator.</exception>
+    /// <param name="customLobbyId">Nowa wartość CustomLobbyId z serwisu EOS.</param>
+    /// <seealso cref="UpdateLobbyIdDisplay"/>
     private void OnCustomLobbyIdUpdated(string customLobbyId)
     {
-        GD.Print($"🆔 [SIGNAL] CustomLobbyId updated: '{customLobbyId}'");
-        GD.Print($"   lobbyIdInput is null: {lobbyIdInput == null}");
-
-        if (lobbyIdInput != null)
-        {
-            GD.Print($"   Current lobbyIdInput.Text: '{lobbyIdInput.Text}'");
-            GD.Print($"   lobbyIdInput.Editable: {lobbyIdInput.Editable}");
-            GD.Print($"   lobbyIdInput.PlaceholderText: '{lobbyIdInput.PlaceholderText}'");
-        }
+        GD.Print($"[Lobby:LobbyID] CustomLobbyId updated: '{customLobbyId}'");
 
         // Jeśli CustomLobbyId jest pusty, wyczyść pole
         if (string.IsNullOrEmpty(customLobbyId))
@@ -661,12 +745,13 @@ public partial class LobbyMenu : Control
             {
                 CallDeferred(nameof(UpdateLobbyIdDisplay), "");
             }
-            GD.Print("🧹 Cleared CustomLobbyId field");
+            GD.Print("[Lobby:LobbyID] Cleared CustomLobbyId field");
             return;
         }
 
         if (customLobbyId != "Unknown")
         {
+            GD.Print($"[Lobby:LobbyID] Setting CustomLobbyId to: '{customLobbyId}'");
             currentLobbyCode = customLobbyId;
 
             if (lobbyIdInput != null)
@@ -676,25 +761,29 @@ public partial class LobbyMenu : Control
             }
             else
             {
-                GD.PrintErr("❌ lobbyIdInput is NULL!");
+                GD.PrintErr("[Lobby:LobbyID] lobbyIdInput is NULL");
             }
         }
         else
         {
-            GD.Print($"⚠️ Received invalid CustomLobbyId: '{customLobbyId}'");
+            GD.PrintErr($"[Lobby:LobbyID] Received invalid CustomLobbyId: '{customLobbyId}'");
         }
     }
 
     /// <summary>
-    /// Callback wywoływany gdy GameMode zostanie zaktualizowany w EOSManager
+    /// Synchronizuje UI i skład drużyn po zmianie trybu gry w <see cref="EOSManager"/>.
     /// </summary>
+    /// <param name="gameMode">Nazwa trybu gry (opis enumu) otrzymana z <see cref="EOSManager.GameModeUpdated"/>.</param>
+    /// <seealso cref="UpdateUIVisibility"/>
+    /// <seealso cref="EOSManager.MoveAllPlayersToUniversal"/>
+    /// <seealso cref="EOSManager.RestorePlayersFromUniversal"/>
+    /// <seealso cref="UpdateHostReadyStatus"/>
     private void OnGameModeUpdated(string gameMode)
     {
-        GD.Print($"🎮 [SIGNAL] GameMode updated: '{gameMode}'");
+        GD.Print($"[Lobby:GameMode] GameMode updated: '{gameMode}'");
 
         // Parsuj string na enum
         EOSManager.GameMode gameModeEnum = EOSManager.ParseEnumFromDescription<EOSManager.GameMode>(gameMode, EOSManager.GameMode.AIMaster);
-        GD.Print($"🔍 Parsed GameMode enum: {gameModeEnum}");
 
         // Zaktualizuj dropdown (dla hosta)
         if (gameModeList != null)
@@ -705,7 +794,6 @@ public partial class LobbyMenu : Control
                 if (gameModeList.GetItemText(i) == gameMode)
                 {
                     gameModeList.Selected = i;
-                    GD.Print($"✅ GameMode dropdown updated to: {gameMode} (index: {i})");
                     break;
                 }
             }
@@ -719,12 +807,12 @@ public partial class LobbyMenu : Control
         {
             if (gameModeEnum == EOSManager.GameMode.AIvsHuman)
             {
-                GD.Print("🔄 Host: Moving all players to Universal team...");
+                GD.Print("[Lobby:GameMode] Moving all players to Universal team...");
                 eosManager.MoveAllPlayersToUniversal();
             }
             else if (gameModeEnum == EOSManager.GameMode.AIMaster)
             {
-                GD.Print("🔄 Host: Restoring players from Universal team...");
+                GD.Print("[Lobby:GameMode] Restoring players from Universal team...");
                 eosManager.RestorePlayersFromUniversal();
             }
         }
@@ -733,7 +821,6 @@ public partial class LobbyMenu : Control
         if (gameModeSelectedLabel != null)
         {
             gameModeSelectedLabel.Text = gameMode;
-            GD.Print($"✅ GameMode label updated to: {gameMode}");
         }
 
         LobbyStatus.gameModeSet = true;
@@ -744,18 +831,20 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Callback wywoływany gdy AIType zostanie zaktualizowany w EOSManager
+    /// Aktualizuje wybór typu AI, widoczność pola klucza API oraz status gotowości po zmianie w <see cref="EOSManager"/>.
     /// </summary>
+    /// <param name="aiType">Nazwa typu AI (opis enumu) otrzymana z <see cref="EOSManager.AITypeUpdated"/>.</param>
+    /// <seealso cref="SetAPIKeyInputBorder"/>
+    /// <seealso cref="UpdateHostReadyStatus"/>
     private void OnAITypeUpdated(string aiType)
     {
-        GD.Print($"🤖 [SIGNAL] AIType updated: '{aiType}'");
+        GD.Print($"[Lobby:AIType] AIType updated: '{aiType}'");
 
         LobbyStatus.isAPIKeySet = false;
         SetAPIKeyInputBorder(new Color(0.5f, 0.5f, 0.5f)); // Szary
 
         // Parsuj string na enum
         EOSManager.AIType aiTypeEnum = EOSManager.ParseEnumFromDescription<EOSManager.AIType>(aiType, EOSManager.AIType.API);
-        GD.Print($"🔍 Parsed AIType enum: {aiTypeEnum}");
 
         // Zaktualizuj dropdown (dla hosta)
         if (aiTypeList != null)
@@ -766,7 +855,6 @@ public partial class LobbyMenu : Control
                 if (aiTypeList.GetItemText(i) == aiType)
                 {
                     aiTypeList.Selected = i;
-                    GD.Print($"✅ AIType dropdown updated to: {aiType} (index: {i})");
                     break;
                 }
             }
@@ -785,7 +873,6 @@ public partial class LobbyMenu : Control
         if (aiTypeSelectedLabel != null)
         {
             aiTypeSelectedLabel.Text = aiType;
-            GD.Print($"✅ AIType label updated to: {aiType}");
         }
 
         //Sprawdź czy API key jest potrzebny i czy jest wypełniony
@@ -805,7 +892,7 @@ public partial class LobbyMenu : Control
         {
             // API nie jest wymagane - automatycznie ustawione na true
             LobbyStatus.isAPIKeySet = true;
-            GD.Print($"✅ API key not required for {aiTypeEnum}");
+            GD.Print($"[Lobby:AIType] API key not required for {aiTypeEnum}");
         }
 
         LobbyStatus.aiTypeSet = true;
@@ -816,17 +903,21 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Callback wywoływany gdy status gotowości lobby zostanie zaktualizowany
+    /// Aktualizuje etykietę stanu gotowości lobby po zmianie ogłoszonej przez hosta.
     /// </summary>
+    /// <param name="isReady">Czy lobby spełnia warunki startu gry.</param>
+    /// <seealso cref="UpdateLobbyStatusDisplay"/>
     private void OnLobbyReadyStatusUpdated(bool isReady)
     {
-        GD.Print($"✅ [SIGNAL] Lobby ready status updated: {isReady}");
+        GD.Print($"[Lobby:ReadyStatus] Lobby ready status updated: {isReady}");
         UpdateLobbyStatusDisplay(isReady);
     }
 
     /// <summary>
-    /// Host aktualizuje i synchronizuje status gotowości
+    /// Wylicza warunek gotowości i publikuje go do serwera lobby jako host przez <see cref="EOSManager.SetLobbyReadyStatus(bool)"/>.
     /// </summary>
+    /// <seealso cref="LobbyStatus.IsReadyToStart"/>
+    /// <seealso cref="UpdateHostReadyStatusIfOwner"/>
     private void UpdateHostReadyStatus()
     {
         if (eosManager == null || !eosManager.isLobbyOwner)
@@ -834,15 +925,16 @@ public partial class LobbyMenu : Control
 
         bool isReady = LobbyStatus.IsReadyToStart();
         eosManager.SetLobbyReadyStatus(isReady);
-        GD.Print($"📤 Host broadcasting ready status: {isReady}");
+        GD.Print($"[Lobby:ReadyStatus] Broadcasting ready status: {isReady}");
     }
 
     /// <summary>
-    /// Sprawdza warunki rozpoczęcia gry dla liczby graczy w drużynach
+    /// Waliduje skład drużyn względem trybu gry i aktualizuje flagi gotowości (pełne drużyny, puste neutralne, obecność graczy), następnie informuje hosta poprzez <see cref="UpdateHostReadyStatus"/>.
     /// </summary>
+    /// <seealso cref="UpdateHostReadyStatus"/>
     private void OnCheckTeamsBalanceConditions()
     {
-        GD.Print("🎮 [SIGNAL] CheckTeamsBalanceConditions triggered");
+        GD.Print("[Lobby:TeamsBalance] CheckTeamsBalanceConditions triggered");
 
         if (blueTeamList == null || redTeamList == null)
             return;
@@ -859,29 +951,11 @@ public partial class LobbyMenu : Control
         // W trybie AI Master muszą być gracze w Blue i Red
         if (isAIvsHuman)
         {
-            if (universalCount > 0)
-            {
-                LobbyStatus.isTeamNotEmpty = true;
-                GD.Print($"✅ Universal team has {universalCount} players (AI vs Human mode).");
-            }
-            else
-            {
-                LobbyStatus.isTeamNotEmpty = false;
-                GD.Print("❌ Universal team is empty (AI vs Human mode).");
-            }
+            LobbyStatus.isTeamNotEmpty = universalCount > 0;
         }
         else
         {
-            if (blueCount > 0 && redCount > 0)
-            {
-                LobbyStatus.isTeamNotEmpty = true;
-                GD.Print("✅ Both Blue and Red teams have players (AI Master mode).");
-            }
-            else
-            {
-                LobbyStatus.isTeamNotEmpty = false;
-                GD.Print("❌ Blue or Red team is empty (AI Master mode).");
-            }
+            LobbyStatus.isTeamNotEmpty = blueCount > 0 && redCount > 0;
         }
 
         // W trybie AI vs Human nie sprawdzamy MaxPlayersPerTeam dla Blue/Red (są ukryte)
@@ -891,30 +965,12 @@ public partial class LobbyMenu : Control
         }
         else
         {
-            if (blueCount > MaxPlayersPerTeam || redCount > MaxPlayersPerTeam)
-            {
-                LobbyStatus.isAnyTeamFull = true;
-                GD.Print("❌ At least one team is full.");
-            }
-            else
-            {
-                LobbyStatus.isAnyTeamFull = false;
-                GD.Print("✅ No team is full.");
-            }
+            LobbyStatus.isAnyTeamFull = blueCount > MaxPlayersPerTeam || redCount > MaxPlayersPerTeam;
         }
 
         // W trybie AI vs Human neutralCount powinien być zawsze 0 (wszyscy w Universal)
         // W trybie AI Master neutralCount też powinien być 0 (wszyscy w Blue/Red)
-        if (neutralCount == 0)
-        {
-            LobbyStatus.isNeutralTeamEmpty = true;
-            GD.Print("✅ Neutral team is empty.");
-        }
-        else
-        {
-            LobbyStatus.isNeutralTeamEmpty = false;
-            GD.Print("❌ Neutral team has players.");
-        }
+        LobbyStatus.isNeutralTeamEmpty = neutralCount == 0;
 
         // Sprawdź czy wszyscy gracze są w widoku lobby (nie w grze)
         if (eosManager != null)
@@ -933,7 +989,7 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Włącza normalny styl przycisku "Rozpocznij grę"
+    /// Włącza normalny styl przycisku "Rozpocznij grę" bazując na stylu przycisku opuszczania lobby.
     /// </summary>
     private void EnableStartGameButtonStyle()
     {
@@ -990,8 +1046,11 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Aktualizuje wyświetlanie statusu lobby
+    /// Aktualizuje etykiety statusu lobby (tekst, kolory, tooltip) w zależności od gotowości i roli hosta.
     /// </summary>
+    /// <param name="isReady">Czy lobby spełnia wszystkie warunki startu.</param>
+    /// <seealso cref="EnableStartGameButtonStyle"/>
+    /// <seealso cref="DisableStartGameButtonStyle"/>
     private void UpdateLobbyStatusDisplay(bool isReady)
     {
         if (lobbyStatusLabel == null)
@@ -1079,8 +1138,6 @@ public partial class LobbyMenu : Control
 
                 DisableStartGameButtonStyle();
             }
-
-            GD.Print($"📊 Host Status: {(lobbyStatusCounter != null ? lobbyStatusCounter.Text : "")} {lobbyStatusLabel.Text}");
         }
         else
         {
@@ -1109,32 +1166,36 @@ public partial class LobbyMenu : Control
                 lobbyStatusLabel.Text = "Oczekiwanie na hosta";
                 lobbyStatusLabel.Modulate = new Color(0.7f, 0.7f, 0.7f); // Szary
             }
-
-            GD.Print($"📊 Player Status: {(lobbyStatusCounter != null ? lobbyStatusCounter.Text : "")} {lobbyStatusLabel.Text} (isReady={isReady})");
         }
     }
 
     /// <summary>
-    /// Aktualizuje wyświetlanie Lobby ID w polu tekstowym
+    /// Ustawia pole tekstowe z kodem lobby i weryfikuje, że UI odzwierciedla oczekiwaną wartość.
     /// </summary>
+    /// <exception>Loguje błąd, gdy pole tekstowe nie odzwierciedla przekazanego kodu.</exception>
+    /// <param name="lobbyId">Kod lobby do wyświetlenia.</param>
     private void UpdateLobbyIdDisplay(string lobbyId)
     {
         if (lobbyIdInput != null)
         {
             lobbyIdInput.Text = lobbyId;
-            GD.Print($"✅ [DEFERRED] Updated Lobby ID input to: '{lobbyIdInput.Text}'");
+            GD.Print($"[Lobby:LobbyID] Updated Lobby ID input to: '{lobbyIdInput.Text}'");
 
             // Sprawdź czy wartość rzeczywiście się zmieniła
             if (lobbyIdInput.Text != lobbyId)
             {
-                GD.PrintErr($"❌ Failed to update! Expected: '{lobbyId}', Got: '{lobbyIdInput.Text}'");
+                GD.PrintErr($"[Lobby:LobbyID] Failed to update - Expected: '{lobbyId}', Got: '{lobbyIdInput.Text}'");
             }
         }
     }
 
     /// <summary>
-    /// Waliduje czy klucz API jest poprawnie sformatowany
+    /// Sprawdza wstępnie format klucza API (długość, dozwolone znaki) i ustawia kolory ramki oraz status gotowości.
     /// </summary>
+    /// <param name="apiKey">Klucz API wpisany przez użytkownika.</param>
+    /// <returns>True, jeśli format klucza spełnia minimalne kryteria.</returns>
+    /// <seealso cref="SetAPIKeyInputBorder"/>
+    /// <seealso cref="UpdateHostReadyStatusIfOwner"/>
     private bool ValidateAPIKey(string apiKey)
     {
         // Sprawdź czy klucz nie jest null lub pusty
@@ -1150,7 +1211,7 @@ public partial class LobbyMenu : Control
         const int MinKeyLength = 35;
         if (apiKey.Length < MinKeyLength)
         {
-            GD.Print($"⚠️ API Key is too short: {apiKey.Length} characters (minimum {MinKeyLength})");
+            GD.Print($"[Lobby:APIKey] API Key is too short: {apiKey.Length} characters (minimum {MinKeyLength})");
             SetAPIKeyInputBorder(new Color(1, 0, 0)); // Czerwony
             LobbyStatus.isAPIKeySet = false;
             UpdateHostReadyStatusIfOwner();
@@ -1170,18 +1231,30 @@ public partial class LobbyMenu : Control
 
             if (!isValidChar)
             {
-                GD.Print($"⚠️ API Key contains invalid character: {c}");
                 return false;
             }
         }
         return true;
     }
 
+    /// <summary>
+    /// Wysyła minimalne zapytanie do DeepSeek, aby zweryfikować klucz API, aktualizując status i atrybuty lobby przez <see cref="EOSManager.SetAPIKey(string)"/>.
+    /// </summary>
+    /// <param name="apiKey">Klucz API do walidacji online.</param>
+    /// <seealso cref="SetAPIKeyInputBorder"/>
+    /// <seealso cref="UpdateHostReadyStatusIfOwner"/>
+    /// <seealso cref="UpdateLobbyStatusMessage"/>
+    /// <exception cref="InvalidApiKeyException">Gdy DeepSeek odrzuci klucz API jako nieprawidłowy (zdefiniowane w <c>libs/AiLibs/LLM/LLMExceptions.cs</c>).</exception>
+    /// <exception cref="NoTokensException">Gdy brak dostępnych tokenów API (zdefiniowane w <c>libs/AiLibs/LLM/LLMExceptions.cs</c>).</exception>
+    /// <exception cref="RateLimitException">Gdy przekroczono limit zapytań do API (zdefiniowane w <c>libs/AiLibs/LLM/LLMExceptions.cs</c>).</exception>
+    /// <exception cref="NoInternetException">Gdy brak połączenia z internetem podczas walidacji (zdefiniowane w <c>libs/AiLibs/LLM/LLMExceptions.cs</c>).</exception>
+    /// <exception cref="ApiException">Gdy DeepSeek zwróci inny błąd API (zdefiniowane w <c>libs/AiLibs/LLM/LLMExceptions.cs</c>).</exception>
+    /// <exception cref="System.Exception">Gdy wystąpi nieoczekiwany błąd podczas walidacji klucza API.</exception>
     private async void ProceedAPIKey(string apiKey)
     {
         try
         {
-            GD.Print($"Proceeding API Key.");
+            GD.Print($"[Lobby:APIKey] Proceeding API Key.");
             DeepSeekLLM apiLLM = new DeepSeekLLM(apiKey);
 
             // Dane testowe - minimalny request
@@ -1191,7 +1264,7 @@ public partial class LobbyMenu : Control
 
             string response = await apiLLM.SendRequestAsync(systemPrompt, userPrompt, maxTokens);
 
-            GD.Print($"✅ API Key validation successful!");
+            GD.Print("[Lobby:APIKey] Validation successful");
             SetAPIKeyInputBorder(new Color(0, 1, 0)); // Zielony
             LobbyStatus.isAPIKeySet = true;
             apiKeyErrorMessage = ""; // Wyczyść komunikat błędu
@@ -1250,20 +1323,22 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Aktualizuje komunikat statusu lobby z błędem API
+    /// Przechowuje i loguje komunikat o błędzie API widoczny w statusie lobby (tylko dla hosta); wpływa na komunikat pokazywany w <see cref="UpdateLobbyStatusDisplay(bool)"/>.
     /// </summary>
+    /// <param name="message">Treść komunikatu do wyświetlenia.</param>
     private void UpdateLobbyStatusMessage(string message)
     {
         if (eosManager != null && eosManager.isLobbyOwner)
         {
             apiKeyErrorMessage = message;
-            GD.Print($"🔔 Updated API error message: {message}");
+            GD.Print($"[Lobby:APIKey] Updated API error message: {message}");
         }
     }
 
     /// <summary>
-    /// Helper do aktualizacji statusu gotowości jeśli jesteśmy hostem
+    /// Ponownie publikuje status gotowości tylko wtedy, gdy bieżący gracz jest hostem poprzez <see cref="EOSManager.SetLobbyReadyStatus(bool)"/>.
     /// </summary>
+    /// <seealso cref="UpdateHostReadyStatus"/>
     private void UpdateHostReadyStatusIfOwner()
     {
         if (eosManager != null && eosManager.isLobbyOwner)
@@ -1273,8 +1348,9 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Ustawia kolor obramowania dla pola API Key
+    /// Nadaje polu klucza API obramowanie w zadanym kolorze (normal i focus) przez nadpisanie stylu.
     /// </summary>
+    /// <param name="color">Kolor obramowania.</param>
     private void SetAPIKeyInputBorder(Color color)
     {
         if (aiAPIKeyInput != null)
@@ -1302,8 +1378,11 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Callback wywoływany gdy użytkownik zmienia tekst w polu API Key
+    /// Resetuje stan walidacji po każdej zmianie znaku w polu klucza API.
     /// </summary>
+    /// <param name="newText">Aktualna treść pola klucza API.</param>
+    /// <seealso cref="SetAPIKeyInputBorder"/>
+    /// <seealso cref="UpdateHostReadyStatusIfOwner"/>
     private void OnAPIKeyTextChanged(string newText)
     {
         SetAPIKeyInputBorder(new Color(0.7f, 0.7f, 0.7f));
@@ -1317,24 +1396,27 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Callback wywoływany gdy użytkownik wciśnie Enter w polu API Key
+    /// Waliduje i rozpoczyna zdalną weryfikację klucza API po wciśnięciu Enter lub wklejeniu.
     /// </summary>
+    /// <param name="newText">Wartość klucza API przekazana z pola.</param>
+    /// <seealso cref="ValidateAPIKey"/>
+    /// <seealso cref="ProceedAPIKey"/>
     private void OnAPIKeySubmitted(string newText)
     {
         bool isValid = ValidateAPIKey(newText);
         if (!isValid)
         {
-            GD.Print($"⚠️ Invalid API Key. Aborting submission.");
+            GD.Print($"[Lobby:APIKey] Invalid API Key. Aborting submission.");
             return;
         }
         ProceedAPIKey(newText);
     }
 
     /// <summary>
-    /// Aktualizuje listę graczy w drużynie
+    /// Podmienia zawartość listy drużyny na podany zestaw graczy.
     /// </summary>
-    /// <param name="teamList">Lista drużyny do zaktualizowania</param>
-    /// <param name="players">Tablica nazw graczy</param>
+    /// <param name="teamList">Lista GUI reprezentująca drużynę.</param>
+    /// <param name="players">Nazwy graczy do wyświetlenia.</param>
     public void UpdateTeamList(ItemList teamList, string[] players)
     {
         if (teamList == null) return;
@@ -1346,14 +1428,19 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Obsługuje zmianę trybu gry z listy: weryfikuje limity, blokuje spam i wysyła wybór do EOSManager.
+    /// </summary>
+    /// <exception>Loguje błąd, gdy próba zmiany trybu narusza limit graczy.</exception>
+    /// <param name="index">Indeks wybranego trybu gry na liście.</param>
+    /// <seealso cref="BlockButtonToHandleTooManyRequests"/>
+    /// <seealso cref="UpdateHostReadyStatus"/>
     private void OnSelectedGameModeChanged(long index)
     {
         if (gameModeList == null || eosManager == null) return;
 
         string selectedModeStr = gameModeList.GetItemText((int)index);
         EOSManager.GameMode selectedMode = EOSManager.ParseEnumFromDescription<EOSManager.GameMode>(selectedModeStr, EOSManager.GameMode.AIMaster);
-
-        GD.Print($"👆 User selected game mode: {selectedModeStr} -> {selectedMode}");
 
         // Sprawdź czy próbujemy zmienić na AI vs Human
         if (selectedMode == EOSManager.GameMode.AIvsHuman)
@@ -1367,7 +1454,7 @@ public partial class LobbyMenu : Control
             // Jeśli jest więcej niż 5 graczy, nie pozwól na zmianę
             if (totalPlayers > 5)
             {
-                GD.PrintErr($"❌ Cannot switch to AI vs Human mode: Too many players ({totalPlayers}/5)");
+                GD.PrintErr($"[Lobby:GameMode] Cannot switch to AI vs Human mode: Too many players ({totalPlayers}/5)");
 
                 // Przywróć poprzednią wartość w dropdown (AI Master)
                 for (int i = 0; i < gameModeList.ItemCount; i++)
@@ -1392,11 +1479,23 @@ public partial class LobbyMenu : Control
         UpdateHostReadyStatus();
     }
 
+    /// <summary>
+    /// Sprawdza czy lokalny sprzęt spełnia minimalne wymagania do uruchomienia lokalnego LLM.
+    /// </summary>
+    /// <returns>True, jeśli CPU/RAM/VRAM przekraczają progi minimalne.</returns>
     private bool CheckHardwareCapabilities()
     {
         return HardwareResources.IfAICapable();
     }
 
+    /// <summary>
+    /// Przełącza typ AI, opcjonalnie wyświetla ostrzeżenie sprzętowe i synchronizuje wybór z serwerem lobby przez <see cref="EOSManager.SetAIType(EOSManager.AIType)"/>.
+    /// </summary>
+    /// <param name="index">Indeks wybranego typu AI na liście.</param>
+    /// <seealso cref="CheckHardwareCapabilities"/>
+    /// <seealso cref="ShowHardwareWarningDialog"/>
+    /// <seealso cref="BlockButtonToHandleTooManyRequests"/>
+    /// <seealso cref="UpdateHostReadyStatus"/>
     private void OnSelectedAITypeChanged(long index)
     {
         if (aiTypeList == null || eosManager == null) return;
@@ -1419,7 +1518,7 @@ public partial class LobbyMenu : Control
 
             }
         }
-        GD.Print("✅ Hardware meets AI requirements.");
+        GD.Print("[Lobby:AIType] Hardware meets AI requirements.");
 
         //zablokuj buttonList by uniknąć wielokrotnych zapytań
         BlockButtonToHandleTooManyRequests(aiTypeList);
@@ -1431,7 +1530,7 @@ public partial class LobbyMenu : Control
     }
 
     /// <summary>
-    /// Callback wywoływany gdy użytkownik kliknie przycisk pomocy do klucza API
+    /// Otwiera stronę z instrukcją uzyskania klucza API w domyślnej przeglądarce systemu.
     /// </summary>
     private void OnAPIKeyHelpButtonPressed()
     {
@@ -1450,8 +1549,13 @@ public partial class LobbyMenu : Control
             Process.Start("xdg-open", helpUrl);
         }
     }
-    /// Pokazuje okno ostrzeżenia o niewystarczającym sprzęcie z możliwością wybrania LLM mimo to
+    /// <summary>
+    /// Wyświetla ostrzeżenie o niewystarczającym sprzęcie dla lokalnego LLM i pozwala kontynuować mimo ryzyka.
     /// </summary>
+    /// <param name="selectedAIType">Wybrany typ AI wymagający potwierdzenia.</param>
+    /// <param name="currentHardwareInfo">Opis wykrytego sprzętu prezentowany w oknie.</param>
+    /// <seealso cref="BlockButtonToHandleTooManyRequests"/>
+    /// <seealso cref="UpdateHostReadyStatus"/>
     private void ShowHardwareWarningDialog(EOSManager.AIType selectedAIType, string currentHardwareInfo)
     {
         string message = "Twój komputer nie spełnia zalecanych wymagań dla lokalnego LLM.\n\n";
@@ -1500,19 +1604,27 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Kopiuje bieżący kod lobby do schowka, jeśli istnieje.
+    /// </summary>
     private void OnCopyIdButtonPressed()
     {
         if (!string.IsNullOrEmpty(currentLobbyCode))
         {
             DisplayServer.ClipboardSet(currentLobbyCode);
-            GD.Print($"✅ Lobby ID copied to clipboard: {currentLobbyCode}");
+            GD.Print($"[Lobby:LobbyID] Lobby ID copied to clipboard: {currentLobbyCode}");
         }
         else
         {
-            GD.Print("⚠️ No lobby ID to copy");
+            GD.Print("[Lobby:LobbyID] No lobby ID to copy");
         }
     }
 
+    /// <summary>
+    /// Generuje nowy kod lobby, zapisuje go w <see cref="EOSManager.SetCustomLobbyId(string)"/> i aktualizuje wyświetlanie.
+    /// </summary>
+    /// <seealso cref="GenerateLobbyIDCode"/>
+    /// <seealso cref="UpdateLobbyIdDisplay"/>
     private void OnGenerateNewIdButtonPressed()
     {
         // Wygeneruj nowy kod
@@ -1526,34 +1638,42 @@ public partial class LobbyMenu : Control
             eosManager.SetCustomLobbyId(newCode);
         }
 
-        GD.Print($"✅ New lobby ID generated: {newCode}");
+        GD.Print($"[Lobby:LobbyID] New lobby ID generated: {newCode}");
 
         //zablokuj button by uniknąć wielokrotnych zapytań
         BlockButtonToHandleTooManyRequests(generateNewIdButton);
     }
 
-    // Obsługa przycisku "Start gry" - tylko host inicjuje start sesji
+    /// <summary>
+    /// Rozpoczyna proces startu gry po spełnieniu warunków gotowości; dostępne tylko dla hosta.
+    /// </summary>
+    /// <seealso cref="LobbyStatus.IsReadyToStart"/>
+    /// <seealso cref="EOSManager.RequestStartGameSession"/>
     private void OnStartGamePressed()
     {
         // Sprawdź czy gra jest gotowa do startu
         if (!LobbyStatus.IsReadyToStart())
         {
-            GD.Print("⚠️ Cannot start game - conditions not met");
+            GD.Print("[Lobby:StartGame] Cannot start game - conditions not met");
             return;
         }
 
         // TYLKO HOST może rozpocząć sesję
         if (eosManager == null || !eosManager.isLobbyOwner)
         {
-            GD.Print("⚠️ Only host can start the game");
+            GD.Print("[Lobby:StartGame] Only host can start the game");
             return;
         }
 
-        GD.Print("🎮 Host requests game session start...");
+        GD.Print("[Lobby:StartGame] Host requests game session start...");
         eosManager.RequestStartGameSession();
 
     }
 
+    /// <summary>
+    /// Otwiera dialog potwierdzenia opuszczenia lobby po naciśnięciu przycisku cofnięcia.
+    /// </summary>
+    /// <seealso cref="LobbyLeaveConfirmation.ShowConfirmation"/>
     private void OnBackButtonPressed()
     {
         if (leaveConfirmation != null)
@@ -1562,6 +1682,10 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Otwiera dialog potwierdzenia opuszczenia lobby po wyborze akcji "Opuść".
+    /// </summary>
+    /// <seealso cref="LobbyLeaveConfirmation.ShowConfirmation"/>
     private void OnLeaveLobbyPressed()
     {
         if (leaveConfirmation != null)
@@ -1570,12 +1694,18 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Próbuje utworzyć lobby, powtarzając próbę po opóźnieniu gdy EOS nie jest gotowy lub brak zalogowania; finalnie wywołuje <see cref="EOSManager.CreateLobby(string, int, bool)"/>.
+    /// </summary>
+    /// <exception>Loguje błąd, gdy przekroczono maksymalną liczbę prób logowania do EOS.</exception>
+    /// <param name="attempt">Aktualny numer próby tworzenia lobby.</param>
+    /// <seealso cref="GenerateLobbyIDCode"/>
+    /// <seealso cref="UpdateLobbyIdDisplay"/>
     private async void CreateLobbyWithRetry(int attempt = 0)
     {
         // Sprawdź czy użytkownik jest już zalogowany
         if (eosManager == null)
         {
-            GD.Print("⚠️ EOSManager not found, retrying in 0.5s...");
             await ToSignal(GetTree().CreateTimer(RetryDelay), SceneTreeTimer.SignalName.Timeout);
             CreateLobbyWithRetry(attempt + 1);
             return;
@@ -1584,7 +1714,7 @@ public partial class LobbyMenu : Control
         // Sprawdź czy już nie ma lobby (np. powrót z innej sceny)
         if (!string.IsNullOrEmpty(eosManager.currentLobbyId))
         {
-            GD.Print($"✅ Already in lobby: {eosManager.currentLobbyId}");
+            GD.Print($"[Lobby:CreateLobby] Already in lobby: {eosManager.currentLobbyId}");
             return;
         }
 
@@ -1593,13 +1723,12 @@ public partial class LobbyMenu : Control
         {
             if (attempt < MaxRetryAttempts)
             {
-                GD.Print($"⏳ Waiting for EOS login... (attempt {attempt + 1}/{MaxRetryAttempts})");
                 await ToSignal(GetTree().CreateTimer(RetryDelay), SceneTreeTimer.SignalName.Timeout);
                 CreateLobbyWithRetry(attempt + 1);
             }
             else
             {
-                GD.Print("❌ EOS login timeout - could not create lobby");
+                GD.PrintErr("[Lobby:CreateLobby] EOS login timeout - could not create lobby");
             }
             return;
         }
@@ -1616,19 +1745,28 @@ public partial class LobbyMenu : Control
         }
 
         eosManager.CreateLobby(lobbyIdCode, LobbyMaxPlayers, true);
-        GD.Print("✅ EOS logged in, creating lobby. Lobby ID: " + lobbyIdCode);
     }
 
+    /// <summary>
+    /// Żąda dołączenia do niebieskiej drużyny przez <see cref="EOSManager.SetMyTeam(EOSManager.Team)"/>.
+    /// </summary>
     private void OnBlueTeamJoinButtonPressed()
     {
         TryJoinTeam(EOSManager.Team.Blue);
     }
 
+    /// <summary>
+    /// Żąda dołączenia do czerwonej drużyny przez <see cref="EOSManager.SetMyTeam(EOSManager.Team)"/>.
+    /// </summary>
     private void OnRedTeamJoinButtonPressed()
     {
         TryJoinTeam(EOSManager.Team.Red);
     }
 
+    /// <summary>
+    /// Pokazuje tooltip ze statusem gotowości gdy kursor najedzie na licznik lub przycisk startu.
+    /// </summary>
+    /// <seealso cref="UpdateLobbyStatusDisplay"/>
     private void OnReadyTooltipMouseEntered()
     {
         if (customTooltip != null && !string.IsNullOrEmpty(lobbyReadyTooltip))
@@ -1637,6 +1775,10 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Ukrywa tooltip gotowości po opuszczeniu kursora z elementu.
+    /// </summary>
+    /// <seealso cref="OnReadyTooltipMouseEntered"/>
     private void OnReadyTooltipMouseExited()
     {
         if (customTooltip != null)
@@ -1645,6 +1787,10 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Pokazuje tooltip z instrukcją dla pola klucza API.
+    /// </summary>
+    /// <seealso cref="CustomTooltip.Show"/>
     private void OnAPIKeyInputTooltipMouseEntered()
     {
         if (customTooltip != null && !string.IsNullOrEmpty(apiKeyInputTooltip))
@@ -1653,6 +1799,10 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Ukrywa tooltip pola klucza API.
+    /// </summary>
+    /// <seealso cref="CustomTooltip.Hide"/>
     private void OnAPIKeyInputTooltipMouseExited()
     {
         if (customTooltip != null)
@@ -1661,6 +1811,10 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Pokazuje tooltip informacyjny przy przycisku pomocy API.
+    /// </summary>
+    /// <seealso cref="CustomTooltip.Show"/>
     private void OnAPIKeyInfoTooltipMouseEntered()
     {
         if (customTooltip != null && !string.IsNullOrEmpty(apiKeyInfoTooltip))
@@ -1669,6 +1823,10 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Ukrywa tooltip informacyjny przy przycisku pomocy API.
+    /// </summary>
+    /// <seealso cref="CustomTooltip.Hide"/>
     private void OnAPIKeyInfoTooltipMouseExited()
     {
         if (customTooltip != null)
@@ -1677,6 +1835,10 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Opuszcza obecną drużynę lokalnego gracza.
+    /// </summary>
+    /// <seealso cref="TryLeftTeam"/>
     private void OnLeaveTeamButtonPressed()
     {
         TryLeftTeam();
@@ -1684,11 +1846,17 @@ public partial class LobbyMenu : Control
 
     private EOSManager.Team currentLocalTeam = EOSManager.Team.None;
 
+    /// <summary>
+    /// Próbuje dołączyć lokalnego gracza do wskazanej drużyny, uwzględniając cooldown i bieżący przydział; deleguje zmianę do <see cref="EOSManager.SetMyTeam(EOSManager.Team)"/>.
+    /// </summary>
+    /// <exception>Loguje błąd, gdy <see cref="EOSManager"/> jest niedostępny.</exception>
+    /// <param name="teamName">Docelowa drużyna.</param>
+    /// <seealso cref="UpdateTeamButtonsState"/>
     private void TryJoinTeam(EOSManager.Team teamName)
     {
         if (eosManager == null)
         {
-            GD.PrintErr("❌ Cannot change team: EOSManager not available");
+            GD.PrintErr("[Lobby:Team] Cannot change team: EOSManager not available");
             return;
         }
 
@@ -1700,7 +1868,7 @@ public partial class LobbyMenu : Control
 
         if (currentLocalTeam == teamName)
         {
-            GD.Print($"ℹ️ Already in {teamName} team, ignoring join request");
+            GD.Print($"[Lobby:Team] Already in {teamName} team, ignoring join request");
             return;
         }
 
@@ -1717,27 +1885,32 @@ public partial class LobbyMenu : Control
                 return;
 
             isTeamChangeCooldownActive = false;
-            GD.Print("✅ Team change cooldown finished");
             // Zaktualizuj stan przycisków po zakończeniu cooldownu
             UpdateTeamButtonsState(currentLocalTeam);
         };
 
         eosManager.SetMyTeam(teamName);
-        GD.Print($"🔁 Sending request to join {teamName} team");
     }
+    /// <summary>
+    /// Próbuje przenieść lokalnego gracza do drużyny Neutral (opuszcza obecną) przez <see cref="TryJoinTeam"/>/<see cref="EOSManager.SetMyTeam(EOSManager.Team)"/>.
+    /// </summary>
+    /// <exception>Loguje błąd, gdy <see cref="EOSManager"/> jest niedostępny.</exception>
+    /// <seealso cref="TryJoinTeam"/>
     private void TryLeftTeam()
     {
         if (eosManager == null)
         {
-            GD.PrintErr("❌ Cannot leave team: EOSManager not available");
+            GD.PrintErr("[Lobby:Team] Cannot leave team: EOSManager not available");
             return;
         }
         TryJoinTeam(EOSManager.Team.None);
     }
 
     /// <summary>
-    /// Sprawdza czy drużyna osiągnęła limit graczy
+    /// Sprawdza czy podana drużyna osiągnęła limit graczy.
     /// </summary>
+    /// <param name="team">Drużyna do sprawdzenia.</param>
+    /// <returns>True, jeśli liczba graczy w drużynie >= limitowi.</returns>
     private bool IsTeamFull(EOSManager.Team team)
     {
         switch (team)
@@ -1753,6 +1926,14 @@ public partial class LobbyMenu : Control
 
     private EOSManager.Team previousLocalTeam = EOSManager.Team.None;
 
+    /// <summary>
+    /// Ustawia stan (tekst, blokady, handler) przycisków dołączania na podstawie bieżącej drużyny gracza i limitów.
+    /// </summary>
+    /// <param name="localTeam">Aktualna drużyna lokalnego gracza.</param>
+    /// <seealso cref="TryJoinTeam"/>
+    /// <seealso cref="OnBlueTeamJoinButtonPressed"/>
+    /// <seealso cref="OnRedTeamJoinButtonPressed"/>
+    /// <seealso cref="OnLeaveTeamButtonPressed"/>
     private void UpdateTeamButtonsState(EOSManager.Team localTeam)
     {
         bool teamChanged = (previousLocalTeam != localTeam);
@@ -1817,6 +1998,10 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Tymczasowo blokuje przycisk po akcji, by ograniczyć spam zapytań.
+    /// </summary>
+    /// <param name="button">Przycisk do zablokowania.</param>
     private void BlockButtonToHandleTooManyRequests(Button button)
     {
         if (button == null) return;
@@ -1834,6 +2019,11 @@ public partial class LobbyMenu : Control
         };
     }
 
+    /// <summary>
+    /// Nakłada cooldown na możliwość przenoszenia wskazanego gracza między drużynami.
+    /// </summary>
+    /// <param name="userId">Id gracza objętego cooldownem.</param>
+    /// <seealso cref="TryJoinTeam"/>
     private void StartPlayerMoveCooldown(string userId)
     {
         playerMoveCooldowns[userId] = true;
@@ -1847,6 +2037,12 @@ public partial class LobbyMenu : Control
         };
     }
 
+    /// <summary>
+    /// Obsługuje kliknięcie PPM na liście drużyny przez hosta i wyświetla menu akcji dla gracza.
+    /// </summary>
+    /// <param name="@event">Zdarzenie wejściowe z listy.</param>
+    /// <param name="teamList">Lista, na której wykonano akcję.</param>
+    /// <seealso cref="ShowMemberActionsPopup"/>
     private void OnTeamListGuiInput(InputEvent @event, ItemList teamList)
     {
         if (!eosManager.isLobbyOwner)
@@ -1885,7 +2081,6 @@ public partial class LobbyMenu : Control
                                 }
                             }
 
-                            GD.Print($"🖱️ Right-clicked on player: {displayName} ({userId})");
                             ShowMemberActionsPopup(userId, displayName, playerTeam, mouseEvent.GlobalPosition);
                         }
                     }
@@ -1894,9 +2089,17 @@ public partial class LobbyMenu : Control
         }
     }
 
+    /// <summary>
+    /// Tworzy menu kontekstowe dla gracza z akcjami przenoszenia, przekazania hosta (<see cref="EOSManager.TransferLobbyOwnership(string)"/>) lub wyrzucenia (<see cref="EOSManager.KickPlayer(string)"/>).
+    /// </summary>
+    /// <param name="userId">Id gracza.</param>
+    /// <param name="displayName">Wyświetlana nazwa gracza.</param>
+    /// <param name="currentTeam">Aktualna drużyna gracza.</param>
+    /// <param name="globalPosition">Pozycja ekranu do wyświetlenia menu.</param>
+    /// <seealso cref="StartPlayerMoveCooldown"/>
     private void ShowMemberActionsPopup(string userId, string displayName, EOSManager.Team currentTeam, Vector2 globalPosition)
     {
-        GD.Print($"📋 Creating popup menu for {displayName}");
+        GD.Print($"[Lobby:ShowMemberActionsPopup] Creating popup menu for {displayName}");
 
         bool isBlueTeamFull = IsTeamFull(EOSManager.Team.Blue);
         bool isRedTeamFull = IsTeamFull(EOSManager.Team.Red);
@@ -1916,15 +2119,14 @@ public partial class LobbyMenu : Control
 
             popup.IndexPressed += (index) =>
             {
-                GD.Print($"📋 Popup menu item {index} pressed for {displayName}");
                 if (index == idxTransferHost)
                 {
-                    GD.Print($"👑 Transferring host to: {displayName}");
+                    GD.Print($"[Lobby:ShowMemberActionsPopup] Transferring host to: {displayName}");
                     eosManager.TransferLobbyOwnership(userId);
                 }
                 else if (index == idxKickPlayer)
                 {
-                    GD.Print($"👢 Kicking player: {displayName}");
+                    GD.Print($"[Lobby:ShowMemberActionsPopup] Kicking player: {displayName}");
                     eosManager.KickPlayer(userId);
                 }
 
@@ -1960,34 +2162,33 @@ public partial class LobbyMenu : Control
 
             popup.IndexPressed += (index) =>
             {
-                GD.Print($"📋 Popup menu item {index} pressed for {displayName}");
 
                 if (index == idxMoveBlue)
                 {
-                    GD.Print($"🔁 Moving player {displayName} to Blue via popup");
+                    GD.Print($"[Lobby:ShowMemberActionsPopup] Moving player {displayName} to Blue via popup");
                     eosManager.MovePlayerToTeam(userId, EOSManager.Team.Blue);
                     StartPlayerMoveCooldown(userId);
                 }
                 else if (index == idxMoveRed)
                 {
-                    GD.Print($"🔁 Moving player {displayName} to Red via popup");
+                    GD.Print($"[Lobby:ShowMemberActionsPopup] Moving player {displayName} to Red via popup");
                     eosManager.MovePlayerToTeam(userId, EOSManager.Team.Red);
                     StartPlayerMoveCooldown(userId);
                 }
                 else if (index == idxMoveNeutral)
                 {
-                    GD.Print($"🔁 Moving player {displayName} to Neutral via popup");
+                    GD.Print($"[Lobby:ShowMemberActionsPopup] Moving player {displayName} to Neutral via popup");
                     eosManager.MovePlayerToTeam(userId, EOSManager.Team.None);
                     StartPlayerMoveCooldown(userId);
                 }
                 else if (index == idxTransferHost)
                 {
-                    GD.Print($"👑 Transferring host to: {displayName}");
+                    GD.Print($"[Lobby:ShowMemberActionsPopup] Transferring host to: {displayName}");
                     eosManager.TransferLobbyOwnership(userId);
                 }
                 else if (index == idxKickPlayer)
                 {
-                    GD.Print($"👢 Kicking player: {displayName}");
+                    GD.Print($"[Lobby:ShowMemberActionsPopup] Kicking player: {displayName}");
                     eosManager.KickPlayer(userId);
                 }
 
@@ -1999,10 +2200,11 @@ public partial class LobbyMenu : Control
         GetTree().Root.AddChild(popup);
         popup.Position = (Vector2I)globalPosition;
         popup.PopupOnParent(new Rect2I(popup.Position, new Vector2I(1, 1)));
-
-        GD.Print($"📋 Popup shown at position {globalPosition}");
     }
 
+    /// <summary>
+    /// Czyści sygnały i subskrypcje przed opuszczeniem sceny lobby.
+    /// </summary>
     public override void _ExitTree()
     {
         base._ExitTree();
