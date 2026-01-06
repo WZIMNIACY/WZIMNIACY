@@ -18,7 +18,7 @@ public partial class CardManager : GridContainer
 
     public game.Deck Deck { get; private set; }
     private Dictionary<string, List<double>> namesVectorDb;
-    private int takenCards = 0
+    private int takenCards = 0;
 	private int commonCards = 0;
 	private int blueCards = 0;
 	private int redCards = 0;
