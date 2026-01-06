@@ -9,9 +9,10 @@ public partial class CardManager : GridContainer
 	[Signal] public delegate void CardManagerReadyEventHandler();
 
 	[Export] private MainGame mainGame;
-
+	
+	private EOSManager eosManager;
 	private List<string> names;
-	private Random rand = new Random(); 
+	private Random rand; 
 	private int commonCards = 0;
 	private int blueCards = 0;
 	private int redCards = 0;
@@ -31,10 +32,14 @@ public partial class CardManager : GridContainer
 	{
 		base._Ready();
 		mainGame.GameReady += OnGameReady;
+
+		eosManager = GetNode<EOSManager>("/root/EOSManager");
+		rand = new Random((int)eosManager.CurrentGameSession.Seed);
+
 		foreach (var card in GetTree().GetNodesInGroup("cards"))
 		{
 			card.Connect("CardConfirmed", new Callable(this, nameof(OnCardConfirmed)));
-        }
+		}
 	}
 
 	private void OnGameReady()
@@ -98,8 +103,8 @@ public partial class CardManager : GridContainer
 		card.SetColor();
 		card.MouseFilter = MouseFilterEnum.Ignore;
 		HideAllCards();
-        mainGame.CardConfirm(card);
-    }
+		mainGame.CardConfirm(card);
+	}
 
 	private void HideAllCards()
 	{
