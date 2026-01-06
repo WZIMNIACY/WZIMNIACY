@@ -384,7 +384,7 @@ public partial class MainGame : Control
         }
 
         GD.Print($"[MainGame] GAME START seed={payload.seed}");
-        
+
 
         GD.Print($"[MainGame] GAME START: players={playerPuidByIndex.Count} sessionId={payload.sessionId}");
 
@@ -479,7 +479,7 @@ public partial class MainGame : Control
         {
             if (member == null || !member.ContainsKey("userId")) continue;
 
-            string puid = member["userId"]?.ToString();
+            string puid = member["userId"].ToString();
             if (string.IsNullOrEmpty(puid)) continue;
             if (puid == eosManager.localProductUserIdString) continue;
 
