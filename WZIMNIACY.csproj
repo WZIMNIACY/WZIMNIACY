@@ -10,4 +10,16 @@
     <DefineConstants>$(DefineConstants);GODOT_64</DefineConstants>
     <!-- <DefineConstants>$(DefineConstants);GODOT_32</DefineConstants> -->
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="libs/**" />
+    <EmbeddedResource Remove="libs/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="./libs/AiLibs/LLM/LLM.csproj" />
+    <ProjectReference Include="./libs/AiLibs/game/game.csproj" />
+    <ProjectReference Include="./libs/AiLibs/HintGenerating/HintGenerating.csproj" />
+    <ProjectReference Include="./libs/AiLibs/Reaction/Reaction.csproj" />
+  </ItemGroup>
 </Project>

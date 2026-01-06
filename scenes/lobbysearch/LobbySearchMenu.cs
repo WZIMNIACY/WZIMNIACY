@@ -10,6 +10,8 @@ public partial class LobbySearchMenu : Node
     [Export] private LineEdit searchInput;
     [Export] private Button joinButton;
 
+    private PasteDetector pasteDetector;
+
     // Animacja przycisku
     private ColorRect loadingOverlay;
     private Tween loadingTween;
@@ -31,7 +33,6 @@ public partial class LobbySearchMenu : Node
         {
             eosManager.LobbyJoined += OnLobbyJoinedSuccessfully;
             eosManager.LobbyJoinFailed += OnLobbyJoinFailed;
-            GD.Print("✅ Connected to LobbyJoined and LobbyJoinFailed signals");
         }
 
         // Podłącz sygnały przycisków
@@ -47,12 +48,55 @@ public partial class LobbySearchMenu : Node
             GD.Print("✅ Join button connected successfully");
         }
 
+        // Podłącz Enter w polu wpisywania
+        if (searchInput != null)
+        {
+            searchInput.TextSubmitted += OnSearchInputSubmitted;
+            GD.Print("✅ Search input Enter handler connected");
+        }
+
+        // Utwórz timer dla animacji
+        animationTimer = new Timer();
+        animationTimer.WaitTime = 0.5; // Co 0.5 sekundy dodaj kropkę
+        animationTimer.Timeout += OnAnimationTimerTimeout;
+        AddChild(animationTimer);
+
         // Utwórz timer dla timeoutu
         joinTimeoutTimer = new Timer();
         joinTimeoutTimer.WaitTime = JoinTimeout;
         joinTimeoutTimer.OneShot = true;
         joinTimeoutTimer.Timeout += OnJoinTimeout;
         AddChild(joinTimeoutTimer);
+
+        pasteDetector = GetNodeOrNull<PasteDetector>("PasteDetector");
+        if (pasteDetector != null)
+        {
+            // Ustaw Target programatycznie zamiast z .tscn
+            pasteDetector.Target = searchInput;
+            pasteDetector.RegisterPasteCallback(OnLobbyIdPasted);
+        }
+    }
+
+    /// <summary>
+    /// Wywoływane gdy użytkownik wklei tekst do pola lobby ID
+    /// </summary>
+    private void OnLobbyIdPasted(string pastedText)
+    {
+        GD.Print($"📋 Lobby ID pasted: {pastedText}");
+
+        // Wywołaj tę samą funkcję co przycisk "Dołącz"
+        OnJoinButtonPressed();
+        joinButton.GrabFocus();
+    }
+
+    /// <summary>
+    /// Wywoływane gdy użytkownik naciśnie Enter w polu lobby ID
+    /// </summary>
+    private void OnSearchInputSubmitted(string text)
+    {
+        GD.Print($"⏎ Enter pressed in search input: {text}");
+        OnJoinButtonPressed();
+        joinButton.GrabFocus();
     }
 
     private void OnBackButtonPressed()
@@ -208,6 +252,11 @@ public partial class LobbySearchMenu : Node
         if (joinButton != null)
         {
             joinButton.Pressed -= OnJoinButtonPressed;
+        }
+
+        if (searchInput != null)
+        {
+            searchInput.TextSubmitted -= OnSearchInputSubmitted;
         }
 
         // Odłącz sygnały z EOSManager

@@ -10,19 +10,22 @@ public partial class AgentCard : PanelContainer
 	[Export] private TextureRect cardImage;
 
 	[Export] private Button selectButton;
-	
+
 	[Signal] public delegate void CardConfirmedEventHandler(AgentCard card);
 
-	private Vector2 hoverScale = new Vector2(1.05f, 1.05f); 
-	private float duration = 0.1f; 
+    /// Mainly for AI lib
+    public game.Card cardInfo;
+
+	private Vector2 hoverScale = new Vector2(1.05f, 1.05f);
+	private float duration = 0.1f;
 
 	private Vector2 normalScale = Vector2.One;
 	private Tween tween;
 
 	private CardManager.CardType type;
-	public CardManager.CardType Type 
-	{ 
-		get { return type; } 
+	public CardManager.CardType Type
+	{
+		get { return type; }
 	}
 	private bool selected = false;
 
@@ -33,7 +36,7 @@ public partial class AgentCard : PanelContainer
 
 		MouseEntered += OnHoverEnter;
 		MouseExited += OnHoverExit;
-	
+
 		Resized += SetPivotCenter;
 
 		cardManager.CardManagerReady += SetCard;
@@ -70,14 +73,14 @@ public partial class AgentCard : PanelContainer
 		if (isHovering)
 		{
 			tween.TweenProperty(this, "scale", hoverScale, duration);
-			
+
 			if (contentContainer != null)
 				tween.TweenProperty(contentContainer, "modulate", darkColor, duration);
 		}
 		else
 		{
 			tween.TweenProperty(this, "scale", normalScale, duration);
-			
+
 			if (contentContainer != null)
 				tween.TweenProperty(contentContainer, "modulate", Colors.White, duration);
 		}
@@ -85,18 +88,18 @@ public partial class AgentCard : PanelContainer
 
 	private void SetCard()
 	{
-		SetCardName(cardManager.GetCardName());
-		type = cardManager.GetCardType();
-		SetColor();
+        cardInfo = cardManager.TakeCard();
+		SetCardName(cardInfo.Word);
+		type = CardTypeExt.FromGameTeam(cardInfo.Team);
 	}
-	
+
 	private void SetCardName(string name)
 	{
 		textLabel.Text = name;
 	}
 
-	private void SetColor()
-	{	
+	public void SetColor()
+	{
 		if(type == CardManager.CardType.Blue)
 		{
 			cardImage.Modulate = new Color("4597ffff");
@@ -109,7 +112,11 @@ public partial class AgentCard : PanelContainer
 		{
 			cardImage.Modulate = new Color("767676aa");
 		}
-	}	
+		else
+		{
+			cardImage.Modulate = new Color("ffffbd");
+		}
+	}
 
 	public override void _GuiInput(InputEvent @event)
 	{
@@ -127,13 +134,13 @@ public partial class AgentCard : PanelContainer
 		selected = false;
 		selectButton.Visible = false;
 	}
-	
+
 	public void ToggleSelected()
 	{
 		selected = !selected;
 		selectButton.Visible = selected;
 	}
-	
+
 	public void OnSelectButtonPressed()
 	{
 		EmitSignal(SignalName.CardConfirmed, this);

@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3 uid="uid://bqfm3bpx8hfit"]
+[gd_scene load_steps=33 format=3 uid="uid://bqfm3bpx8hfit"]
 
 [ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://assets/themes/main_game.tres" id="1_s3esy"]
@@ -18,6 +18,7 @@
 [ext_resource type="PackedScene" uid="uid://bfxpcutxox0tt" path="res://scenes/settings/Settings.tscn" id="15_eixuh"]
 [ext_resource type="PackedScene" uid="uid://b6bdhq5ktk0vo" path="res://scenes/components/main_game/end_game_screen.tscn" id="16_eixuh"]
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="16_v72ow"]
+[ext_resource type="Script" uid="uid://d355aol0ujbg" path="res://scripts/P2PNetworkManager.cs" id="19_stils"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -91,7 +92,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene")]
+[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -99,6 +100,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_o6v7o")
+endGameScreen = NodePath("EndGameScreen")
 menuPanel = NodePath("MenuPanel")
 scoreContainerBlue = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/BlueScoreContainer")
 scoreContainerRed = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/RedScoreContainer")
@@ -109,6 +111,8 @@ gameInputPanel = NodePath("Panel/InputPanel")
 turnLabel = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/TurnCounterContainer/Label")
 settingsScene = NodePath("Settings")
 helpScene = NodePath("HelpScene")
+cardManager = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer")
+metadata/_edit_horizontal_guides_ = [-92.0]
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
@@ -575,6 +579,9 @@ layout_mode = 1
 [node name="EndGameScreen" parent="." instance=ExtResource("16_eixuh")]
 visible = false
 layout_mode = 1
+
+[node name="P2PNetworkManager" type="Node" parent="."]
+script = ExtResource("19_stils")
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
 [connection signal="pressed" from="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer/Button" to="." method="OnSkipTurnPressed"]
