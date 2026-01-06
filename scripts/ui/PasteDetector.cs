@@ -5,11 +5,19 @@ using System;
 /// Obsługuje wykrywanie wklejania tekstu (paste) w polach LineEdit
 /// i wykonuje określoną akcję po wklejeniu.
 /// </summary>
+/// <summary>
+/// Wykrywa wklejanie tekstu w polu <see cref="LineEdit"/> na podstawie szybkości i długości zmian oraz skrótu Ctrl/Cmd+V;
+/// wywołuje zarejestrowany callback (np. <see cref="LobbySearchMenu.OnLobbyIdPasted"/>).
+/// </summary>
+/// <remarks>
+/// Wymaga ustawienia <see cref="Target"/> (zazwyczaj w wątku głównym Godota); klasa nie jest thread-safe.
+/// </remarks>
 public partial class PasteDetector : Node
 {
     /// <summary>
-    /// LineEdit który ma być monitorowany
+    /// Pole tekstowe monitorowane pod kątem wklejania.
     /// </summary>
+    /// <value>Referencja do <see cref="LineEdit"/>; wymagane do działania.</value>
     [Export]
     public LineEdit Target
     {
@@ -35,21 +43,30 @@ public partial class PasteDetector : Node
     private LineEdit target;
 
     /// <summary>
-    /// Minimalna liczba znaków wprowadzonych jednocześnie aby uznać za paste
+    /// Minimalna liczba znaków dodanych na raz, by uznać zmianę za wklejenie.
     /// </summary>
+    /// <value>Domyślnie 3; wartości ujemne niezalecane.</value>
     [Export]
     public int MinPasteLength { get; set; } = 3;
 
     /// <summary>
-    /// Maksymalny czas (w sekundach) pomiędzy zmianami tekstu aby uznać za paste
+    /// Maksymalny czas (sekundy) między zmianami tekstu, by sklasyfikować je jako wklejenie.
     /// </summary>
+    /// <value>Domyślnie 0.02 sekundy; powinno być dodatnie.</value>
     [Export]
     public float MaxPasteTime { get; set; } = 0.02f;
 
+    /// <summary>Poprzednia wartość tekstu używana do obliczenia różnicy długości.</summary>
     private string previousText = "";
+    /// <summary>Znacznik czasu (s) ostatniej zmiany tekstu.</summary>
     private double lastChangeTime = 0;
+    /// <summary>Zarejestrowany callback wywoływany po wykryciu wklejenia.</summary>
     private Action<string> onPasteCallback;
 
+    /// <summary>
+    /// Podpina zdarzenia dla monitorowanego pola i resetuje licznik czasu przy starcie.
+    /// </summary>
+    /// <seealso cref="OnTextChanged"/>
     public override void _Ready()
     {
         base._Ready();
@@ -61,6 +78,11 @@ public partial class PasteDetector : Node
         }
     }
 
+    /// <summary>
+    /// Nasłuchuje skrótu wklejania (Ctrl/Cmd+V) i wyzwala callback po krótkim opóźnieniu.
+    /// </summary>
+    /// <param name="@event">Zdarzenie wejściowe z Godot.</param>
+    /// <seealso cref="RegisterPasteCallback"/>
     public override void _Input(InputEvent @event)
     {
         base._Input(@event);
@@ -85,17 +107,20 @@ public partial class PasteDetector : Node
     }
 
     /// <summary>
-    /// Rejestruje callback do wykonania po wykryciu wklejenia
+    /// Rejestruje callback do wykonania po wykryciu wklejenia.
     /// </summary>
-    /// <param name="callback">Funkcja przyjmująca wklejony tekst jako argument</param>
+    /// <param name="callback">Funkcja przyjmująca wklejony tekst jako argument.</param>
+    /// <seealso cref="OnTextChanged"/>
     public void RegisterPasteCallback(Action<string> callback)
     {
         onPasteCallback = callback;
     }
 
     /// <summary>
-    /// Wywoływane gdy tekst w polu się zmienia
+    /// Reaguje na każdą zmianę tekstu w monitorowanym polu i wykrywa wklejenie na podstawie tempa oraz długości zmiany.
     /// </summary>
+    /// <param name="newText">Aktualna treść pola po zmianie.</param>
+    /// <seealso cref="RegisterPasteCallback"/>
     private void OnTextChanged(string newText)
     {
         double currentTime = Time.GetTicksMsec() / 1000.0;
@@ -118,6 +143,9 @@ public partial class PasteDetector : Node
         lastChangeTime = currentTime;
     }
 
+    /// <summary>
+    /// Odłącza subskrypcję zmian tekstu przy usuwaniu węzła.
+    /// </summary>
     public override void _ExitTree()
     {
         base._ExitTree();

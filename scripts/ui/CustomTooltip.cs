@@ -1,14 +1,27 @@
 using Godot;
 
+/// <summary>
+/// Prosty tooltip z opóźnionym wyświetlaniem, podążający za kursorem.
+/// </summary>
+/// <remarks>
+/// Wymaga dziecka typu <see cref="Label"/> o nazwie "Label"; działa w wątku głównym Godota (nie thread-safe).
+/// </remarks>
 public partial class CustomTooltip : PanelContainer
 {
+    /// <summary>Label przechowujący tekst tooltipa.</summary>
     private Label label;
+    /// <summary>Timer opóźniający wyświetlenie tooltipa.</summary>
     private Timer showTimer;
 
     private const float ShowDelay = 0.2f; // 200ms opóźnienia
     private const int MouseOffsetX = 10;
     private const int MouseOffsetY = 10;
 
+    /// <summary>
+    /// Inicjalizuje label, timer oraz początkowy stan tooltipa.
+    /// </summary>
+    /// <seealso cref="OnShowTimerTimeout"/>
+    /// <seealso cref="UpdateSize"/>
     public override void _Ready()
     {
         base._Ready();
@@ -29,6 +42,11 @@ public partial class CustomTooltip : PanelContainer
         MouseFilter = MouseFilterEnum.Ignore;
     }
 
+    /// <summary>
+    /// Aktualizuje pozycję tooltipa gdy jest widoczny.
+    /// </summary>
+    /// <param name="delta">Czas od ostatniej klatki.</param>
+    /// <seealso cref="UpdatePosition"/>
     public override void _Process(double delta)
     {
         base._Process(delta);
@@ -41,8 +59,11 @@ public partial class CustomTooltip : PanelContainer
     }
 
     /// <summary>
-    /// Pokazuje tooltip z podanym tekstem
+    /// Pokazuje tooltip z podanym tekstem po krótkim opóźnieniu.
     /// </summary>
+    /// <param name="text">Treść wyświetlana w tooltipie.</param>
+    /// <seealso cref="UpdateSize"/>
+    /// <seealso cref="OnShowTimerTimeout"/>
     public void Show(string text)
     {
         if (label != null)
@@ -63,6 +84,7 @@ public partial class CustomTooltip : PanelContainer
     /// <summary>
     /// Ukrywa tooltip
     /// </summary>
+    /// <seealso cref="Show"/>
     public new void Hide()
     {
         Visible = false;
@@ -76,6 +98,7 @@ public partial class CustomTooltip : PanelContainer
     /// <summary>
     /// Callback gdy timer się skończy
     /// </summary>
+    /// <seealso cref="UpdatePosition"/>
     private void OnShowTimerTimeout()
     {
         Visible = true;
