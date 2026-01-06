@@ -6,6 +6,8 @@ using System.Collections.Generic;
 
 public partial class CardManager : GridContainer
 {
+    public const int DECK_CARD_COUNT = 25;
+
 	[Signal] public delegate void CardManagerReadyEventHandler();
 
 	[Export] private MainGame mainGame;
@@ -13,20 +15,23 @@ public partial class CardManager : GridContainer
 	private EOSManager eosManager;
 	private List<string> names;
 	private Random rand; 
+
+    public game.Deck Deck { get; private set; }
+    private Dictionary<string, List<double>> namesVectorDb;
+    private int takenCards = 0
 	private int commonCards = 0;
 	private int blueCards = 0;
 	private int redCards = 0;
 	private int assassinCards = 0;
-	
-	public MainGame.Team teamWithMoreCards = MainGame.Team.None;
-	
+
 	public enum CardType
-	{	
+	{
 		Red,
 		Blue,
 		Assassin,
 		Common
 	}
+
 
 	public override void _Ready()
 	{
@@ -47,64 +52,54 @@ public partial class CardManager : GridContainer
 		EmitSignal(SignalName.CardManagerReady);
 	}
 
-	public void LoadNames(){
-		string json = File.ReadAllText("assets/dict.json");
- 		string[] name = JsonSerializer.Deserialize<string[]>(json);
-		names = new List<string>(name);
+	public void LoadDeck(){
+        string json = File.ReadAllText("assets/WordVectorBase.json");
+        namesVectorDb = JsonSerializer.Deserialize<Dictionary<string, List<double>>>(json);
+        game.Team cardTeam = mainGame.StartingTeam == MainGame.Team.Red
+            ? game.Team.Red
+            : game.Team.Blue;
+
+        Deck = game.Deck.CreateFromDictionary(namesVectorDb, cardTeam, rand);
 	}
 
-	public string GetCardName(){
-		if(names == null) LoadNames();
-		string name = names[rand.Next(0,names.Count)];
-		names.Remove(name);
-		return name;
-	}
-	
-	public CardType GetCardType(){
-		//3-assassin 2-blue 1-red 0-common
-		if(teamWithMoreCards == MainGame.Team.None)
-		{
-			teamWithMoreCards = mainGame.StartingTeam;
-		}
-		int num = rand.Next(0,4);
-		if(num == 3){
-			if(assassinCards == 0) {
-				assassinCards += 1;
-				return CardType.Assassin;
-			}
-			return GetCardType();
-		}
-		else if(num == 2){
-			if(blueCards < 8 || (blueCards < 9 &&  teamWithMoreCards == MainGame.Team.Blue)){
-				blueCards += 1;
-				return CardType.Blue;
-			}
-			return GetCardType();
-		}
-		else if(num == 1){
-			if(redCards < 8 || (redCards < 9 &&  teamWithMoreCards == MainGame.Team.Red)){
-				redCards += 1;
-				return CardType.Red;
-			}
-			return GetCardType();
-		}
-		else{
-			if(commonCards < 7){
-				commonCards += 1;
-				return CardType.Common;
-			}
-			return GetCardType();
-		}
-	}
-	
+    public game.Card TakeCard()
+    {
+        if (Deck == null)
+        {
+            LoadDeck();
+        }
+
+        if (takenCards > DECK_CARD_COUNT)
+        {
+            throw new Exception("Out of cards to take - taken too many");
+        }
+
+        game.Card card = Deck.Cards[takenCards];
+        takenCards += 1;
+        return card;
+    }
+
 	private void OnCardConfirmed(AgentCard card)
 	{
 		GD.Print("Karta kliknięta: " + card.Name);
 		card.SetColor();
 		card.MouseFilter = MouseFilterEnum.Ignore;
 		HideAllCards();
-		mainGame.CardConfirm(card);
-	}
+
+        string cardName = card.cardInfo.Word;
+        GD.Print($"About to delete {cardName} card from deck");
+        for (var i = 0; i < Deck.Cards.Count; i++)
+        {
+            if (Deck.Cards[i].Word == cardName)
+            {
+                GD.Print($"Deleting card {cardName} from deck");
+                Deck.Cards.SwapRemove(i);
+                break;
+            }
+        }
+
+        mainGame.CardConfirm(card);
+    }
 
 	private void HideAllCards()
 	{
