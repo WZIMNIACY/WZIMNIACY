@@ -1,6 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
+[Tool]
 public partial class SettingsManager : Node
 {
 	public static SettingsManager Instance { get; private set; }
@@ -49,6 +50,7 @@ public partial class SettingsManager : Node
 
 	public override void _Ready()
 	{
+		if (Engine.IsEditorHint()) return;
 		if (Instance != null && Instance != this)
 		{
 			QueueFree();

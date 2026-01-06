@@ -7,7 +7,7 @@
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
 
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);IDE1006;NETSDK1022</NoWarn>
+    <NoWarn>$(NoWarn);IDE1006;NETSDK1022;IDE0005</NoWarn>
 
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
