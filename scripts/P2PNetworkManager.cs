@@ -76,7 +76,7 @@ public partial class P2PNetworkManager : Node
 
     // Host może (opcjonalnie) zbudować payload z dodatkowymi danymi (name/team)
     // żeby P2P nie znał EOSManager.    
-    public Func<GameStartPayload> HostBuildGameStartPayload;
+    public Func<GameStartPayload> hostBuildGameStartPayload;
     // =============================
 
 
@@ -339,11 +339,11 @@ public partial class P2PNetworkManager : Node
         GameStartPayload payload = null;
 
         // 1) Jeśli host dostarcza payload (np. z name/team/seed) -> użyj
-        if (HostBuildGameStartPayload != null)
+        if (hostBuildGameStartPayload != null)
         {
             try
             {
-                payload = HostBuildGameStartPayload.Invoke();
+                payload = hostBuildGameStartPayload.Invoke();
             }
             catch (Exception e)
             {
