@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://d3qcvlrxpnrc2" path="res://scripts/ui/EscapeBackHandler.cs" id="1_escape"]
 [ext_resource type="Script" uid="uid://e1gwnvhxoqi8a" path="res://scripts/ui/LobbyLeaveConfirmation.cs" id="1_leave_confirm"]
+[ext_resource type="Script" uid="uid://baqxgvwrnvlw" path="res://scripts/ui/PasteDetector.cs" id="1_paste"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="2_31whf"]
 [ext_resource type="StyleBox" uid="uid://dgkp41umsnv7g" path="res://assets/inputs/InputPlaceHolder.tres" id="2_qh262"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="3_1cd5g"]
@@ -163,6 +164,9 @@ script = ExtResource("1_escape")
 PreviousScenePath = "res://scenes/menu/main.tscn"
 LeaveLobbyBeforeExit = true
 ShowConfirmDialog = true
+
+[node name="PasteDetector" type="Node" parent="."]
+script = ExtResource("1_paste")
 
 [node name="Panel" type="ColorRect" parent="."]
 layout_mode = 1
@@ -365,7 +369,6 @@ alignment = 1
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
-tooltip_text = "Zatwierdź wprowadzanie Enter"
 theme_override_constants/minimum_character_width = 20
 theme_override_fonts/font = ExtResource("2_31whf")
 theme_override_font_sizes/font_size = 16
@@ -379,7 +382,6 @@ emoji_menu_enabled = false
 custom_minimum_size = Vector2(18, 18)
 layout_mode = 2
 size_flags_vertical = 0
-tooltip_text = "Jak uzyskać api key od DeepSeek?"
 mouse_default_cursor_shape = 2
 theme_override_fonts/font = ExtResource("3_1cd5g")
 theme_override_font_sizes/font_size = 13

@@ -98,10 +98,41 @@ public partial class EOSManager : Node
 	// Lokalny cache danych sesji gry odczytanych z atrybtów lobby
 	public GameSessionData CurrentGameSession { get; private set; } = new GameSessionData();
 
+	// Nie wiem dlaczego projekt nie buduje się przez jakiś błąd związany z apikey więc daje quick fix, nie koniecznie poprawny
+	private string apiKey = "";
+	public string ApiKey => apiKey;
+	public void SetAPIKey(string newApiKey)
+	{
+		apiKey = newApiKey ?? "";
+		GD.Print("[EOS] API key set");
+	}
+
+
+	// Właśiwość platforminterface
+	public PlatformInterface PlatformInterface => platformInterface;
+
 	// chroni przed wielokrotnym przejściem do sceny gry przy wielu update’ach lobby
 	private bool sessionStartHandled = false;
 
-    // Wywoływane przez hosta - zapisuje dane sesji do lobby i inicjuje start gry
+	public string GetLobbyOwnerPuidString()
+	{
+		if (string.IsNullOrEmpty(currentLobbyId))
+			return "";
+
+		if (!foundLobbyDetails.ContainsKey(currentLobbyId) || foundLobbyDetails[currentLobbyId] == null)
+			return "";
+
+		var infoOptions = new LobbyDetailsCopyInfoOptions();
+		foundLobbyDetails[currentLobbyId].CopyInfo(ref infoOptions, out LobbyDetailsInfo? info);
+
+		if (info == null)
+			return "";
+
+		return info.Value.LobbyOwnerUserId?.ToString() ?? "";
+	}
+
+
+	// Wywoływane przez hosta - zapisuje dane sesji do lobby i inicjuje start gry
 	public void RequestStartGameSession()
 	{
     	if (string.IsNullOrEmpty(currentLobbyId))
@@ -134,7 +165,8 @@ public partial class EOSManager : Node
 
     	// 3) lokalnie też ustaw cache
     	CurrentGameSession.SessionId = sessionId;
-    	CurrentGameSession.Seed = seed;
+		CurrentGameSession.LobbyId = currentLobbyId;
+		CurrentGameSession.Seed = seed;
     	CurrentGameSession.HostUserId = localProductUserId.ToString();
     	CurrentGameSession.State = GameSessionState.Starting;
 
@@ -2176,6 +2208,7 @@ public partial class EOSManager : Node
 		CurrentGameSession.HostUserId = "";
 		CurrentGameSession.Seed = 0;
 		CurrentGameSession.State = GameSessionState.None;
+		CurrentGameSession.LobbyId = currentLobbyId;
 
 		// Iteruj po wszystkich atrybutach lobby
 		for (uint i = 0; i < attributeCount; i++)
@@ -2324,10 +2357,11 @@ public partial class EOSManager : Node
 		{
     		sessionStartHandled = false;
 		}
-		
+
 		bool hasAll = !string.IsNullOrEmpty(CurrentGameSession.SessionId)
-          		&& !string.IsNullOrEmpty(CurrentGameSession.HostUserId)
-          		&& CurrentGameSession.Seed != 0;
+		  && !string.IsNullOrEmpty(CurrentGameSession.HostUserId)
+		  && CurrentGameSession.Seed != 0
+		  && !string.IsNullOrEmpty(CurrentGameSession.LobbyId);
 
 		// Bezpieczne wykrycie startu sesji gry - wykonywane tylko raz na update lobby	
 		if (!string.IsNullOrEmpty(currentLobbyId)
@@ -2337,8 +2371,11 @@ public partial class EOSManager : Node
 		{
     		sessionStartHandled = true;
 
+
     		GD.Print($"🚀 Session start detected from lobby: {CurrentGameSession.SessionId}, seed={CurrentGameSession.Seed}");
-    		EmitSignal(SignalName.GameSessionStartRequested,
+			GD.Print($"[SESSION DEBUG] currentLobbyId={currentLobbyId} sessionLobbyId={CurrentGameSession.LobbyId} hostUserId={CurrentGameSession.HostUserId} localPuid={localProductUserIdString}");
+
+			EmitSignal(SignalName.GameSessionStartRequested,
         		CurrentGameSession.SessionId,
         		CurrentGameSession.HostUserId,
         		CurrentGameSession.Seed
@@ -2471,60 +2508,6 @@ public partial class EOSManager : Node
 	{
 		SetLobbyAttribute("ReadyToStart", isReady ? "true" : "false");
 		GD.Print($"✅ Setting ReadyToStart to: {isReady}");
-	}
-
-	public void SetAPIKey(string apiKey)
-	{
-		if (string.IsNullOrWhiteSpace(apiKey))
-		{
-			GD.Print("⚠️ Cannot set empty API Key");
-			return;
-		}
-
-		SetLobbyAttribute("APIKey", apiKey);
-	}
-
-	public string GetAPIKey()
-	{
-		if (string.IsNullOrEmpty(currentLobbyId))
-		{
-			GD.PrintErr("❌ Cannot get API Key: Not in any lobby!");
-			return "";
-		}
-
-		// Sprawdź czy mamy lobby details
-		if (!foundLobbyDetails.ContainsKey(currentLobbyId))
-		{
-			GD.PrintErr("❌ Cannot get API Key: Lobby details not found!");
-			return "";
-		}
-
-		LobbyDetails lobbyDetails = foundLobbyDetails[currentLobbyId];
-
-		if (lobbyDetails != null)
-		{
-			var attrCountOptions = new LobbyDetailsGetAttributeCountOptions();
-			uint attributeCount = lobbyDetails.GetAttributeCount(ref attrCountOptions);
-
-			for (uint i = 0; i < attributeCount; i++)
-			{
-				var attrOptions = new LobbyDetailsCopyAttributeByIndexOptions() { AttrIndex = i };
-				Result attrResult = lobbyDetails.CopyAttributeByIndex(ref attrOptions, out Epic.OnlineServices.Lobby.Attribute? attribute);
-
-				if (attrResult == Result.Success && attribute.HasValue && attribute.Value.Data.HasValue)
-				{
-					string keyStr = attribute.Value.Data.Value.Key;
-					string valueStr = attribute.Value.Data.Value.Value.AsUtf8;
-
-					if (keyStr != null && keyStr.Equals("APIKey", StringComparison.OrdinalIgnoreCase))
-					{
-						return valueStr;
-					}
-				}
-			}
-		}
-
-		return "";
 	}
 
 	/// <summary>
