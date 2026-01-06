@@ -69,6 +69,9 @@ public partial class P2PNetworkManager : Node
     {
         public string sessionId { get; set; }
         public GameStartPlayer[] players { get; set; }
+        public string startingTeam { get; set; } // "Blue" / "Red"
+        public ulong seed { get; set; }          // wspólny seed rozgrywki
+
     }
 
     // Host może (opcjonalnie) zbudować payload z dodatkowymi danymi (name/team)

@@ -126,11 +126,10 @@ public partial class MainGame : Control
             // TODO: w przyszłości wyślij startingTeam do klientów (P2P / lobby attributes)
         }
         else
-        {
-            // Tymczasowe zachowanie klienta:
-            startingTeam = Team.Blue;
-            GD.Print("Starting team (CLIENT TEMP): " + startingTeam.ToString());
+{
+            GD.Print("Starting team (CLIENT): waiting for game_start...");
         }
+
 
         // === P2P (DODANE) ===
         p2pNet = GetNode<P2PNetworkManager>("P2PNetworkManager");
@@ -140,11 +139,16 @@ public partial class MainGame : Control
             p2pNet.PacketHandlers += HandlePackets;
             p2pNet.PacketHandlers += HandleGameStartPacket;
 
-
-            if (!isHost)
+            if (isHost)
+            {
+                p2pNet.HostBuildGameStartPayload = BuildGameStartPayloadFromLobby;
+            }
+            
+            /*if (!isHost)
             {
                 p2pNet.HandshakeCompleted += OnP2PHandshakeCompletedTest;
             }
+            */
         }
         // =====================
 
@@ -187,64 +191,7 @@ public partial class MainGame : Control
             );
         }
 
-        // Assing initianl points and turn
-        if (startingTeam == Team.Blue)
-        {
-            currentTurn = Team.Blue;
-            pointsBlue = 9;
-            pointsRed = 8;
-            SetTurnBlue();
-        }
-        else
-        {
-            currentTurn = Team.Red;
-            pointsBlue = 8;
-            pointsRed = 9;
-            SetTurnRed();
-        }
-        UpdatePointsDisplay();
-        UpdateTurnDisplay();
-
-        NewTurnStart += OnNewTurnStart;
-
-        if (gameInputPanel != null)
-        {
-            gameInputPanel.HintGiven += OnCaptainHintReceived;
-        }
-        else
-        {
-            GD.PrintErr("Error");
-        }
-
-        string userID = eosManager.localProductUserIdString;
-        EOSManager.Team team = eosManager.GetTeamForUser(userID);
-        playerTeam = (team == EOSManager.Team.Blue) ? Team.Blue : Team.Red;
-        if (playerTeam == startingTeam)
-        {
-            gameRightPanel.EnableSkipButton();
-        }
-        else
-        {
-            gameRightPanel.DisableSkipButton();
-        }
-
-        if (eosManager.isLobbyOwner)
-        {
-            if (eosManager.currentAIType == EOSManager.AIType.LocalLLM)
-            {
-                llm = new LocalLLM();
-            }
-            else
-            {
-                var apiKey = eosManager.ApiKey;
-                if (string.IsNullOrEmpty(apiKey))
-                {
-                    throw new Exception("Got into game without settings API key");
-                }
-
-                llm = new DeepSeekLLM(apiKey);
-            }
-        }
+        
 
     }
 
@@ -256,10 +203,12 @@ public partial class MainGame : Control
             p2pNet.PacketHandlers -= HandlePackets;
             p2pNet.PacketHandlers -= HandleGameStartPacket;
 
+            /*
             if (!isHost)
             {
                 p2pNet.HandshakeCompleted -= OnP2PHandshakeCompletedTest;
             }
+            */
         }
         base._ExitTree();
     }
@@ -411,6 +360,32 @@ public partial class MainGame : Control
             playerPuidByIndex[p.index] = p.puid;
         }
 
+        string local = eosManager.localProductUserIdString;
+        foreach (var p in payload.players)
+        {
+            if (p == null) continue;
+            if (p.puid != local) continue;
+
+            if (Enum.TryParse<Team>(p.team, out var parsed))
+            {
+                playerTeam = parsed;
+            }
+            break;
+        }
+
+        if (!string.IsNullOrEmpty(payload.startingTeam) && Enum.TryParse<Team>(payload.startingTeam, out var parsedStart))
+        {
+            startingTeam = parsedStart;
+        }
+        else
+        {
+            GD.PrintErr($"[MainGame] GAME START missing/invalid startingTeam={payload.startingTeam}");
+            startingTeam = Team.Blue;
+        }
+
+        GD.Print($"[MainGame] GAME START seed={payload.seed}");
+        
+
         GD.Print($"[MainGame] GAME START: players={playerPuidByIndex.Count} sessionId={payload.sessionId}");
 
         if (loadingScreen != null)
@@ -419,8 +394,123 @@ public partial class MainGame : Control
             loadingScreen.MouseFilter = Control.MouseFilterEnum.Ignore;
         }
 
+        // Assing initianl points and turn
+        if (startingTeam == Team.Blue)
+        {
+            currentTurn = Team.Blue;
+            pointsBlue = 9;
+            pointsRed = 8;
+            SetTurnBlue();
+        }
+        else
+        {
+            currentTurn = Team.Red;
+            pointsBlue = 8;
+            pointsRed = 9;
+            SetTurnRed();
+        }
+        UpdatePointsDisplay();
+        UpdateTurnDisplay();
+
+        NewTurnStart += OnNewTurnStart;
+
+        if (gameInputPanel != null)
+        {
+            gameInputPanel.HintGiven += OnCaptainHintReceived;
+        }
+        else
+        {
+            GD.PrintErr("Error");
+        }
+
+        string userID = eosManager.localProductUserIdString;
+        EOSManager.Team team = eosManager.GetTeamForUser(userID);
+        playerTeam = (team == EOSManager.Team.Blue) ? Team.Blue : Team.Red;
+        if (playerTeam == startingTeam)
+        {
+            gameRightPanel.EnableSkipButton();
+        }
+        else
+        {
+            gameRightPanel.DisableSkipButton();
+        }
+
+        if (eosManager.isLobbyOwner)
+        {
+            if (eosManager.currentAIType == EOSManager.AIType.LocalLLM)
+            {
+                llm = new LocalLLM();
+            }
+            else
+            {
+                var apiKey = eosManager.ApiKey;
+                if (string.IsNullOrEmpty(apiKey))
+                {
+                    throw new Exception("Got into game without settings API key");
+                }
+
+                llm = new DeepSeekLLM(apiKey);
+            }
+        }
+
         EmitSignal(SignalName.GameReady);
         EmitSignal(SignalName.NewTurnStart);
+    }
+
+    private P2PNetworkManager.GameStartPayload BuildGameStartPayloadFromLobby()
+    {
+        // Kolejność graczy: host (index 0) + reszta według lobby (albo sort fallback)
+        var players = new List<P2PNetworkManager.GameStartPlayer>();
+
+        // Host jako index 0
+        players.Add(new P2PNetworkManager.GameStartPlayer
+        {
+            index = 0,
+            puid = eosManager.localProductUserIdString,
+            name = null, // można dodać nazwę z lobby, tylko nie wiem na razie jak, jeśli potrzebne
+            team = eosManager.GetTeamForUser(eosManager.localProductUserIdString).ToString()
+        });
+
+        // Klienci z lobby
+        var members = eosManager.GetCurrentLobbyMembers();
+        var clientPuids = new List<string>();
+
+        foreach (var member in members)
+        {
+            if (member == null || !member.ContainsKey("userId")) continue;
+
+            string puid = member["userId"]?.ToString();
+            if (string.IsNullOrEmpty(puid)) continue;
+            if (puid == eosManager.localProductUserIdString) continue;
+
+            clientPuids.Add(puid);
+        }
+
+        // Stabilna kolejność (żeby indexy były deterministyczne nawet jak lobby zwróci inaczej)
+        clientPuids.Sort(StringComparer.Ordinal);
+
+        int index = 1;
+        foreach (string puid in clientPuids)
+        {
+            players.Add(new P2PNetworkManager.GameStartPlayer
+            {
+                index = index,
+                puid = puid,
+                name = null, // można dodać nazwę z lobby, tylko nie wiem na razie jak, jeśli potrzebne
+                team = eosManager.GetTeamForUser(puid).ToString()
+            });
+
+            index++;
+        }
+
+        return new P2PNetworkManager.GameStartPayload
+        {
+            sessionId = eosManager.CurrentGameSession.SessionId,
+            players = players.ToArray(),
+            startingTeam = startingTeam.ToString(),
+            seed = eosManager.CurrentGameSession.Seed
+        };
+
     }
 
     private bool CanInteractWithGame()
