@@ -53,6 +53,13 @@ public partial class MainGame : Control
         None
     }
 
+    private sealed class HintNetworkPayload
+    {
+        public string Word { get; set; }
+        public int Number { get; set; }
+        public bool IsBlueTeam { get; set; }
+    }
+
     private int turnCounter = 1;
     Team startingTeam;
     public Team StartingTeam
@@ -299,6 +306,24 @@ public partial class MainGame : Control
             return true; // zjedliśmy pakiet
         }
 
+        if (packet.type == "hint_given" && !isHost)
+        {
+            try
+            {
+                var data = packet.payload.Deserialize<HintNetworkPayload>();
+
+                if(gameRightPanel != null)
+                {
+                    gameRightPanel.UpdateHintDisplay(data.Word, data.Number, data.IsBlueTeam);
+                }
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"Hint error: {e.Message}");
+            }
+            return true;
+        }
+    // -----------------
         // Tu dopisujecie kolejne RPC:
         // if (packet.type == "hint_given" && isHost) { ... return true; }
         // if (packet.type == "turn_skip" && isHost) { ... return true; }
@@ -332,15 +357,38 @@ public partial class MainGame : Control
         if (gameInputPanel != null)
         {
             gameInputPanel.SetupTurn(currentTurn == Team.Blue);
+            gameInputPanel.Visible = isHost;
         }
     }
 
     private void OnCaptainHintReceived(string word, int number)
     {
         GD.Print($"{word} [{number}]");
+        bool isBlue = (currentTurn == Team.Blue);
         if (gameRightPanel != null)
         {
-            gameRightPanel.UpdateHintDisplay(word, number, currentTurn == Team.Blue);
+            gameRightPanel.UpdateHintDisplay(word, number, isBlue);
+        }
+
+        if(isHost && p2pNet != null)
+        {
+            var payload = new HintNetworkPayload
+            {
+                Word = word,
+                Number = number,
+                IsBlueTeam = isBlue
+            };
+
+            var members = eosManager.GetCurrentLobbyMembers();
+            foreach (var member in members)
+        {
+            string puid = member["userId"].ToString();
+            if (puid != eosManager.localProductUserIdString)
+            {
+                var targetPeer = ProductUserId.FromString(puid);
+                p2pNet.SendRpcToPeer(targetPeer, "hint_given", payload);
+            }
+        }
         }
     }
 
