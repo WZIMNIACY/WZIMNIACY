@@ -141,7 +141,7 @@ public partial class MainGame : Control
 
             if (isHost)
             {
-                p2pNet.HostBuildGameStartPayload = BuildGameStartPayloadFromLobby;
+                p2pNet.hostBuildGameStartPayload = BuildGameStartPayloadFromLobby;
             }
             
             /*if (!isHost)
