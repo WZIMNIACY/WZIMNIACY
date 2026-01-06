@@ -13,7 +13,6 @@ public partial class CardManager : GridContainer
 	[Export] private MainGame mainGame;
 	
 	private EOSManager eosManager;
-	private List<string> names;
 	private Random rand; 
 
     public game.Deck Deck { get; private set; }
