@@ -467,7 +467,7 @@ public partial class MainGame : Control
         {
             index = 0,
             puid = eosManager.localProductUserIdString,
-            name = null, // można dodać nazwę z lobby, tylko nie wiem na razie jak, jeśli potrzebne
+            name = GetDisplayNameFromLobby(eosManager.localProductUserIdString),
             team = eosManager.GetTeamForUser(eosManager.localProductUserIdString).ToString()
         });
 
@@ -496,7 +496,7 @@ public partial class MainGame : Control
             {
                 index = index,
                 puid = puid,
-                name = null, // można dodać nazwę z lobby, tylko nie wiem na razie jak, jeśli potrzebne
+                name = GetDisplayNameFromLobby(puid),
                 team = eosManager.GetTeamForUser(puid).ToString()
             });
 
@@ -511,6 +511,44 @@ public partial class MainGame : Control
             seed = eosManager.CurrentGameSession.Seed
         };
 
+    }
+
+    private string GetDisplayNameFromLobby(string puid)
+    {
+        if (eosManager == null || string.IsNullOrEmpty(puid))
+        {
+            return "";
+        }
+
+        // To jest to samo cache, które budujesz w EOSManager.GetLobbyMembers()
+        var members = eosManager.GetCurrentLobbyMembers();
+        if (members == null)
+        {
+            return "";
+        }
+
+        foreach (var member in members)
+        {
+            if (member == null) continue;
+            if (!member.ContainsKey("userId")) continue;
+
+            string memberPuid = member["userId"].ToString();
+            if (memberPuid != puid) continue;
+
+            if (member.ContainsKey("displayName"))
+            {
+                string displayName = member["displayName"].ToString();
+                if (!string.IsNullOrEmpty(displayName))
+                {
+                    return displayName;
+                }
+            }
+
+            break;
+        }
+
+        // fallback jakby coś poszło nie tak z cache
+        return $"Player_{puid.Substring(Math.Max(0, puid.Length - 4))}";
     }
 
     private bool CanInteractWithGame()
