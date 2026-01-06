@@ -10,7 +10,6 @@ using Epic.OnlineServices.Auth;
 using Epic.OnlineServices.Connect;
 using Epic.OnlineServices.Lobby;
 
-[Tool]
 public partial class EOSManager : Node
 {
 	// Sygnały dla UI
@@ -289,7 +288,6 @@ public partial class EOSManager : Node
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		if (Engine.IsEditorHint()) return;
 		base._Ready();
 
 		// Opcjonalne opóźnienie sieci (do testów)

@@ -3,26 +3,28 @@ using System;
 
 [Tool]
 public partial class SoundManager : Node
-{	
-	// Ścieżki do plików audio
+{
+	// --- ŚCIEŻKI ---
 	private const string AUDIO_HOVER_PATH = "res://assets/sounds/Hover.ogg";
 	private const string AUDIO_BUTTON_PATH = "res://assets/sounds/Button.ogg";
 	private const string AUDIO_BG_MUSIC_PATH = "res://assets/sounds/Background.mp3";
 
-	// Odtwarzacze audio
+	// --- KOMPONENTY ---
 	private AudioStreamPlayer musicPlayer;
 	private AudioStreamPlayer sfxHover;
 	private AudioStreamPlayer sfxClick;
 
-	// Preloadowane streamy
+	// --- ZASOBY ---
 	private AudioStream hoverStream;
 	private AudioStream buttonStream;
 	private AudioStream bgMusicStream;
 
 	public override void _Ready()
 	{
+		// 1. ZABEZPIECZENIE DLA EDYTORA I CI (To naprawia błędy na GitHubie)
 		if (Engine.IsEditorHint()) return;
-		// 1. Dźwięki działają w pauzie
+
+		// 2. Dźwięki działają nawet gdy gra jest zapauzowana
 		ProcessMode = ProcessModeEnum.Always;
 
 		GD.Print("🎵 Initializing SoundManager...");
@@ -31,11 +33,12 @@ public partial class SoundManager : Node
 		SetupAudioPlayers();
 		PlayMusic();
 
-		// 2. Podłączamy się do sygnału dla PRZYSZŁYCH przycisków
+		// 3. Podłączamy się do sygnału dla NOWYCH przycisków (np. ładowanie sceny)
 		GetTree().NodeAdded += OnNodeAdded;
 
-		// 3. Skanujemy przyciski już istniejące
-		ScanTreeForButtons(GetTree().Root);
+		// 4. Skanujemy przyciski JUŻ ISTNIEJĄCE w pierwszej scenie
+		// Używamy CallDeferred, żeby mieć pewność, że drzewo jest gotowe (fix dla stabilności)
+		CallDeferred(nameof(SafeScanTree));
 
 		GD.Print("✅ SoundManager ready!");
 	}
@@ -45,29 +48,25 @@ public partial class SoundManager : Node
 		hoverStream   = GD.Load<AudioStream>(AUDIO_HOVER_PATH);
 		buttonStream  = GD.Load<AudioStream>(AUDIO_BUTTON_PATH);
 		bgMusicStream = GD.Load<AudioStream>(AUDIO_BG_MUSIC_PATH);
-
-		if (hoverStream == null)   GD.PrintErr($"❌ Failed to load: {AUDIO_HOVER_PATH}");
-		if (buttonStream == null)  GD.PrintErr($"❌ Failed to load: {AUDIO_BUTTON_PATH}");
-		if (bgMusicStream == null) GD.PrintErr($"❌ Failed to load: {AUDIO_BG_MUSIC_PATH}");
 	}
 
 	private void SetupAudioPlayers()
 	{
-		// Muzyka
+		// --- MUZYKA ---
 		musicPlayer = new AudioStreamPlayer();
 		musicPlayer.Stream = bgMusicStream;
 		musicPlayer.VolumeDb = -15.0f;
 		musicPlayer.Bus = "Music";
 		AddChild(musicPlayer);
 
-		// Dźwięk kliknięcia
+		// --- SFX KLIK ---
 		sfxClick = new AudioStreamPlayer();
 		sfxClick.Stream = buttonStream;
 		sfxClick.VolumeDb = -5.0f;
 		sfxClick.Bus = "SFX";
 		AddChild(sfxClick);
 
-		// Dźwięk najechania
+		// --- SFX HOVER ---
 		sfxHover = new AudioStreamPlayer();
 		sfxHover.Stream = hoverStream;
 		sfxHover.VolumeDb = -10.0f;
@@ -77,14 +76,19 @@ public partial class SoundManager : Node
 
 	private void PlayMusic()
 	{
-		if (musicPlayer != null && !musicPlayer.Playing)
+		if (musicPlayer != null && musicPlayer.Stream != null && !musicPlayer.Playing)
 		{
 			musicPlayer.Play();
-			GD.Print("🎵 Background music started");
 		}
 	}
 
-	// --- LOGIKA PODŁĄCZANIA ---
+	// --- LOGIKA PODŁĄCZANIA (NAPRAWIONA) ---
+
+	private void SafeScanTree()
+	{
+		if (GetTree() == null || GetTree().Root == null) return;
+		ScanTreeForButtons(GetTree().Root);
+	}
 
 	private void OnNodeAdded(Node node)
 	{
@@ -93,10 +97,9 @@ public partial class SoundManager : Node
 
 	private void ScanTreeForButtons(Node node)
 	{
-		// Sprawdź obecny węzeł
 		ConnectButtonSignals(node);
 
-		// Sprawdź dzieci (rekurencja)
+		// Rekurencja dla dzieci
 		foreach (Node child in node.GetChildren())
 		{
 			ScanTreeForButtons(child);
@@ -105,17 +108,23 @@ public partial class SoundManager : Node
 
 	private void ConnectButtonSignals(Node node)
 	{
+		// Działamy tylko na przyciskach
 		if (node is BaseButton button)
 		{
-			// FIX: Zamiast IsConnected (które jest zawodne przy C# events), 
-			// używamy bezpiecznego wzorca: najpierw odejmij (-=), potem dodaj (+=).
-			// To gwarantuje, że funkcja nie podłączy się dwa razy.
-			
-			button.MouseEntered -= PlayHover; // Usuń jeśli już jest (bezpieczne, nawet jak nie ma)
-			button.MouseEntered += PlayHover; // Dodaj
-			
-			button.Pressed -= PlayClick;
+			// FIX: Metoda "Na Pieczątkę"
+			// Sprawdzamy, czy ten konkretny guzik został już obsłużony.
+			// "HasMeta" to wbudowana funkcja Godota do przechowywania danych w węźle.
+			if (button.HasMeta("SoundConnected")) 
+			{
+				return; // Już podłączony, wychodzimy!
+			}
+
+			// Podłączamy (tylko raz!)
+			button.MouseEntered += PlayHover;
 			button.Pressed += PlayClick;
+
+			// Przybijamy pieczątkę, żeby nie podłączyć go drugi raz
+			button.SetMeta("SoundConnected", true);
 		}
 	}
 
@@ -125,8 +134,7 @@ public partial class SoundManager : Node
 	{
 		if (sfxHover != null)
 		{
-			// FIX: Używamy nameof(), żeby nie zależeć od generowania kodu podczas błędu kompilacji
-			// GD.RandRange zwraca double, rzutujemy na float - to jest OK.
+			// Lekka losowość tonacji dla lepszego efektu
 			sfxHover.PitchScale = (float)GD.RandRange(0.95, 1.05);
 			sfxHover.Play();
 		}
@@ -142,8 +150,8 @@ public partial class SoundManager : Node
 
 	public override void _ExitTree()
 	{
-		// FIX: Sprawdź czy Tree istnieje (przy zamykaniu gry może być null)
-		if (GetTree() != null)
+		// Sprzątanie tylko jeśli nie jesteśmy w edytorze
+		if (!Engine.IsEditorHint() && GetTree() != null)
 		{
 			GetTree().NodeAdded -= OnNodeAdded;
 		}
