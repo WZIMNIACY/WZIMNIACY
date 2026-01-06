@@ -473,7 +473,7 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		GD.Print("[EOSManager:Initialization] ✅ EOS SDK initialized successfully.");
+		GD.Print("[EOSManager:Initialization] EOS SDK initialized successfully.");
 		// Krok 2: Konfiguracja logowania
 		LoggingInterface.SetLogLevel(LogCategory.AllCategories, LogLevel.VeryVerbose);
 		LoggingInterface.SetCallback((ref LogMessage logMessage) =>
@@ -481,7 +481,7 @@ public partial class EOSManager : Node
 			GD.Print($"[EOSManager:Logging {logMessage.Category}] {logMessage.Message}");
 		});
 
-		GD.Print("[EOSManager:Initialization] ✅ Logging configured.");
+		GD.Print("[EOSManager:Initialization] Logging configured.");
 		// Krok 3: Utworzenie platformy (PlatformHandle)
 		var createOptions = new Options()
 		{
@@ -510,7 +510,7 @@ public partial class EOSManager : Node
 			return;
 		}
 
-		GD.Print("[EOSManager:Initialization] ✅ EOS Platform Interface created successfully.");
+		GD.Print("[EOSManager:Initialization] EOS Platform Interface created successfully.");
 		// Pobierz Auth Interface
 		authInterface = platformInterface.GetAuthInterface();
 		if (authInterface == null)
@@ -1950,7 +1950,7 @@ public partial class EOSManager : Node
 							// KROK 6: Wyślij sygnał do UI (zmień scenę)
 							GetTree().CreateTimer(0.3).Timeout += () =>
 							{
-								GD.Print("✅ [EOSManager:LobbyJoin] [STEP 5/5] All synchronization complete, emitting LobbyJoined signal");
+								GD.Print("[EOSManager:LobbyJoin] [STEP 5/5] All synchronization complete, emitting LobbyJoined signal");
 								isJoiningLobby = false; // Zakończono dołączanie
 								EmitSignal(SignalName.LobbyJoined, currentLobbyId);
 							};
@@ -2453,7 +2453,7 @@ public partial class EOSManager : Node
 			// Jeśli to MY zostaliśmy awansowani
 			if (promotedUserId == localProductUserId.ToString())
 			{
-				GD.Print("  [EOSManager:LobbyMemberStatus] ✅ YOU have been promoted to lobby owner!");
+				GD.Print("  [EOSManager:LobbyMemberStatus] YOU have been promoted to lobby owner!");
 				isLobbyOwner = true;
 
 				if (isLocalPlayerInLobbyView)
@@ -2628,7 +2628,7 @@ public partial class EOSManager : Node
 
 		SetMemberAttribute("Team", teamName.ToString());
 		SetMemberAttribute("ProfileIcon", newIcon.ToString());
-		GD.Print($"[EOSManager:Team] ✅ Set my team to: {teamName}");
+		GD.Print($"[EOSManager:Team] Set my team to: {teamName}");
 
 		//Sprawdzenie warunków dotyczących rozpoczęcia gry
 		EmitSignal(SignalName.CheckTeamsBalanceConditions);
