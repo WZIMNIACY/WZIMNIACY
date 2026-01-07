@@ -88,6 +88,10 @@ public partial class MainGame : Control
         public string by { get; set; }
     }
 
+    private sealed class RemovePointAckPayload
+    {
+        public Team team { get; set; }
+    }
     private bool p2pJsonTestSent = false;
     // =====================
 
@@ -359,6 +363,24 @@ public partial class MainGame : Control
             return true;
         }
 
+        if(packet.type == "remove_point_ack" && !isHost)
+        {
+            RemovePointAckPayload ack;
+            try
+            {
+                ack = packet.payload.Deserialize<RemovePointAckPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC remove_point_ack payload parse error: {e.Message}");
+                return true;
+            }
+
+            GD.Print($"[MainGame][P2P-TEST] CLIENT received remove_point_ack from host: removing point from: {ack.team} fromPeer={fromPeer}");
+            if(ack.team == Team.Blue) RemovePointBlue();
+            if(ack.team == Team.Red) RemovePointRed();
+            return true;
+        }
         // Tu dopisujecie kolejne RPC:
         // if (packet.type == "hint_given" && isHost) { ... return true; }
         // if (packet.type == "turn_skip" && isHost) { ... return true; }
@@ -533,6 +555,33 @@ public partial class MainGame : Control
         GD.Print("Point removed from team blue...");
         pointsBlue--;
 
+        //Narazie tylko host rozsyła info o usunięciu punktu do klientów
+        if(isHost)
+        {
+            string str = eosManager.localProductUserIdString;
+            ProductUserId fromPeer = ProductUserId.FromString(str);
+            var ack = new
+            {
+                team = Team.Blue
+            };
+
+            foreach (var member in eosManager.GetCurrentLobbyMembers())
+            {
+                if (member == null || !member.ContainsKey("userId"))
+                {
+                    continue;
+                }
+
+                string puidStr = member["userId"].ToString();
+                if (puidStr != eosManager.localProductUserIdString)
+                {
+                    ProductUserId puid = ProductUserId.FromString(puidStr);
+                    bool sentInit = p2pNet.SendRpcToPeer(puid, "remove_point_ack", ack);
+                    GD.Print($"[MainGame][P2P-TEST] HOST sent remove_point_ack to {puid} ok={sentInit}");
+                }
+            }
+        }
+
         if (currentTurn == Team.Blue)
         {
             currentStreak++;
@@ -551,7 +600,32 @@ public partial class MainGame : Control
     {
         GD.Print("Point removed from team red...");
         pointsRed--;
+        //Narazie tylko host rozsyła info o usunięciu punktu do klientów
+        if(isHost)
+        {
+            string str = eosManager.localProductUserIdString;
+            ProductUserId fromPeer = ProductUserId.FromString(str); 
+            var ack = new
+            {
+                team = Team.Red
+            };
 
+            foreach (var member in eosManager.GetCurrentLobbyMembers())
+            {
+                if (member == null || !member.ContainsKey("userId"))
+                {
+                    continue;
+                }
+
+                string puidStr = member["userId"].ToString();
+                if (puidStr != eosManager.localProductUserIdString)
+                {
+                    ProductUserId puid = ProductUserId.FromString(puidStr);
+                    bool sentInit = p2pNet.SendRpcToPeer(puid, "remove_point_ack", ack);
+                    GD.Print($"[MainGame][P2P-TEST] HOST sent remove_point_ack to {puid} ok={sentInit}");
+                }
+            }
+        }
         if (currentTurn == Team.Red)
         {
             currentStreak++;
