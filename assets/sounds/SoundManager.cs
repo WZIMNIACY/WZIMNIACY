@@ -1,12 +1,11 @@
 using Godot;
 
-[Tool]
 public partial class SoundManager : Node
 {
-	// --- ŚCIEŻKI ---
-	private const string AUDIO_HOVER_PATH = "res://assets/sounds/Hover.ogg";
-	private const string AUDIO_BUTTON_PATH = "res://assets/sounds/Button.ogg";
-	private const string AUDIO_BG_MUSIC_PATH = "res://assets/sounds/Background.mp3";
+	// --- ŚCIEŻKI (Zmieniono na PascalCase zgodnie ze standardem C#) ---
+	private const string AudioHoverPath = "res://assets/sounds/Hover.ogg";
+	private const string AudioButtonPath = "res://assets/sounds/Button.ogg";
+	private const string AudioBgMusicPath = "res://assets/sounds/Background.mp3";
 
 	// --- KOMPONENTY ---
 	private AudioStreamPlayer musicPlayer;
@@ -20,10 +19,6 @@ public partial class SoundManager : Node
 
 	public override void _Ready()
 	{
-		// 1. ZABEZPIECZENIE DLA EDYTORA I CI (To naprawia błędy na GitHubie)
-		if (Engine.IsEditorHint()) return;
-
-		// 2. Dźwięki działają nawet gdy gra jest zapauzowana
 		ProcessMode = ProcessModeEnum.Always;
 
 		GD.Print("🎵 Initializing SoundManager...");
@@ -44,9 +39,9 @@ public partial class SoundManager : Node
 
 	private void LoadAudioStreams()
 	{
-		hoverStream   = GD.Load<AudioStream>(AUDIO_HOVER_PATH);
-		buttonStream  = GD.Load<AudioStream>(AUDIO_BUTTON_PATH);
-		bgMusicStream = GD.Load<AudioStream>(AUDIO_BG_MUSIC_PATH);
+		hoverStream   = GD.Load<AudioStream>(AudioHoverPath);
+		buttonStream  = GD.Load<AudioStream>(AudioButtonPath);
+		bgMusicStream = GD.Load<AudioStream>(AudioBgMusicPath);
 	}
 
 	private void SetupAudioPlayers()
@@ -81,7 +76,7 @@ public partial class SoundManager : Node
 		}
 	}
 
-	// --- LOGIKA PODŁĄCZANIA (NAPRAWIONA) ---
+	// --- LOGIKA PODŁĄCZANIA ---
 
 	private void SafeScanTree()
 	{
@@ -111,8 +106,6 @@ public partial class SoundManager : Node
 		if (node is BaseButton button)
 		{
 			// FIX: Metoda "Na Pieczątkę"
-			// Sprawdzamy, czy ten konkretny guzik został już obsłużony.
-			// "HasMeta" to wbudowana funkcja Godota do przechowywania danych w węźle.
 			if (button.HasMeta("SoundConnected")) 
 			{
 				return; // Już podłączony, wychodzimy!
@@ -122,7 +115,7 @@ public partial class SoundManager : Node
 			button.MouseEntered += PlayHover;
 			button.Pressed += PlayClick;
 
-			// Przybijamy pieczątkę, żeby nie podłączyć go drugi raz
+			// Przybijamy pieczątkę
 			button.SetMeta("SoundConnected", true);
 		}
 	}

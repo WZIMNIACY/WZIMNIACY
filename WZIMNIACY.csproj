@@ -3,23 +3,17 @@
     <TargetFramework>net8.0</TargetFramework>
     <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net9.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
-
-    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
-
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);IDE1006;NETSDK1022;IDE0005</NoWarn>
-
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- <DefineConstants>$(DefineConstants);GODOT;GODOT_WINDOWS;GODOT_64;EOS_GODOT</DefineConstants> -->
     <DefineConstants>$(DefineConstants);GODOT_64</DefineConstants>
+    <!-- <DefineConstants>$(DefineConstants);GODOT_32</DefineConstants> -->
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="libs\**" />
-    <EmbeddedResource Remove="libs\**" />
+    <Compile Remove="libs/**" />
+    <EmbeddedResource Remove="libs/**" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,6 @@
 using Godot;
 using System.Collections.Generic;
 
-[Tool]
 public partial class SettingsManager : Node
 {
 	public static SettingsManager Instance { get; private set; }
@@ -40,7 +39,7 @@ public partial class SettingsManager : Node
 	private int busIndexMusic;
 	private int busIndexSfx;
 
-	public readonly List<Vector2I> AvailableResolutions = new List<Vector2I>
+	public readonly List<Vector2I> availableResolutions = new List<Vector2I>
 	{
 		new Vector2I(3840, 2160), new Vector2I(3440, 1440),
 		new Vector2I(2560, 1440), new Vector2I(1920, 1200),
@@ -50,7 +49,6 @@ public partial class SettingsManager : Node
 
 	public override void _Ready()
 	{
-		if (Engine.IsEditorHint()) return;
 		if (Instance != null && Instance != this)
 		{
 			QueueFree();
@@ -74,17 +72,17 @@ public partial class SettingsManager : Node
 	private void AddNativeResolution()
 	{
 		Vector2I screenRes = DisplayServer.ScreenGetSize();
-		if (AvailableResolutions.Contains(screenRes)) return;
+		if (availableResolutions.Contains(screenRes)) return;
 
 		bool inserted = false;
-		for (int i = 0; i < AvailableResolutions.Count; i++)
+		for (int i = 0; i < availableResolutions.Count; i++)
 		{
-			bool isSmaller = (AvailableResolutions[i].X < screenRes.X) || 
-							 (AvailableResolutions[i].X == screenRes.X && AvailableResolutions[i].Y < screenRes.Y);
+			bool isSmaller = (availableResolutions[i].X < screenRes.X) || 
+							 (availableResolutions[i].X == screenRes.X && availableResolutions[i].Y < screenRes.Y);
 			
 			if (isSmaller)
 			{
-				AvailableResolutions.Insert(i, screenRes);
+				availableResolutions.Insert(i, screenRes);
 				inserted = true;
 				break;
 			}
@@ -92,7 +90,7 @@ public partial class SettingsManager : Node
 
 		if (!inserted)
 		{
-			AvailableResolutions.Add(screenRes);
+			availableResolutions.Add(screenRes);
 		}
 		GD.Print($"🖥️ Wstawiono natywną rozdzielczość gracza: {screenRes}");
 	}
@@ -124,10 +122,10 @@ public partial class SettingsManager : Node
 		Video.UiScale = (float)config.GetValue("Video", "UiScale", 1.0f);
 		Video.VSync   = (bool) config.GetValue("Video", "VSync",   true);
 
-		if (!AvailableResolutions.Contains(Video.Resolution))
+		if (!availableResolutions.Contains(Video.Resolution))
 		{
-			AvailableResolutions.Add(Video.Resolution);
-			AvailableResolutions.Sort((a, b) => 
+			availableResolutions.Add(Video.Resolution);
+			availableResolutions.Sort((a, b) => 
 			{
 				int res = b.X.CompareTo(a.X);
 				return res == 0 ? b.Y.CompareTo(a.Y) : res;
@@ -201,15 +199,15 @@ public partial class SettingsManager : Node
 	
 	public void SetResolutionByIndex(int index)
 	{
-		if (index >= 0 && index < AvailableResolutions.Count)
+		if (index >= 0 && index < availableResolutions.Count)
 		{
-			SetResolution(AvailableResolutions[index]);
+			SetResolution(availableResolutions[index]);
 		}
 	}
 	
 	public int GetCurrentResolutionIndex()
 	{
-		return AvailableResolutions.IndexOf(Video.Resolution);
+		return availableResolutions.IndexOf(Video.Resolution);
 	}
 
 	public void SetUiScale(float scale)

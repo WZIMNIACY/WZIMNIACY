@@ -1,52 +1,49 @@
 using Godot;
-using System;
 
 public partial class PopupSystem : CanvasLayer
 {
-	[Export] public Control ContentContainer;
-	[Export] public Label MessageLabel;       // <--- NOWE: Tutaj podepniemy tekst wiadomości
-	[Export] public Button BtnConfirm;
-	[Export] public Button BtnCancel;
+	// --- UI ELEMENTS ---
+	[Export] private Control contentContainer;
+	[Export] private Label messageLabel;
+	[Export] private Button btnConfirm;
+	[Export] private Button btnCancel;
 
 	public override void _Ready()
 	{
-		// Ukrywamy okno na start gry
 		Visible = false;
 
-		if (BtnConfirm != null)
-			BtnConfirm.Pressed += OnConfirmPressed;
+		if (btnConfirm != null)
+			btnConfirm.Pressed += OnConfirmPressed;
 		
-		if (BtnCancel != null)
-			BtnCancel.Pressed += OnCancelPressed;
+		if (btnCancel != null)
+			btnCancel.Pressed += OnCancelPressed;
 	}
 
-	// Tę funkcję będziesz wywoływał z innych miejsc w grze!
 	public void ShowError(string errorText)
 	{
 		// 1. Ustawiamy tekst błędu
-		if (MessageLabel != null)
+		if (messageLabel != null)
 		{
-			MessageLabel.Text = errorText;
+			messageLabel.Text = errorText;
 		}
 
 		// 2. Pokazujemy warstwę
 		Visible = true;
 		
 		// 3. Resetujemy ustawienia przed animacją
-		if (ContentContainer != null)
+		if (contentContainer != null)
 		{
-			ContentContainer.Scale = new Vector2(0.7f, 0.7f);
-			ContentContainer.Modulate = new Color(1, 1, 1, 0); // Przezroczysty
+			contentContainer.Scale = new Vector2(0.7f, 0.7f);
+			contentContainer.Modulate = new Color(1, 1, 1, 0); // Przezroczysty
 			
-			// 4. Animacja "wyskakiwania"
 			Tween tween = CreateTween();
 			tween.SetParallel(true);
 			
-			tween.TweenProperty(ContentContainer, "scale", new Vector2(1.0f, 1.0f), 0.4f)
+			tween.TweenProperty(contentContainer, "scale", new Vector2(1.0f, 1.0f), 0.4f)
 				.SetTrans(Tween.TransitionType.Back)
 				.SetEase(Tween.EaseType.Out); 
 			
-			tween.TweenProperty(ContentContainer, "modulate:a", 1.0f, 0.3f);
+			tween.TweenProperty(contentContainer, "modulate:a", 1.0f, 0.3f);
 		}
 	}
 
@@ -63,14 +60,12 @@ public partial class PopupSystem : CanvasLayer
 	
 	private void HidePopup()
 	{
-		// Opcjonalnie: Animacja zamykania (zmniejszanie)
-		if (ContentContainer != null)
+		if (contentContainer != null)
 		{
 			Tween tween = CreateTween();
 			tween.SetParallel(true);
-			tween.TweenProperty(ContentContainer, "scale", new Vector2(0.8f, 0.8f), 0.2f);
-			tween.TweenProperty(ContentContainer, "modulate:a", 0.0f, 0.2f);
-			// Po zakończeniu animacji ukryj całkowicie
+			tween.TweenProperty(contentContainer, "scale", new Vector2(0.8f, 0.8f), 0.2f);
+			tween.TweenProperty(contentContainer, "modulate:a", 0.0f, 0.2f);
 			tween.Finished += () => Visible = false;
 		}
 		else

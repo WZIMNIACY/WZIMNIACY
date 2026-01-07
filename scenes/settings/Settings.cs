@@ -1,23 +1,23 @@
 using Godot;
-using System;
 
 public partial class Settings : Control
 {
 	// --- UI ELEMENTS (Przypisz w Inspektorze!) ---
+	// Zmieniono nazwy: usunięto "_" i upewniono się, że zaczynają się z małej litery
 	[ExportGroup("Nawigacja")]
-	[Export] private Button _backButton;
-	[Export] private Button _saveButton;
+	[Export] private Button backButton;
+	[Export] private Button saveButton;
 
 	[ExportGroup("Audio")]
-	[Export] private HSlider _masterVolumeSlider;
-	[Export] private HSlider _musicVolumeSlider;
-	[Export] private HSlider _sfxVolumeSlider;
-	[Export] private CheckButton _mutedCheckBox;
+	[Export] private HSlider masterVolumeSlider;
+	[Export] private HSlider musicVolumeSlider;
+	[Export] private HSlider sfxVolumeSlider;
+	[Export] private CheckButton mutedCheckBox;
 
 	[ExportGroup("Wideo")]
-	[Export] private OptionButton _screenModeOptionButton; // Dropdown trybu okna
-	[Export] private OptionButton _resolutionOptionButton; // Dropdown rozdzielczości
-	[Export] private HSlider _scaleUISlider;
+	[Export] private OptionButton screenModeOptionButton; // Dropdown trybu okna
+	[Export] private OptionButton resolutionOptionButton; // Dropdown rozdzielczości
+	[Export] private HSlider scaleUISlider;
 
 	public override void _Ready()
 	{
@@ -34,25 +34,25 @@ public partial class Settings : Control
 	private void SetupVideoOptions()
 	{
 		// -- Tryb Okna --
-		if (_screenModeOptionButton != null)
+		if (screenModeOptionButton != null)
 		{
-			_screenModeOptionButton.Clear();
+			screenModeOptionButton.Clear();
 			// Kolejność musi zgadzać się z Enumem w SettingsManager: 0=Windowed, 1=Borderless, 2=Fullscreen
-			_screenModeOptionButton.AddItem("W oknie", 0);
-			_screenModeOptionButton.AddItem("Okno bez ramek", 1);
-			_screenModeOptionButton.AddItem("Pełny ekran", 2);
+			screenModeOptionButton.AddItem("W oknie", 0);
+			screenModeOptionButton.AddItem("Okno bez ramek", 1);
+			screenModeOptionButton.AddItem("Pełny ekran", 2);
 		}
 
 		// -- Rozdzielczości --
-		if (_resolutionOptionButton != null)
+		if (resolutionOptionButton != null)
 		{
-			_resolutionOptionButton.Clear();
+			resolutionOptionButton.Clear();
 			// Pobieramy listę dostępnych rozdzielczości prosto z Managera
-			var resolutions = SettingsManager.Instance.AvailableResolutions;
+			var resolutions = SettingsManager.Instance.availableResolutions;
 			for (int i = 0; i < resolutions.Count; i++)
 			{
 				Vector2I res = resolutions[i];
-				_resolutionOptionButton.AddItem($"{res.X} x {res.Y}", i);
+				resolutionOptionButton.AddItem($"{res.X} x {res.Y}", i);
 			}
 		}
 	}
@@ -63,27 +63,27 @@ public partial class Settings : Control
 		if (sm == null) return;
 
 		// Audio
-		if (_masterVolumeSlider != null) _masterVolumeSlider.Value = sm.Sound.MasterVolume;
-		if (_musicVolumeSlider != null)  _musicVolumeSlider.Value  = sm.Sound.MusicVolume;
-		if (_sfxVolumeSlider != null)    _sfxVolumeSlider.Value    = sm.Sound.SfxVolume;
-		if (_mutedCheckBox != null)      _mutedCheckBox.ButtonPressed = sm.Sound.Muted;
+		if (masterVolumeSlider != null) masterVolumeSlider.Value = sm.Sound.MasterVolume;
+		if (musicVolumeSlider != null)  musicVolumeSlider.Value  = sm.Sound.MusicVolume;
+		if (sfxVolumeSlider != null)    sfxVolumeSlider.Value    = sm.Sound.SfxVolume;
+		if (mutedCheckBox != null)      mutedCheckBox.ButtonPressed = sm.Sound.Muted;
 
 		// Wideo
-		if (_screenModeOptionButton != null)
+		if (screenModeOptionButton != null)
 		{
 			// NAPRAWA CS0266: Rzutujemy Enum na int, żeby Dropdown to zrozumiał
-			_screenModeOptionButton.Selected = (int)sm.Video.DisplayMode;
+			screenModeOptionButton.Selected = (int)sm.Video.DisplayMode;
 		}
 
-		if (_resolutionOptionButton != null)
+		if (resolutionOptionButton != null)
 		{
 			// NAPRAWA CS1061: Nie bierzemy Indexu z danych, tylko pytamy Managera, który to index
-			_resolutionOptionButton.Selected = sm.GetCurrentResolutionIndex();
+			resolutionOptionButton.Selected = sm.GetCurrentResolutionIndex();
 		}
 
-		if (_scaleUISlider != null)
+		if (scaleUISlider != null)
 		{
-			_scaleUISlider.Value = sm.Video.UiScale;
+			scaleUISlider.Value = sm.Video.UiScale;
 		}
 
 		CheckResolutionLock();
@@ -92,19 +92,19 @@ public partial class Settings : Control
 	private void ConnectSignals()
 	{
 		// Nawigacja
-		if (_backButton != null) _backButton.Pressed += OnBackButtonPressed;
-		if (_saveButton != null) _saveButton.Pressed += OnSavePressed;
+		if (backButton != null) backButton.Pressed += OnBackButtonPressed;
+		if (saveButton != null) saveButton.Pressed += OnSavePressed;
 
 		// Audio (Natychmiastowa zmiana)
-		if (_masterVolumeSlider != null) _masterVolumeSlider.ValueChanged += (v) => SettingsManager.Instance.SetMasterVolume((float)v);
-		if (_musicVolumeSlider != null)  _musicVolumeSlider.ValueChanged  += (v) => SettingsManager.Instance.SetMusicVolume((float)v);
-		if (_sfxVolumeSlider != null)    _sfxVolumeSlider.ValueChanged    += (v) => SettingsManager.Instance.SetSfxVolume((float)v);
-		if (_mutedCheckBox != null)      _mutedCheckBox.Toggled           += (v) => SettingsManager.Instance.SetMuted(v);
+		if (masterVolumeSlider != null) masterVolumeSlider.ValueChanged += (v) => SettingsManager.Instance.SetMasterVolume((float)v);
+		if (musicVolumeSlider != null)  musicVolumeSlider.ValueChanged  += (v) => SettingsManager.Instance.SetMusicVolume((float)v);
+		if (sfxVolumeSlider != null)    sfxVolumeSlider.ValueChanged    += (v) => SettingsManager.Instance.SetSfxVolume((float)v);
+		if (mutedCheckBox != null)      mutedCheckBox.Toggled           += (v) => SettingsManager.Instance.SetMuted(v);
 
 		// Wideo
-		if (_screenModeOptionButton != null) _screenModeOptionButton.ItemSelected += OnWindowModeSelected;
-		if (_resolutionOptionButton != null) _resolutionOptionButton.ItemSelected += OnResolutionSelected;
-		if (_scaleUISlider != null)          _scaleUISlider.ValueChanged          += OnUIScaleChanged;
+		if (screenModeOptionButton != null) screenModeOptionButton.ItemSelected += OnWindowModeSelected;
+		if (resolutionOptionButton != null) resolutionOptionButton.ItemSelected += OnResolutionSelected;
+		if (scaleUISlider != null)          scaleUISlider.ValueChanged          += OnUIScaleChanged;
 	}
 
 	// --- HANDLERY ZDARZEŃ ---
@@ -142,12 +142,12 @@ public partial class Settings : Control
 		GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
 	}
 
-	// Blokujemy zmianę rozdzielczości, jeśli jesteśmy w Fullscreen (opcjonalne, ale dobra praktyka)
+	// Blokujemy zmianę rozdzielczości, jeśli jesteśmy w Fullscreen
 	private void CheckResolutionLock()
 	{
-		if (_resolutionOptionButton == null) return;
+		if (resolutionOptionButton == null) return;
 		
 		bool isFullscreen = SettingsManager.Instance.Video.DisplayMode == SettingsManager.WindowMode.Fullscreen;
-		_resolutionOptionButton.Disabled = isFullscreen;
+		resolutionOptionButton.Disabled = isFullscreen;
 	}
 }
