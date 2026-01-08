@@ -53,11 +53,11 @@ public partial class MainGame : Control
         None
     }
 
-    private sealed class HintNetworkPayload
+    public sealed class HintNetworkPayload
     {
         public string Word { get; set; }
         public int Number { get; set; }
-        public bool IsBlueTeam { get; set; }
+        public Team TeamId { get; set; }
     }
 
     private int turnCounter = 1;
@@ -314,7 +314,8 @@ public partial class MainGame : Control
 
                 if(gameRightPanel != null)
                 {
-                    gameRightPanel.UpdateHintDisplay(data.Word, data.Number, data.IsBlueTeam);
+                    bool isBlue = data.TeamId == Team.Blue;
+                    gameRightPanel.UpdateHintDisplay(data.Word, data.Number, isBlue);
                 }
             }
             catch (Exception e)
@@ -357,38 +358,16 @@ public partial class MainGame : Control
         if (gameInputPanel != null)
         {
             gameInputPanel.SetupTurn(currentTurn == Team.Blue);
-            gameInputPanel.Visible = isHost;
         }
     }
 
     private void OnCaptainHintReceived(string word, int number)
     {
         GD.Print($"{word} [{number}]");
-        bool isBlue = (currentTurn == Team.Blue);
         if (gameRightPanel != null)
         {
-            gameRightPanel.UpdateHintDisplay(word, number, isBlue);
-        }
-
-        if(isHost && p2pNet != null)
-        {
-            var payload = new HintNetworkPayload
-            {
-                Word = word,
-                Number = number,
-                IsBlueTeam = isBlue
-            };
-
-            var members = eosManager.GetCurrentLobbyMembers();
-            foreach (var member in members)
-        {
-            string puid = member["userId"].ToString();
-            if (puid != eosManager.localProductUserIdString)
-            {
-                var targetPeer = ProductUserId.FromString(puid);
-                p2pNet.SendRpcToPeer(targetPeer, "hint_given", payload);
-            }
-        }
+            gameRightPanel.UpdateHintDisplay(word, number, currentTurn == Team.Blue);
+            gameRightPanel.BroadcastHint(word, number, currentTurn);
         }
     }
 

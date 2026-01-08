@@ -10,6 +10,44 @@ public partial class RightPanel : Node
 	private Color blueTeamColor = new Color("5AD2C8FF");
 	private Color redTeamColor = new Color("E65050FF");
 
+    private EOSManager eosManager;
+    private P2PNetworkManager p2pNet;
+    private MainGame mainGame;
+
+    public override void _Ready()
+    {
+        eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
+        p2pNet = GetNodeOrNull<P2PNetworkManager>("/root/P2PNetworkManager");
+        if (p2pNet == null) p2pNet = GetNodeOrNull<P2PNetworkManager>("../P2PNetworkManager");
+
+        mainGame = GetNodeOrNull<MainGame>("/root/MainGame") ?? GetParent<MainGame>(); 
+    }
+
+    public void BroadcastHint(string word, int number, MainGame.Team team)
+    {
+        if (mainGame != null && mainGame.isHost && p2pNet != null)
+        {
+            var payload = new MainGame.HintNetworkPayload
+            {
+                Word = word,
+                Number = number,
+                TeamId = team
+            };
+
+            var members = eosManager.GetCurrentLobbyMembers();
+            foreach (var member in members)
+            {
+                string puid = member["userId"].ToString();
+                if (puid != eosManager.localProductUserIdString)
+                {
+                    var targetPeer = Epic.OnlineServices.ProductUserId.FromString(puid);
+                    p2pNet.SendRpcToPeer(targetPeer, "hint_given", payload);
+                }
+            }
+            GD.Print($"[RightPanel] Broadcasted hint: {word} ({team})");
+        }
+    }
+
 	public void CommitToHistory()
     {
 		if(currentWordLabel != null && currentWordLabel.Text != "" && currentWordLabel.Text != "-")
