@@ -555,33 +555,6 @@ public partial class MainGame : Control
         GD.Print("Point removed from team blue...");
         pointsBlue--;
 
-        //Narazie tylko host rozsyła info o usunięciu punktu do klientów
-        if(isHost)
-        {
-            string str = eosManager.localProductUserIdString;
-            ProductUserId fromPeer = ProductUserId.FromString(str);
-            var ack = new
-            {
-                team = Team.Blue
-            };
-
-            foreach (var member in eosManager.GetCurrentLobbyMembers())
-            {
-                if (member == null || !member.ContainsKey("userId"))
-                {
-                    continue;
-                }
-
-                string puidStr = member["userId"].ToString();
-                if (puidStr != eosManager.localProductUserIdString)
-                {
-                    ProductUserId puid = ProductUserId.FromString(puidStr);
-                    bool sentInit = p2pNet.SendRpcToPeer(puid, "remove_point_ack", ack);
-                    GD.Print($"[MainGame][P2P-TEST] HOST sent remove_point_ack to {puid} ok={sentInit}");
-                }
-            }
-        }
-
         if (currentTurn == Team.Blue)
         {
             currentStreak++;
@@ -600,32 +573,7 @@ public partial class MainGame : Control
     {
         GD.Print("Point removed from team red...");
         pointsRed--;
-        //Narazie tylko host rozsyła info o usunięciu punktu do klientów
-        if(isHost)
-        {
-            string str = eosManager.localProductUserIdString;
-            ProductUserId fromPeer = ProductUserId.FromString(str); 
-            var ack = new
-            {
-                team = Team.Red
-            };
-
-            foreach (var member in eosManager.GetCurrentLobbyMembers())
-            {
-                if (member == null || !member.ContainsKey("userId"))
-                {
-                    continue;
-                }
-
-                string puidStr = member["userId"].ToString();
-                if (puidStr != eosManager.localProductUserIdString)
-                {
-                    ProductUserId puid = ProductUserId.FromString(puidStr);
-                    bool sentInit = p2pNet.SendRpcToPeer(puid, "remove_point_ack", ack);
-                    GD.Print($"[MainGame][P2P-TEST] HOST sent remove_point_ack to {puid} ok={sentInit}");
-                }
-            }
-        }
+        
         if (currentTurn == Team.Red)
         {
             currentStreak++;
@@ -683,16 +631,19 @@ public partial class MainGame : Control
 
     public void CardConfirm(AgentCard card)
     {
+        Team teamToRemovePoint = Team.None;
         switch (card.Type)
         {
             case CardManager.CardType.Blue:
                 RemovePointBlue();
+                teamToRemovePoint = Team.Blue;
                 if (currentTurn == Team.Red)
                     TurnChange();
                 break;
 
             case CardManager.CardType.Red:
                 RemovePointRed();
+                teamToRemovePoint = Team.Red;
                 if (currentTurn == Team.Blue)
                     TurnChange();
                 break;
@@ -707,6 +658,33 @@ public partial class MainGame : Control
                 else
                     EndGame(Team.Blue);
                 break;
+        }
+        
+        //Narazie tylko host rozsyła info o usunięciu punktu do klientów
+        if(teamToRemovePoint != Team.None && isHost)
+        {
+            string str = eosManager.localProductUserIdString;
+            ProductUserId fromPeer = ProductUserId.FromString(str); 
+            var ack = new
+            {
+                team = teamToRemovePoint
+            };
+
+            foreach (var member in eosManager.GetCurrentLobbyMembers())
+            {
+                if (member == null || !member.ContainsKey("userId"))
+                {
+                    continue;
+                }
+
+                string puidStr = member["userId"].ToString();
+                if (puidStr != eosManager.localProductUserIdString)
+                {
+                    ProductUserId puid = ProductUserId.FromString(puidStr);
+                    bool sentInit = p2pNet.SendRpcToPeer(puid, "remove_point_ack", ack);
+                    GD.Print($"[MainGame][P2P-TEST] HOST sent remove_point_ack to {puid} ok={sentInit}");
+                }
+            }
         }
     }
 
