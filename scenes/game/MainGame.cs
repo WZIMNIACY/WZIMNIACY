@@ -88,6 +88,12 @@ public partial class MainGame : Control
         public string by { get; set; }
     }
 
+    private sealed class TurnSkipPayload
+    {
+        public string by { get; set; }
+        public string skippedBy { get; set; }
+    }
+
     private bool p2pJsonTestSent = false;
     // =====================
 
@@ -354,14 +360,39 @@ public partial class MainGame : Control
                 return true;
             }
 
-            OnSkipTurnPressedHost();
+            string senderPuid = payload.by.ToString();
+
+            OnSkipTurnPressedHost(senderPuid);
 
             return true;
         }
 
+        // Odebranie infomacji przez clienta o tym ze nalezy pominac ture
+        if (packet.type == "skip_turn" && !isHost)
+        {
+            TurnSkipPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<TurnSkipPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC skip_turn payload parse error: {e.Message}");
+                return true;
+            }
+
+            GD.Print($"[MainGame] RPC skip_turn received: by={payload.by} skippedBy={payload.skippedBy}");
+
+            UpdateMaxStreak();
+
+            TurnChange();
+
+            return true;
+        }
+
+
         // Tu dopisujecie kolejne RPC:
         // if (packet.type == "hint_given" && isHost) { ... return true; }
-        // if (packet.type == "turn_skip" && isHost) { ... return true; }
         // if (packet.type == "starting_team" && !isHost) { ... return true; }
 
         return false;
@@ -406,18 +437,27 @@ public partial class MainGame : Control
         GD.Print("SkipTurnButton pressed...");
 
         if (isHost)
-            OnSkipTurnPressedHost();
+            OnSkipTurnPressedHost(eosManager?.localProductUserIdString);
         else
             OnSkipTurnPressedClient();
     }
 
-    public void OnSkipTurnPressedHost()
+    public void OnSkipTurnPressedHost(string skippedBy)
     {
         UpdateMaxStreak(); 
 
         TurnChange();
 
-        // TODO: notify clients about turn change (rpc type: skip_turn)
+        if (p2pNet == null) return;
+
+        var payload = new
+        {
+            by = eosManager?.localProductUserIdString,
+            skippedBy = skippedBy
+        };
+
+        int RPCsSent = p2pNet.SendRpcToAllClients("skip_turn", payload);
+        GD.Print($"[MainGame] SendRpcToAllClients(skip_turn) RPCsSent={RPCsSent}");
     }
 
     public void OnSkipTurnPressedClient()
