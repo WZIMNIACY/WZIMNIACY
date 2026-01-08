@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using Epic.OnlineServices;
-using Epic.OnlineServices.P2P;
+using Epic.OnlineServices.P2P;  
 
 public partial class P2PNetworkManager : Node
 {
@@ -34,8 +34,7 @@ public partial class P2PNetworkManager : Node
     private ProductUserId hostPuid;
 
     // Host: lista klientów (PUID)
-    private readonly Dictionary<string, ProductUserId> hostClients = new();
-
+    private readonly Dictionary<string, ProductUserId> hostClients = new(); 
     // Handshake state
     private bool clientHandshakeComplete = false;
     private readonly HashSet<string> hostWelcomedClients = new();
@@ -57,18 +56,18 @@ public partial class P2PNetworkManager : Node
     }
 
     // === GAME START RPC MODELS ===
-    public sealed class GameStartPlayer
+    public sealed class GamePlayer
     {
         public int index { get; set; }          // 0 = host, 1..N = klienci
         public string puid { get; set; }        // ProductUserId jako string
         public string name { get; set; }        // opcjonalnie (może być null)
-        public string team { get; set; }        // opcjonalnie (np. "Blue"/"Red")
+        public MainGame.Team team { get; set; }        // enum Team
     }
 
     public sealed class GameStartPayload
     {
         public string sessionId { get; set; }
-        public GameStartPlayer[] players { get; set; }
+        public GamePlayer[] players { get; set; }
         public string startingTeam { get; set; } // "Blue" / "Red"
         public ulong seed { get; set; }          // wspólny seed rozgrywki
 
@@ -382,26 +381,26 @@ public partial class P2PNetworkManager : Node
         var welcomedSorted = new List<string>(hostWelcomedClients);
         welcomedSorted.Sort(StringComparer.Ordinal);
 
-        var players = new List<GameStartPlayer>();
+        var players = new List<GamePlayer>();
 
         // index 0 = host
-        players.Add(new GameStartPlayer
+        players.Add(new GamePlayer
         {
             index = 0,
             puid = localPuid != null ? localPuid.ToString() : "",
             name = null,
-            team = null
+            team = MainGame.Team.None
         });
 
         int index = 1;
         foreach (string puidStr in welcomedSorted)
         {
-            players.Add(new GameStartPlayer
+            players.Add(new GamePlayer
             {
                 index = index,
                 puid = puidStr,
                 name = null,
-                team = null
+                team = MainGame.Team.None
             });
             index++;
         }

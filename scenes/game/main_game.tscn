@@ -19,7 +19,7 @@
 [ext_resource type="PackedScene" uid="uid://b6bdhq5ktk0vo" path="res://scenes/components/main_game/end_game_screen.tscn" id="16_eixuh"]
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="16_v72ow"]
 [ext_resource type="Script" uid="uid://d355aol0ujbg" path="res://scripts/P2PNetworkManager.cs" id="19_stils"]
-[ext_resource type="PackedScene" uid="uid://da78r3ltx830e" path="res://scenes/loadingscreen/loadingscreen.tscn" id="20_mssxc"]
+[ext_resource type="PackedScene" uid="uid://da78r3ltx830e" path="res://scenes/loadingscreen/LoadingScreen.tscn" id="20_mssxc"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -93,7 +93,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "loadingScreen")]
+[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager", "loadingScreen")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -112,7 +112,8 @@ gameInputPanel = NodePath("Panel/InputPanel")
 turnLabel = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/TurnCounterContainer/Label")
 settingsScene = NodePath("Settings")
 helpScene = NodePath("HelpScene")
-loadingScreen = NodePath("loadingscreen")
+cardManager = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer")
+loadingScreen = NodePath("LoadingScreen")
 metadata/_edit_horizontal_guides_ = [-92.0]
 
 [node name="Panel" type="Panel" parent="."]
@@ -584,7 +585,7 @@ layout_mode = 1
 [node name="P2PNetworkManager" type="Node" parent="."]
 script = ExtResource("19_stils")
 
-[node name="loadingscreen" parent="." instance=ExtResource("20_mssxc")]
+[node name="LoadingScreen" parent="." instance=ExtResource("20_mssxc")]
 layout_mode = 1
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
