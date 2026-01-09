@@ -88,6 +88,10 @@ public partial class MainGame : Control
         public string by { get; set; }
     }
 
+    private sealed class RemovePointAckPayload
+    {
+        public Team team { get; set; }
+    }
     private bool p2pJsonTestSent = false;
     // =====================
 
@@ -359,6 +363,24 @@ public partial class MainGame : Control
             return true;
         }
 
+        if(packet.type == "remove_point_ack" && !isHost)
+        {
+            RemovePointAckPayload ack;
+            try
+            {
+                ack = packet.payload.Deserialize<RemovePointAckPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC remove_point_ack payload parse error: {e.Message}");
+                return true;
+            }
+
+            GD.Print($"[MainGame][P2P-TEST] CLIENT received remove_point_ack from host: removing point from: {ack.team} fromPeer={fromPeer}");
+            if(ack.team == Team.Blue) RemovePointBlue();
+            if(ack.team == Team.Red) RemovePointRed();
+            return true;
+        }
         // Tu dopisujecie kolejne RPC:
         // if (packet.type == "hint_given" && isHost) { ... return true; }
         // if (packet.type == "turn_skip" && isHost) { ... return true; }
@@ -551,7 +573,7 @@ public partial class MainGame : Control
     {
         GD.Print("Point removed from team red...");
         pointsRed--;
-
+        
         if (currentTurn == Team.Red)
         {
             currentStreak++;
@@ -609,16 +631,19 @@ public partial class MainGame : Control
 
     public void CardConfirm(AgentCard card)
     {
+        Team teamToRemovePoint = Team.None;
         switch (card.Type)
         {
             case CardManager.CardType.Blue:
                 RemovePointBlue();
+                teamToRemovePoint = Team.Blue;
                 if (currentTurn == Team.Red)
                     TurnChange();
                 break;
 
             case CardManager.CardType.Red:
                 RemovePointRed();
+                teamToRemovePoint = Team.Red;
                 if (currentTurn == Team.Blue)
                     TurnChange();
                 break;
@@ -633,6 +658,21 @@ public partial class MainGame : Control
                 else
                     EndGame(Team.Blue);
                 break;
+        }
+        
+        //Narazie tylko host rozsyła info o usunięciu punktu do klientów
+        if(teamToRemovePoint != Team.None && isHost)
+        {
+            string str = eosManager.localProductUserIdString;
+            ProductUserId fromPeer = ProductUserId.FromString(str); 
+            var ack = new
+            {
+                team = teamToRemovePoint
+            };
+
+            int sentInit = p2pNet.SendRpcToAllClients("remove_point_ack", ack);
+            GD.Print($"[MainGame][P2P-TEST] HOST sent remove_point_ack to all clients number of successful sendings={sentInit}");
+            
         }
     }
 
