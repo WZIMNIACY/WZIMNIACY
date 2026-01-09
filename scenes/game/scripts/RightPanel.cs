@@ -1,4 +1,9 @@
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Godot;
+using hints;
+using AI;
 using Epic.OnlineServices;
 
 public partial class RightPanel : Node
@@ -47,6 +52,18 @@ public partial class RightPanel : Node
             }
             GD.Print($"[RightPanel] Broadcasted hint: {word} ({team})");
         }
+    private Godot.Timer hintGenerationAnimationTimer;
+
+    private CancellationTokenSource hintGeneratorCancellation;
+
+    public override void _Ready()
+    {
+        hintGenerationAnimationTimer = new Godot.Timer();
+        hintGenerationAnimationTimer.WaitTime = 0.5f;
+        hintGenerationAnimationTimer.OneShot = false;
+        hintGenerationAnimationTimer.Autostart = false;
+        hintGenerationAnimationTimer.Timeout += UpdateGenerationAnimation;
+        AddChild(hintGenerationAnimationTimer);
     }
 
 	public void CommitToHistory()
@@ -54,11 +71,46 @@ public partial class RightPanel : Node
 		if(currentWordLabel != null && currentWordLabel.Text != "" && currentWordLabel.Text != "-")
         {
             AddToHistory(currentWordLabel.Text, currentWordLabel.Modulate);
-            
+
             currentWordLabel.Text = "-";
             currentWordLabel.Modulate = new Color(1, 1, 1, 0.5f);
         }
 	}
+
+    public void CancelHintGeneration()
+    {
+        HintGenerationAnimationStop();
+        hintGeneratorCancellation?.Cancel();
+    }
+
+    public async Task GenerateAndUpdateHint(ILLM llm, game.Deck deck, MainGame.Team currentTurn)
+    {
+        CancelHintGeneration();
+        hintGeneratorCancellation?.Dispose();
+        hintGeneratorCancellation = new CancellationTokenSource();
+        CancellationToken ct = hintGeneratorCancellation.Token;
+        HintGenerationAnimationStart();
+        Hint hint = await GenerateHint(llm, deck, currentTurn);
+
+        // It's ok that i only check here because after GenerateHint there are no await,
+        // so execution will not be taken away.
+        // After this if, do not call await,
+        // because after we are given back the execution we might have been cancelled
+        if (ct.IsCancellationRequested)
+        {
+            return;
+        }
+
+        HintGenerationAnimationStop();
+
+        string cards = string.Join(", ", hint.Cards.Select(x => x.ToString()).ToArray());
+        GD.Print($"Hint Generated: {hint.Word}, {hint.NoumberOfSimilarWords}, for words: [{cards}]");
+        UpdateHintDisplay(
+            hint.Word,
+            hint.NoumberOfSimilarWords,
+            currentTurn == MainGame.Team.Blue
+        );
+    }
 
 	public void UpdateHintDisplay(string word, int count, bool isBlueTeam)
     {
@@ -115,5 +167,40 @@ public partial class RightPanel : Node
             skipButton.Disabled = false;
             skipButton.MouseFilter = Control.MouseFilterEnum.Stop;
         }
+    }
+
+    private void HintGenerationAnimationStart()
+    {
+        if (hintGenerationAnimationTimer.IsStopped())
+        {
+            CommitToHistory();
+            currentWordLabel.Text = "...";
+            hintGenerationAnimationTimer.Start();
+        }
+    }
+
+    private void HintGenerationAnimationStop()
+    {
+        if (!hintGenerationAnimationTimer.IsStopped())
+        {
+            hintGenerationAnimationTimer.Stop();
+            currentWordLabel.Text = "";
+        }
+    }
+
+    private void UpdateGenerationAnimation()
+    {
+        if (currentWordLabel.Text.Length >= 3)
+        {
+            currentWordLabel.Text = "";
+            return;
+        }
+
+        currentWordLabel.Text += ".";
+    }
+
+    private async Task<Hint> GenerateHint(ILLM llm, game.Deck deck, MainGame.Team currentTurn)
+    {
+        return await Hint.Create(deck, llm, currentTurn.ToAiLibTeam());
     }
 }

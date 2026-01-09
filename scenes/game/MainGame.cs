@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using Godot;
 using System;
+using AI;
 using System.Text.Json;
 using Epic.OnlineServices;
 
 public partial class MainGame : Control
 {
     [Signal] public delegate void GameReadyEventHandler();
+    [Signal] public delegate void NewTurnStartEventHandler();
 
     [Export] public EndGameScreen endGameScreen;
     [Export] Panel menuPanel;
@@ -19,7 +21,11 @@ public partial class MainGame : Control
     [Export] Label turnLabel;
     [Export] Control settingsScene;
     [Export] Control helpScene;
+    [Export] CardManager cardManager;
+
     private EOSManager eosManager;
+
+    private ILLM llm;
 
     // Określa czy lokalny gracz jest hostem (właścicielem lobby EOS) - wartość ustawiana dynamicznie na podstawie EOSManager.IsLobbyOwner
     public bool isHost = false;
@@ -82,6 +88,11 @@ public partial class MainGame : Control
     {
         public string msg { get; set; }
         public int cardId { get; set; }
+    }
+
+    private sealed class TurnSkipPressedPayload
+    {
+        public string by { get; set; }
     }
 
     private bool p2pJsonTestSent = false;
@@ -191,10 +202,11 @@ public partial class MainGame : Control
         UpdatePointsDisplay();
         UpdateTurnDisplay();
 
+        NewTurnStart += OnNewTurnStart;
+
         if (gameInputPanel != null)
         {
             gameInputPanel.HintGiven += OnCaptainHintReceived;
-            StartCaptainPhase();
         }
         else
         {
@@ -213,7 +225,26 @@ public partial class MainGame : Control
             gameRightPanel.DisableSkipButton();
         }
 
+        if (eosManager.isLobbyOwner)
+        {
+            if (eosManager.currentAIType == EOSManager.AIType.LocalLLM)
+            {
+                llm = new LocalLLM();
+            }
+            else
+            {
+                var apiKey = eosManager.ApiKey;
+                if (string.IsNullOrEmpty(apiKey))
+                {
+                    throw new Exception("Got into game without settings API key");
+                }
+
+                llm = new DeepSeekLLM(apiKey);
+            }
+        }
+
         EmitSignal(SignalName.GameReady);
+        EmitSignal(SignalName.NewTurnStart);
     }
 
     // === P2P (DODANE) ===
@@ -325,6 +356,35 @@ public partial class MainGame : Control
             return true;
         }
     // -----------------
+        // Odebranie infomacji przez hosta o tym ze klient chce pominac ture
+        if (packet.type == "skip_turn_pressed" && isHost)
+        {
+            TurnSkipPressedPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<TurnSkipPressedPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC skip_turn_pressed payload parse error: {e.Message}");
+                return true;
+            }
+
+            GD.Print($"[MainGame] RPC skip_turn_pressed received: by={payload.by}");
+
+            EOSManager.Team senderTeam = eosManager.GetTeamForUser(payload.by.ToString());
+
+            if (currentTurn.ToEOSManagerTeam() != senderTeam)
+            {
+                GD.Print("[MainGame] Refusing to skip turn.");
+                return true;
+            }
+
+            OnSkipTurnPressedHost();
+
+            return true;
+        }
+
         // Tu dopisujecie kolejne RPC:
         // if (packet.type == "hint_given" && isHost) { ... return true; }
         // if (packet.type == "turn_skip" && isHost) { ... return true; }
@@ -352,10 +412,7 @@ public partial class MainGame : Control
 
     private void StartCaptainPhase()
     {
-        currentStreak = 0;
-
-        GD.Print($"Początek tury {(currentTurn == Team.Blue ? "BLUE" : "RED")}");
-        if (gameInputPanel != null)
+        if(gameInputPanel != null)
         {
             gameInputPanel.SetupTurn(currentTurn == Team.Blue);
         }
@@ -373,14 +430,49 @@ public partial class MainGame : Control
 
     public void OnSkipTurnPressed()
     {
-        GD.Print("Koniec tury");
+        GD.Print("SkipTurnButton pressed...");
 
-        UpdateMaxStreak();
+        if (isHost)
+            OnSkipTurnPressedHost();
+        else
+            OnSkipTurnPressedClient();
+    }
 
-        if (gameRightPanel != null)
-            gameRightPanel.CommitToHistory();
+    public void OnSkipTurnPressedHost()
+    {
+        UpdateMaxStreak(); 
+
         TurnChange();
+
+        // TODO: notify clients about turn change (rpc type: skip_turn)
+    }
+
+    public void OnSkipTurnPressedClient()
+    {
+        if (p2pNet == null) return;
+
+        var payload = new
+        {
+            by = eosManager?.localProductUserIdString
+        };
+
+        bool ok = p2pNet.SendRpcToHost("skip_turn_pressed", payload);
+        GD.Print($"[MainGame] SendRpcToHost(skip_turn_pressed) ok={ok}");
+    }
+
+    private async void OnNewTurnStart()
+    {
+        GD.Print($"Początek tury {(currentTurn == Team.Blue ? "BLUE" : "RED")}");
+
+        currentStreak = 0;
+
+        gameRightPanel.CommitToHistory();
         StartCaptainPhase();
+
+        if (eosManager.isLobbyOwner)
+        {
+            await gameRightPanel.GenerateAndUpdateHint(llm, cardManager.Deck, currentTurn);
+        }
     }
 
     private void UpdateMaxStreak()
@@ -503,12 +595,15 @@ public partial class MainGame : Control
 
     public void TurnChange()
     {
+        gameRightPanel.CancelHintGeneration();
         turnCounter++;
         UpdateTurnDisplay();
         if (currentTurn == Team.Blue)
             SetTurnRed();
         else
             SetTurnBlue();
+
+        EmitSignal(SignalName.NewTurnStart);
     }
 
     public void SetTurnBlue()
@@ -570,6 +665,7 @@ public partial class MainGame : Control
 
     public void EndGame(Team winner)
     {
+        gameRightPanel.CancelHintGeneration();
         GD.Print($"Koniec gry! Wygrywa: {winner}");
         UpdateMaxStreak();
 
