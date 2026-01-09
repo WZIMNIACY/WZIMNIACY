@@ -20,7 +20,7 @@ public partial class RightPanel : Node
     private P2PNetworkManager p2pNet;
     private MainGame mainGame;
 
-     private Godot.Timer hintGenerationAnimationTimer;
+    private Godot.Timer hintGenerationAnimationTimer;
 
     private CancellationTokenSource hintGeneratorCancellation;
 
