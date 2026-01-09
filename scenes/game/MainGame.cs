@@ -90,7 +90,6 @@ public partial class MainGame : Control
 
     private sealed class TurnSkipPayload
     {
-        public string by { get; set; }
         public string skippedBy { get; set; }
     }
 
@@ -381,7 +380,7 @@ public partial class MainGame : Control
                 return true;
             }
 
-            GD.Print($"[MainGame] RPC skip_turn received: by={payload.by} skippedBy={payload.skippedBy}");
+            GD.Print($"[MainGame] RPC skip_turn received: skippedBy={payload.skippedBy}");
 
             UpdateMaxStreak();
 
@@ -452,7 +451,6 @@ public partial class MainGame : Control
 
         var payload = new
         {
-            by = eosManager?.localProductUserIdString,
             skippedBy = skippedBy
         };
 
