@@ -1,4 +1,5 @@
 using Godot;
+using Epic.OnlineServices;
 
 public partial class RightPanel : Node
 {
@@ -40,7 +41,7 @@ public partial class RightPanel : Node
                 string puid = member["userId"].ToString();
                 if (puid != eosManager.localProductUserIdString)
                 {
-                    var targetPeer = Epic.OnlineServices.ProductUserId.FromString(puid);
+                    var targetPeer = ProductUserId.FromString(puid);
                     p2pNet.SendRpcToPeer(targetPeer, "hint_given", payload);
                 }
             }
