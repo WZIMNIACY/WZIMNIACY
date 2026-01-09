@@ -670,21 +670,9 @@ public partial class MainGame : Control
                 team = teamToRemovePoint
             };
 
-            foreach (var member in eosManager.GetCurrentLobbyMembers())
-            {
-                if (member == null || !member.ContainsKey("userId"))
-                {
-                    continue;
-                }
-
-                string puidStr = member["userId"].ToString();
-                if (puidStr != eosManager.localProductUserIdString)
-                {
-                    ProductUserId puid = ProductUserId.FromString(puidStr);
-                    bool sentInit = p2pNet.SendRpcToPeer(puid, "remove_point_ack", ack);
-                    GD.Print($"[MainGame][P2P-TEST] HOST sent remove_point_ack to {puid} ok={sentInit}");
-                }
-            }
+            int sentInit = p2pNet.SendRpcToAllClients("remove_point_ack", ack);
+            GD.Print($"[MainGame][P2P-TEST] HOST sent remove_point_ack to all clients number of successful sendings={sentInit}");
+            
         }
     }
 
