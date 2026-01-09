@@ -21,6 +21,16 @@ public partial class LobbySearchMenu : Node
     private Timer joinTimeoutTimer;
     private const float JoinTimeout = 7.0f; // 7 sekund timeout
 
+    // Timer dla timeoutu opuszczania lobby
+    private Timer leaveTimeoutTimer;
+    private const float LeaveTimeout = 3.0f; // 3 sekund timeout na opuszczenie
+
+    // Zabezpieczenie przed wielokrotnym wywołaniem
+    private bool isPending = false;
+
+    // Zapamietany kod lobby do dołączenia po opuszczeniu obecnego
+    private string pendingLobbyCodeToJoin = null;
+
     public override void _Ready()
     {
         base._Ready();
@@ -33,6 +43,7 @@ public partial class LobbySearchMenu : Node
         {
             eosManager.LobbyJoined += OnLobbyJoinedSuccessfully;
             eosManager.LobbyJoinFailed += OnLobbyJoinFailed;
+            eosManager.LobbyLeft += OnLobbyLeftSuccessfully;
         }
 
         // Podłącz sygnały przycisków
@@ -66,6 +77,13 @@ public partial class LobbySearchMenu : Node
         joinTimeoutTimer.OneShot = true;
         joinTimeoutTimer.Timeout += OnJoinTimeout;
         AddChild(joinTimeoutTimer);
+
+        // Utwórz timer dla timeoutu opuszczania
+        leaveTimeoutTimer = new Timer();
+        leaveTimeoutTimer.WaitTime = LeaveTimeout;
+        leaveTimeoutTimer.OneShot = true;
+        leaveTimeoutTimer.Timeout += OnLeaveTimeout;
+        AddChild(leaveTimeoutTimer);
 
         pasteDetector = GetNodeOrNull<PasteDetector>("PasteDetector");
         if (pasteDetector != null)
@@ -111,6 +129,10 @@ public partial class LobbySearchMenu : Node
             GD.PrintErr("❌ Search input or EOSManager is null!");
             return;
         }
+        if (isPending)
+        {
+            return;
+        }
 
         string customId = searchInput.Text.Trim().ToUpper();
 
@@ -122,8 +144,34 @@ public partial class LobbySearchMenu : Node
 
         GD.Print($"🚀 Attempting to join lobby: {customId}");
 
+        // Ustaw flagę pending
+        isPending = true;
+
         // Rozpocznij animację dołączania
         StartJoiningAnimation();
+
+        // Sprawdź czy gracz jest już w jakimś lobby
+        if (!string.IsNullOrEmpty(eosManager.currentLobbyId))
+        {
+            GD.Print($"⚠️ Player is already in lobby {eosManager.currentLobbyId}, leaving first...");
+
+            // Zapisz kod lobby do dołączenia po opuszczeniu obecnego
+            pendingLobbyCodeToJoin = customId;
+            eosManager.LeaveLobby();
+            leaveTimeoutTimer.Start();
+            return;
+        }
+
+        // Jeśli nie ma obecnego lobby, dołącz bezpośrednio
+        JoinLobbyByCode(customId);
+    }
+
+    /// <summary>
+    /// Faktycznie dołącza do lobby po podanym kodzie
+    /// </summary>
+    private void JoinLobbyByCode(string customId)
+    {
+        GD.Print($"🔗 Joining lobby: {customId}");
 
         // Wyszukaj i dołącz do lobby (scena zmieni się automatycznie po sygnale LobbyJoined)
         eosManager.JoinLobbyByCustomId(customId);
@@ -144,6 +192,14 @@ public partial class LobbySearchMenu : Node
         joinButton.Disabled = true;
         joinButton.Text = "Dołączanie";
 
+        // Zablokuj również przycisk Menu
+        if (backButton != null)
+        {
+            backButton.Disabled = true;
+            backButton.FocusMode = Control.FocusModeEnum.None;
+            backButton.MouseDefaultCursorShape = Control.CursorShape.Forbidden;
+        }
+
         // Uruchom timer animacji
         animationTimer.Start();
     }
@@ -156,11 +212,21 @@ public partial class LobbySearchMenu : Node
         if (joinButton == null) return;
 
         isJoining = false;
+        isPending = false;
         animationTimer.Stop();
         joinTimeoutTimer.Stop();
+        leaveTimeoutTimer.Stop();
 
         joinButton.Disabled = false;
         joinButton.Text = "Dołącz";
+
+        // Odblokuj przycisk Menu
+        if (backButton != null)
+        {
+            backButton.Disabled = false;
+            backButton.FocusMode = Control.FocusModeEnum.All;
+            backButton.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+        }
     }
 
     /// <summary>
@@ -183,11 +249,30 @@ public partial class LobbySearchMenu : Node
     {
         GD.PrintErr("❌ Join timeout - lobby not found or connection failed");
 
+        pendingLobbyCodeToJoin = null;
+
         // Przywróć przycisk
         StopJoiningAnimation();
 
         // Możesz tu dodać komunikat dla użytkownika
         GD.Print("⚠️ Nie udało się dołączyć do lobby. Spróbuj ponownie.");
+    }
+
+    /// <summary>
+    /// Callback gdy przekroczono timeout opuszczania lobby
+    /// </summary>
+    private void OnLeaveTimeout()
+    {
+        GD.PrintErr("❌ Leave timeout - failed to leave previous lobby");
+
+        // Wyczyść pending lobby code
+        pendingLobbyCodeToJoin = null;
+
+        // Przywróć przycisk
+        StopJoiningAnimation();
+
+        // Możesz tu dodać komunikat dla użytkownika
+        GD.Print("⚠️ Nie udało się opuścić poprzedniego lobby. Spróbuj ponownie.");
     }
 
     /// <summary>
@@ -197,6 +282,8 @@ public partial class LobbySearchMenu : Node
     {
         GD.PrintErr($"❌ Failed to join lobby: {errorMessage}");
 
+        pendingLobbyCodeToJoin = null;
+
         // Przywróć przycisk
         StopJoiningAnimation();
 
@@ -205,11 +292,33 @@ public partial class LobbySearchMenu : Node
     }
 
     /// <summary>
+    /// Callback wywoływany po opuszczeniu lobby
+    /// </summary>
+    private void OnLobbyLeftSuccessfully()
+    {
+        GD.Print($"✅ Successfully left lobby");
+
+        leaveTimeoutTimer.Stop();
+
+        // Jeśli mamy zapamiętany kod lobby do dołączenia, dołącz teraz
+        if (!string.IsNullOrEmpty(pendingLobbyCodeToJoin))
+        {
+            string codeToJoin = pendingLobbyCodeToJoin;
+            pendingLobbyCodeToJoin = null;
+
+            GD.Print($"➡️ Now joining lobby: {codeToJoin}");
+            JoinLobbyByCode(codeToJoin);
+        }
+    }
+
+    /// <summary>
     /// Callback wywoływany po POMYŚLNYM dołączeniu do lobby
     /// </summary>
     private void OnLobbyJoinedSuccessfully(string lobbyId)
     {
         GD.Print($"✅ Successfully joined lobby {lobbyId}, changing scene...");
+
+        pendingLobbyCodeToJoin = null;
 
         // Teraz możemy bezpiecznie zmienić scenę
         // Dodaj małe opóźnienie, aby użytkownik zauważył zmianę stanu
@@ -238,6 +347,12 @@ public partial class LobbySearchMenu : Node
             joinTimeoutTimer.QueueFree();
         }
 
+        if (leaveTimeoutTimer != null)
+        {
+            leaveTimeoutTimer.Stop();
+            leaveTimeoutTimer.QueueFree();
+        }
+
         // Odłącz sygnały z przycisków
         if (backButton != null)
         {
@@ -259,6 +374,7 @@ public partial class LobbySearchMenu : Node
         {
             eosManager.LobbyJoined -= OnLobbyJoinedSuccessfully;
             eosManager.LobbyJoinFailed -= OnLobbyJoinFailed;
+            eosManager.LobbyLeft -= OnLobbyLeftSuccessfully;
         }
     }
 }
