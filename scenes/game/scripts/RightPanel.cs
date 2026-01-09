@@ -20,8 +20,19 @@ public partial class RightPanel : Node
     private P2PNetworkManager p2pNet;
     private MainGame mainGame;
 
+     private Godot.Timer hintGenerationAnimationTimer;
+
+    private CancellationTokenSource hintGeneratorCancellation;
+
     public override void _Ready()
     {
+        hintGenerationAnimationTimer = new Godot.Timer();
+        hintGenerationAnimationTimer.WaitTime = 0.5f;
+        hintGenerationAnimationTimer.OneShot = false;
+        hintGenerationAnimationTimer.Autostart = false;
+        hintGenerationAnimationTimer.Timeout += UpdateGenerationAnimation;
+        AddChild(hintGenerationAnimationTimer);
+
         eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
         p2pNet = GetNodeOrNull<P2PNetworkManager>("/root/P2PNetworkManager");
         if (p2pNet == null) p2pNet = GetNodeOrNull<P2PNetworkManager>("../P2PNetworkManager");
@@ -52,18 +63,6 @@ public partial class RightPanel : Node
             }
             GD.Print($"[RightPanel] Broadcasted hint: {word} ({team})");
         }
-    private Godot.Timer hintGenerationAnimationTimer;
-
-    private CancellationTokenSource hintGeneratorCancellation;
-
-    public override void _Ready()
-    {
-        hintGenerationAnimationTimer = new Godot.Timer();
-        hintGenerationAnimationTimer.WaitTime = 0.5f;
-        hintGenerationAnimationTimer.OneShot = false;
-        hintGenerationAnimationTimer.Autostart = false;
-        hintGenerationAnimationTimer.Timeout += UpdateGenerationAnimation;
-        AddChild(hintGenerationAnimationTimer);
     }
 
 	public void CommitToHistory()
@@ -110,6 +109,7 @@ public partial class RightPanel : Node
             hint.NoumberOfSimilarWords,
             currentTurn == MainGame.Team.Blue
         );
+        BroadcastHint(hint.Word, hint.NoumberOfSimilarWords, currentTurn);
     }
 
 	public void UpdateHintDisplay(string word, int count, bool isBlueTeam)
