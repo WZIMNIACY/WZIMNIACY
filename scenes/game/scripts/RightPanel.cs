@@ -17,7 +17,7 @@ public partial class RightPanel : Node
 	private Color redTeamColor = new Color("E65050FF");
 
     private EOSManager eosManager;
-    private P2PNetworkManager p2pNet;
+
     private MainGame mainGame;
 
     private Godot.Timer hintGenerationAnimationTimer;
@@ -34,8 +34,6 @@ public partial class RightPanel : Node
         AddChild(hintGenerationAnimationTimer);
 
         eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
-        p2pNet = GetNodeOrNull<P2PNetworkManager>("/root/P2PNetworkManager");
-        if (p2pNet == null) p2pNet = GetNodeOrNull<P2PNetworkManager>("../P2PNetworkManager");
 
         Node current = this;
         while (current != null)
@@ -45,20 +43,26 @@ public partial class RightPanel : Node
         }
     }
 
-    public void BroadcastHint(string word, int number, bool isBlue)
+    public void BroadcastHint(string word, int number, MainGame.Team team)
     {
-        if (mainGame != null && mainGame.isHost && p2pNet != null)
+        if (!mainGame.isHost) 
+        {
+            return; 
+        }
+
+        var net = mainGame.P2PNet;
+
+        if (net != null)
         {
             var payload = new MainGame.HintNetworkPayload
             {
                 Word = word,
                 Number = number,
-                IsBlue = isBlue
+                TurnTeam = team
             };
 
-            p2pNet.SendRpcToAllClients("hint_given", payload);
-            
-            GD.Print($"[RightPanel] Broadcasted hint: {word} (IsBlue: {isBlue})");
+            net.SendRpcToAllClients("hint_given", payload);
+            GD.Print($"[RightPanel] Broadcasted hint: {word} (Team: {team})");
         }
     }
 
@@ -106,7 +110,14 @@ public partial class RightPanel : Node
             hint.NoumberOfSimilarWords,
             currentTurn == MainGame.Team.Blue
         );
-        BroadcastHint(hint.Word, hint.NoumberOfSimilarWords, currentTurn == MainGame.Team.Blue);
+        BroadcastHint(hint.Word, hint.NoumberOfSimilarWords, currentTurn);
+    }
+
+    public void UpdateHintDisplay(string word, int number, MainGame.Team team)
+    {
+        bool isBlue = (team == MainGame.Team.Blue);
+        
+        UpdateHintDisplay(word, number, isBlue);
     }
 
 	public void UpdateHintDisplay(string word, int count, bool isBlueTeam)
