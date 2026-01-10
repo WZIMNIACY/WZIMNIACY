@@ -19,8 +19,11 @@ mono_crash.*.json
 # Visual studio ignores
 .vs/
 
-#MacOS specific ignores
+# MacOS specific ignores
 .DS_Store
 
 **/obj/
 **/bin/
+
+# Ignore auto-generated Godot .cs.uid files in libraries
+libs/**/*.cs.uid

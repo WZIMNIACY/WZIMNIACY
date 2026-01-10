@@ -11,11 +11,13 @@ public partial class CardManager : GridContainer
 	[Signal] public delegate void CardManagerReadyEventHandler();
 
 	[Export] private MainGame mainGame;
+	
+	private EOSManager eosManager;
+	private Random rand; 
 
     public game.Deck Deck { get; private set; }
     private Dictionary<string, List<double>> namesVectorDb;
     private int takenCards = 0;
-	private Random rand = new Random();
 	private int commonCards = 0;
 	private int blueCards = 0;
 	private int redCards = 0;
@@ -34,10 +36,14 @@ public partial class CardManager : GridContainer
 	{
 		base._Ready();
 		mainGame.GameReady += OnGameReady;
+
+		eosManager = GetNode<EOSManager>("/root/EOSManager");
+		rand = new Random((int)eosManager.CurrentGameSession.Seed);
+
 		foreach (var card in GetTree().GetNodesInGroup("cards"))
 		{
 			card.Connect("CardConfirmed", new Callable(this, nameof(OnCardConfirmed)));
-        }
+		}
 	}
 
 	private void OnGameReady()

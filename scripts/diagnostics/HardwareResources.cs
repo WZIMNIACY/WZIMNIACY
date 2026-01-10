@@ -95,16 +95,16 @@ namespace Diagnostics
                     case VRAMStatus.Detected:
                         if (vramInfo.valueMB > 0)
                         {
-                            return $"• CPU: {cpuInfo} rdzeni\n• RAM: {memoryInfo / 1024} GB ({memoryInfo} MB)\n• VRAM: {vramInfo.valueMB / 1024} GB ({vramInfo.valueMB} MB)";
+                            return $"• CPU: {cpuInfo} rdzeni\n• RAM: {(memoryInfo / 1024):F2} GB ({memoryInfo:F2} MB)\n• VRAM: {(vramInfo.valueMB / 1024):F2} GB ({vramInfo.valueMB:F2} MB)";
                         }
                         else
                         {
-                            return $"• CPU: {cpuInfo} rdzeni\n• RAM: {memoryInfo / 1024} GB ({memoryInfo} MB)\n• VRAM: Nie wykryto";
+                            return $"• CPU: {cpuInfo} rdzeni\n• RAM: {(memoryInfo / 1024):F2} GB ({memoryInfo:F2} MB)\n• VRAM: Nie wykryto";
                         }
                     case VRAMStatus.SharedMemory:
-                        return $"• CPU: {cpuInfo} rdzeni\n• RAM: {memoryInfo / 1024} GB ({memoryInfo} MB)\n• VRAM: {vramInfo.message}";
+                        return $"• CPU: {cpuInfo} rdzeni\n• RAM: {(memoryInfo / 1024):F2} GB ({memoryInfo:F2} MB)\n• VRAM: {vramInfo.message}";
                     case VRAMStatus.Error:
-                        return $"• CPU: {cpuInfo} rdzeni\n• RAM: {memoryInfo / 1024} GB ({memoryInfo} MB)\n• VRAM: {vramInfo.message}";
+                        return $"• CPU: {cpuInfo} rdzeni\n• RAM: {(memoryInfo / 1024):F2} GB ({memoryInfo:F2} MB)\n• VRAM: {vramInfo.message}";
                 }
             }
 
