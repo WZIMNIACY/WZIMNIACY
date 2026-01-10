@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Godot;
 using hints;
 using AI;
-using Epic.OnlineServices;
+
 
 public partial class RightPanel : Node
 {
@@ -37,10 +37,15 @@ public partial class RightPanel : Node
         p2pNet = GetNodeOrNull<P2PNetworkManager>("/root/P2PNetworkManager");
         if (p2pNet == null) p2pNet = GetNodeOrNull<P2PNetworkManager>("../P2PNetworkManager");
 
-        mainGame = GetNodeOrNull<MainGame>("/root/MainGame") ?? GetParent<MainGame>(); 
+        Node current = this;
+        while (current != null)
+        {
+            if (current is MainGame mg) { mainGame = mg; break; }
+            current = current.GetParent();
+        }
     }
 
-    public void BroadcastHint(string word, int number, MainGame.Team team)
+    public void BroadcastHint(string word, int number, bool isBlue)
     {
         if (mainGame != null && mainGame.isHost && p2pNet != null)
         {
@@ -48,20 +53,12 @@ public partial class RightPanel : Node
             {
                 Word = word,
                 Number = number,
-                TeamId = team
+                IsBlue = isBlue
             };
 
-            var members = eosManager.GetCurrentLobbyMembers();
-            foreach (var member in members)
-            {
-                string puid = member["userId"].ToString();
-                if (puid != eosManager.localProductUserIdString)
-                {
-                    var targetPeer = ProductUserId.FromString(puid);
-                    p2pNet.SendRpcToPeer(targetPeer, "hint_given", payload);
-                }
-            }
-            GD.Print($"[RightPanel] Broadcasted hint: {word} ({team})");
+            p2pNet.SendRpcToAllClients("hint_given", payload);
+            
+            GD.Print($"[RightPanel] Broadcasted hint: {word} (IsBlue: {isBlue})");
         }
     }
 
@@ -109,7 +106,7 @@ public partial class RightPanel : Node
             hint.NoumberOfSimilarWords,
             currentTurn == MainGame.Team.Blue
         );
-        BroadcastHint(hint.Word, hint.NoumberOfSimilarWords, currentTurn);
+        BroadcastHint(hint.Word, hint.NoumberOfSimilarWords, currentTurn == MainGame.Team.Blue);
     }
 
 	public void UpdateHintDisplay(string word, int count, bool isBlueTeam)

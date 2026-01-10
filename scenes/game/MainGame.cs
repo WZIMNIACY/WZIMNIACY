@@ -63,7 +63,7 @@ public partial class MainGame : Control
     {
         public string Word { get; set; }
         public int Number { get; set; }
-        public Team TeamId { get; set; }
+        public bool IsBlue { get; set; }
     }
 
     private int turnCounter = 1;
@@ -339,19 +339,24 @@ public partial class MainGame : Control
 
         if (packet.type == "hint_given" && !isHost)
         {
+            GD.Print(">>> [MainGame] HINT PACKET RECEIVED! RAW DATA ARRIVED. <<<"); 
             try
             {
-                var data = packet.payload.Deserialize<HintNetworkPayload>();
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                
+                var data = packet.payload.Deserialize<HintNetworkPayload>(options);
+                
+                GD.Print($"[MainGame] SUCCESS! Word={data.Word}, Num={data.Number}, IsBlue={data.IsBlue}");
 
                 if(gameRightPanel != null)
                 {
-                    bool isBlue = data.TeamId == Team.Blue;
-                    gameRightPanel.UpdateHintDisplay(data.Word, data.Number, isBlue);
+                    gameRightPanel.UpdateHintDisplay(data.Word, data.Number, data.IsBlue);
                 }
             }
             catch (Exception e)
             {
-                GD.PrintErr($"Hint error: {e.Message}");
+                GD.PrintErr($"[CRITICAL JSON ERROR]: {e.Message}");
+                GD.PrintErr($"Raw Payload: {packet.payload.ToString()}");
             }
             return true;
         }
@@ -423,8 +428,9 @@ public partial class MainGame : Control
         GD.Print($"{word} [{number}]");
         if (gameRightPanel != null)
         {
-            gameRightPanel.UpdateHintDisplay(word, number, currentTurn == Team.Blue);
-            gameRightPanel.BroadcastHint(word, number, currentTurn);
+            bool isBlue = currentTurn == Team.Blue;
+            gameRightPanel.UpdateHintDisplay(word, number, isBlue);
+            gameRightPanel.BroadcastHint(word, number, isBlue);
         }
     }
 
