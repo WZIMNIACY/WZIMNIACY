@@ -22,6 +22,11 @@ public partial class MainGame : Control
     [Export] Control settingsScene;
     [Export] Control helpScene;
     [Export] CardManager cardManager;
+    [Export] LoadingScreen loadingScreen;
+
+
+    private bool isGameStarted = false;
+    private readonly Dictionary<int, P2PNetworkManager.GamePlayer> playersByIndex = new();
 
     private EOSManager eosManager;
 
@@ -113,6 +118,10 @@ public partial class MainGame : Control
         settingsScene.Visible = false;
         helpScene.Visible = false;
 
+        isGameStarted = false;
+
+        loadingScreen?.ShowLoading();
+
         // Ustalanie czy lokalny gracz jest hostem na podstawie właściciela lobby EOS
         isHost = eosManager != null && eosManager.isLobbyOwner;
 
@@ -129,10 +138,9 @@ public partial class MainGame : Control
         }
         else
         {
-            // Tymczasowe zachowanie klienta:
-            startingTeam = Team.Blue;
-            GD.Print("Starting team (CLIENT TEMP): " + startingTeam.ToString());
+            GD.Print("Starting team (CLIENT): waiting for game_start...");
         }
+
 
         // === P2P (DODANE) ===
         p2pNet = GetNode<P2PNetworkManager>("P2PNetworkManager");
@@ -140,10 +148,11 @@ public partial class MainGame : Control
         {
             // Podpinamy handler JAK NAJWCZEŚNIEJ (bez bufora)
             p2pNet.PacketHandlers += HandlePackets;
+            p2pNet.PacketHandlers += HandleGameStartPacket;
 
-            if (!isHost)
+            if (isHost)
             {
-                p2pNet.HandshakeCompleted += OnP2PHandshakeCompletedTest;
+                p2pNet.hostBuildGameStartPayload = BuildGameStartPayloadFromLobby;
             }
         }
         // =====================
@@ -187,67 +196,8 @@ public partial class MainGame : Control
             );
         }
 
-        // Assing initianl points and turn
-        if (startingTeam == Team.Blue)
-        {
-            currentTurn = Team.Blue;
-            pointsBlue = 9;
-            pointsRed = 8;
-            SetTurnBlue();
-        }
-        else
-        {
-            currentTurn = Team.Red;
-            pointsBlue = 8;
-            pointsRed = 9;
-            SetTurnRed();
-        }
-        UpdatePointsDisplay();
-        UpdateTurnDisplay();
+        
 
-        NewTurnStart += OnNewTurnStart;
-
-        if (gameInputPanel != null)
-        {
-            gameInputPanel.HintGiven += OnCaptainHintReceived;
-        }
-        else
-        {
-            GD.PrintErr("Error");
-        }
-
-        string userID = eosManager.localProductUserIdString;
-        EOSManager.Team team = eosManager.GetTeamForUser(userID);
-        playerTeam = (team == EOSManager.Team.Blue) ? Team.Blue : Team.Red;
-        if (playerTeam == startingTeam)
-        {
-            gameRightPanel.EnableSkipButton();
-        }
-        else
-        {
-            gameRightPanel.DisableSkipButton();
-        }
-
-        if (eosManager.isLobbyOwner)
-        {
-            if (eosManager.currentAIType == EOSManager.AIType.LocalLLM)
-            {
-                llm = new LocalLLM();
-            }
-            else
-            {
-                var apiKey = eosManager.ApiKey;
-                if (string.IsNullOrEmpty(apiKey))
-                {
-                    throw new Exception("Got into game without settings API key");
-                }
-
-                llm = new DeepSeekLLM(apiKey);
-            }
-        }
-
-        EmitSignal(SignalName.GameReady);
-        EmitSignal(SignalName.NewTurnStart);
     }
 
     // === P2P (DODANE) ===
@@ -256,36 +206,9 @@ public partial class MainGame : Control
         if (p2pNet != null)
         {
             p2pNet.PacketHandlers -= HandlePackets;
-
-            if (!isHost)
-            {
-                p2pNet.HandshakeCompleted -= OnP2PHandshakeCompletedTest;
-            }
+            p2pNet.PacketHandlers -= HandleGameStartPacket;
         }
         base._ExitTree();
-    }
-
-    private void OnP2PHandshakeCompletedTest()
-    {
-        if (p2pNet == null) return;
-        if (isHost) return;
-        if (p2pJsonTestSent) return;
-
-        p2pJsonTestSent = true;
-
-        GD.Print("[MainGame][P2P-TEST] Handshake completed -> sending TEST JSON RPC card_selected to host...");
-
-        int testCardId = 123;
-
-        var payload = new
-        {
-            cardId = testCardId,
-            by = eosManager?.localProductUserIdString,
-            test = true
-        };
-
-        bool ok = p2pNet.SendRpcToHost("card_selected", payload);
-        GD.Print($"[MainGame][P2P-TEST] SendRpcToHost(card_selected) ok={ok} testCardId={testCardId}");
     }
 
     // Handler pakietów z sieci (zgodnie z propozycją kolegi)
@@ -311,6 +234,12 @@ public partial class MainGame : Control
         // Przykład: "card_selected" ma sens tylko gdy jesteśmy hostem (host rozstrzyga)
         if (packet.type == "card_selected" && isHost)
         {
+            if (!isGameStarted)
+            {
+                GD.Print("[MainGame] Ignoring card_selected (game not started yet)");
+                return true;
+            }
+
             CardSelectedPayload payload;
             try
             {
@@ -420,10 +349,286 @@ public partial class MainGame : Control
         return false;
     }
 
+    private bool HandleGameStartPacket(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
+    {
+        if (packet.type != "game_start")
+        {
+            return false;
+        }
+
+        P2PNetworkManager.GameStartPayload payload;
+        try
+        {
+            payload = packet.payload.Deserialize<P2PNetworkManager.GameStartPayload>();
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[MainGame] game_start payload parse error: {e.Message}");
+            return true;
+        }
+
+        if (payload == null || payload.players == null || payload.players.Length == 0)
+        {
+            GD.PrintErr("[MainGame] game_start payload invalid (no players)");
+            return true;
+        }
+
+        // Jeśli lokalna sesja ISTNIEJE, sprawdzamy zgodność ID
+        if (eosManager != null && eosManager.CurrentGameSession != null)
+        {
+            if (!string.IsNullOrEmpty(payload.sessionId) &&
+                payload.sessionId != eosManager.CurrentGameSession.SessionId)
+            {
+                GD.PrintErr(
+                    $"[MainGame] game_start ignored (session mismatch): payload={payload.sessionId} local={eosManager.CurrentGameSession.SessionId}"
+                );
+                return true;
+            }
+        }
+        // Jeśli lokalna sesja NIE istnieje → pozwalamy wystartować grę
+
+
+        ApplyGameStart(payload);
+        return true;
+    }
+
+    private void ApplyGameStart(P2PNetworkManager.GameStartPayload payload)
+    {
+        if (isGameStarted)
+        {
+            GD.Print("[MainGame] ApplyGameStart ignored (already started)");
+            return;
+        }
+
+        isGameStarted = true;
+        
+        if (payload == null || payload.players == null || payload.players.Length == 0)
+        {
+            GD.PrintErr("[MainGame] ApplyGameStart: payload/players invalid");
+            isGameStarted = false; 
+            return;
+        }
+
+
+        playersByIndex.Clear();
+        foreach (var p in payload.players)
+        {
+            if (p == null) continue;
+            if (string.IsNullOrEmpty(p.puid)) continue;
+
+            playersByIndex[p.index] = p; // trzymamy cały obiekt (puid + name + team)
+        }
+
+
+        string local = eosManager.localProductUserIdString;
+        playerTeam = Team.None;
+
+        foreach (var p in payload.players)
+        {
+            if (p == null) continue;
+            if (p.puid != local) continue;
+
+            playerTeam = p.team;
+            break;
+        }
+
+        if (playerTeam == Team.None)
+        {
+            GD.PrintErr("[MainGame] GAME START: local player not found in payload.players (playerTeam=None)");
+            // fallback na wszelki wypadek (tylko gdyby payload był uszkodzony)
+            playerTeam = Team.Blue;
+        }
+
+
+        if (!string.IsNullOrEmpty(payload.startingTeam) && Enum.TryParse<Team>(payload.startingTeam, out var parsedStart))
+        {
+            startingTeam = parsedStart;
+        }
+        else
+        {
+            GD.PrintErr($"[MainGame] GAME START missing/invalid startingTeam={payload.startingTeam}");
+            startingTeam = Team.Blue;
+        }
+
+        GD.Print($"[MainGame] GAME START seed={payload.seed}");
+
+
+        GD.Print($"[MainGame] GAME START: players={playersByIndex.Count} sessionId={payload.sessionId}");
+
+        loadingScreen?.HideLoading();
+
+        // Assing initianl points and turn
+        if (startingTeam == Team.Blue)
+        {
+            currentTurn = Team.Blue;
+            pointsBlue = 9;
+            pointsRed = 8;
+            SetTurnBlue();
+        }
+        else
+        {
+            currentTurn = Team.Red;
+            pointsBlue = 8;
+            pointsRed = 9;
+            SetTurnRed();
+        }
+        UpdatePointsDisplay();
+        UpdateTurnDisplay();
+
+        NewTurnStart += OnNewTurnStart;
+
+        if (gameInputPanel != null)
+        {
+            gameInputPanel.HintGiven += OnCaptainHintReceived;
+        }
+        else
+        {
+            GD.PrintErr("Error");
+        }
+
+        // playerTeam jest już ustawiony z game_start (RPC) i w trakcie gry się nie zmienia.
+        // Nie nadpisujemy go danymi z lobby.
+        if (playerTeam == startingTeam)
+        {
+            gameRightPanel.EnableSkipButton();
+        }
+        else
+        {
+            gameRightPanel.DisableSkipButton();
+        }
+
+
+        if (eosManager.isLobbyOwner)
+        {
+            if (eosManager.currentAIType == EOSManager.AIType.LocalLLM)
+            {
+                llm = new LocalLLM();
+            }
+            else
+            {
+                var apiKey = eosManager.ApiKey;
+                if (string.IsNullOrEmpty(apiKey))
+                {
+                    throw new Exception("Got into game without settings API key");
+                }
+
+                llm = new DeepSeekLLM(apiKey);
+            }
+        }
+
+        EmitSignal(SignalName.GameReady);
+        EmitSignal(SignalName.NewTurnStart);
+    }
+
+    private P2PNetworkManager.GameStartPayload BuildGameStartPayloadFromLobby()
+    {
+        // Kolejność graczy: host (index 0) + reszta według lobby (albo sort fallback)
+        var players = new List<P2PNetworkManager.GamePlayer>();
+
+        // Host jako index 0
+        players.Add(new P2PNetworkManager.GamePlayer
+        {
+            index = 0,
+            puid = eosManager.localProductUserIdString,
+            name = GetDisplayNameFromLobby(eosManager.localProductUserIdString),
+            team = eosManager.GetTeamForUser(eosManager.localProductUserIdString) == EOSManager.Team.Blue
+                ? Team.Blue
+                : Team.Red
+        });
+
+        // Klienci z lobby
+        var members = eosManager.GetCurrentLobbyMembers();
+        var clientPuids = new List<string>();
+
+        foreach (var member in members)
+        {
+            if (member == null || !member.ContainsKey("userId")) continue;
+
+            string puid = member["userId"].ToString();
+            if (string.IsNullOrEmpty(puid)) continue;
+            if (puid == eosManager.localProductUserIdString) continue;
+
+            clientPuids.Add(puid);
+        }
+
+        // Stabilna kolejność (żeby indexy były deterministyczne nawet jak lobby zwróci inaczej)
+        clientPuids.Sort(StringComparer.Ordinal);
+
+        int index = 1;
+        foreach (string puid in clientPuids)
+        {
+            players.Add(new P2PNetworkManager.GamePlayer
+            {
+                index = index,
+                puid = puid,
+                name = GetDisplayNameFromLobby(puid),
+                team = eosManager.GetTeamForUser(puid) == EOSManager.Team.Blue
+                    ? Team.Blue
+                    : Team.Red
+            });
+
+            index++;
+        }
+
+        return new P2PNetworkManager.GameStartPayload
+        {
+            sessionId = eosManager.CurrentGameSession.SessionId,
+            players = players.ToArray(),
+            startingTeam = startingTeam.ToString(),
+            seed = eosManager.CurrentGameSession.Seed
+        };
+
+    }
+
+    private string GetDisplayNameFromLobby(string puid)
+    {
+        if (eosManager == null || string.IsNullOrEmpty(puid))
+        {
+            return "";
+        }
+
+        // To jest to samo cache, które budujesz w EOSManager.GetLobbyMembers()
+        var members = eosManager.GetCurrentLobbyMembers();
+        if (members == null)
+        {
+            return "";
+        }
+
+        foreach (var member in members)
+        {
+            if (member == null) continue;
+            if (!member.ContainsKey("userId")) continue;
+
+            string memberPuid = member["userId"].ToString();
+            if (memberPuid != puid) continue;
+
+            if (member.ContainsKey("displayName"))
+            {
+                string displayName = member["displayName"].ToString();
+                if (!string.IsNullOrEmpty(displayName))
+                {
+                    return displayName;
+                }
+            }
+
+            break;
+        }
+
+        // fallback jakby coś poszło nie tak z cache
+        return $"Player_{puid.Substring(Math.Max(0, puid.Length - 4))}";
+    }
+
+    private bool CanInteractWithGame()
+    {
+        return isGameStarted;
+    }
+
     // Opcjonalny przykład wysyłki (np. lokalny gracz kliknął kartę)
     // W praktyce wywołasz to z UI / CardManager / AgentCard
     public void SendCardSelectedRpc_ToHost(int cardId)
     {
+        if (!CanInteractWithGame()) return;
+
         if (p2pNet == null) return;
 
         var payload = new
@@ -456,6 +661,9 @@ public partial class MainGame : Control
 
     public void OnSkipTurnPressed()
     {
+        if (!CanInteractWithGame()) return;
+
+        GD.Print("Koniec tury");
         GD.Print("SkipTurnButton pressed...");
 
         if (isHost)
@@ -529,6 +737,8 @@ public partial class MainGame : Control
 
     public void OnMenuButtonPressed()
     {
+        if (!CanInteractWithGame()) return;
+
         GD.Print("Menu button pressed");
         menuPanel.Visible = true;
     }
@@ -670,6 +880,8 @@ public partial class MainGame : Control
 
     public void CardConfirm(AgentCard card)
     {
+        if (!CanInteractWithGame()) return;
+
         Team teamToRemovePoint = Team.None;
         switch (card.Type)
         {
