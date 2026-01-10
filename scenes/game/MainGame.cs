@@ -64,6 +64,13 @@ public partial class MainGame : Control
         None
     }
 
+    public sealed class HintNetworkPayload
+    {
+        public string Word { get; set; }
+        public int Number { get; set; }
+        public Team TurnTeam { get; set; }
+    }
+
     private int turnCounter = 1;
     Team startingTeam;
     public Team StartingTeam
@@ -74,6 +81,7 @@ public partial class MainGame : Control
 
     // === P2P (DODANE) ===
     private P2PNetworkManager p2pNet;
+    public P2PNetworkManager P2PNet => p2pNet;
 
     // Przykładowy payload do RPC "card_selected" (logika gry → tu, nie w P2P)
     private sealed class CardSelectedPayload
@@ -269,6 +277,27 @@ public partial class MainGame : Control
             return true; // zjedliśmy pakiet
         }
 
+        if (packet.type == "hint_given" && !isHost)
+        {
+            GD.Print(">>> [MainGame] HINT PACKET RECEIVED! RAW DATA ARRIVED. <<<"); 
+            try
+            {
+                var data = packet.payload.Deserialize<HintNetworkPayload>();
+                
+                GD.Print($"[MainGame] SUCCESS! Word={data.Word}, Num={data.Number}, IsBlue={data.TurnTeam}");
+
+                if(gameRightPanel != null)
+                {
+                    gameRightPanel.UpdateHintDisplay(data.Word, data.Number, data.TurnTeam);
+                }
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[CRITICAL JSON ERROR]: {e.Message}");
+            }
+            return true;
+        }
+    // -----------------
         // Odebranie infomacji przez hosta o tym ze klient chce pominac ture
         if (packet.type == "skip_turn_pressed" && isHost)
         {
@@ -655,7 +684,9 @@ public partial class MainGame : Control
         GD.Print($"{word} [{number}]");
         if (gameRightPanel != null)
         {
-            gameRightPanel.UpdateHintDisplay(word, number, currentTurn == Team.Blue);
+            bool isBlue = currentTurn == Team.Blue;
+            gameRightPanel.UpdateHintDisplay(word, number, isBlue);
+            gameRightPanel.BroadcastHint(word, number, currentTurn);
         }
     }
 

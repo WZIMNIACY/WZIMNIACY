@@ -5,6 +5,7 @@ using Godot;
 using hints;
 using AI;
 
+
 public partial class RightPanel : Node
 {
 	[Export] public Label currentWordLabel;
@@ -14,6 +15,10 @@ public partial class RightPanel : Node
 
 	private Color blueTeamColor = new Color("5AD2C8FF");
 	private Color redTeamColor = new Color("E65050FF");
+
+    private EOSManager eosManager;
+
+    private MainGame mainGame;
 
     private Godot.Timer hintGenerationAnimationTimer;
 
@@ -27,6 +32,38 @@ public partial class RightPanel : Node
         hintGenerationAnimationTimer.Autostart = false;
         hintGenerationAnimationTimer.Timeout += UpdateGenerationAnimation;
         AddChild(hintGenerationAnimationTimer);
+
+        eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
+
+        Node current = this;
+        while (current != null)
+        {
+            if (current is MainGame mg) { mainGame = mg; break; }
+            current = current.GetParent();
+        }
+    }
+
+    public void BroadcastHint(string word, int number, MainGame.Team team)
+    {
+        if (!mainGame.isHost) 
+        {
+            return; 
+        }
+
+        var net = mainGame.P2PNet;
+
+        if (net != null)
+        {
+            var payload = new MainGame.HintNetworkPayload
+            {
+                Word = word,
+                Number = number,
+                TurnTeam = team
+            };
+
+            net.SendRpcToAllClients("hint_given", payload);
+            GD.Print($"[RightPanel] Broadcasted hint: {word} (Team: {team})");
+        }
     }
 
 	public void CommitToHistory()
@@ -73,6 +110,14 @@ public partial class RightPanel : Node
             hint.NoumberOfSimilarWords,
             currentTurn == MainGame.Team.Blue
         );
+        BroadcastHint(hint.Word, hint.NoumberOfSimilarWords, currentTurn);
+    }
+
+    public void UpdateHintDisplay(string word, int number, MainGame.Team team)
+    {
+        bool isBlue = (team == MainGame.Team.Blue);
+        
+        UpdateHintDisplay(word, number, isBlue);
     }
 
 	public void UpdateHintDisplay(string word, int count, bool isBlueTeam)
