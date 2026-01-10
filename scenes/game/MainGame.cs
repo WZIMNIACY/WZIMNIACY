@@ -374,6 +374,7 @@ public partial class MainGame : Control
         if (payload == null || payload.players == null || payload.players.Length == 0)
         {
             GD.PrintErr("[MainGame] ApplyGameStart: payload/players invalid");
+            isGameStarted = false; 
             return;
         }
 
