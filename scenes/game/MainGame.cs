@@ -340,23 +340,16 @@ public partial class MainGame : Control
 
         if (packet.type == "hint_given" && !isHost)
         {
-            GD.Print(">>> [MainGame] HINT PACKET RECEIVED! RAW DATA ARRIVED. <<<"); 
-            try
+            if (packet.type == "hint_given" && !isHost)
             {
-                var data = packet.payload.Deserialize<HintNetworkPayload>();
-                
-                GD.Print($"[MainGame] SUCCESS! Word={data.Word}, Num={data.Number}, IsBlue={data.TurnTeam}");
-
-                if(gameRightPanel != null)
+                if (gameRightPanel != null)
                 {
-                    gameRightPanel.UpdateHintDisplay(data.Word, data.Number, data.TurnTeam);
+                    gameRightPanel.HandleHintPacket(packet.payload);
                 }
+                return true;
             }
-            catch (Exception e)
-            {
-                GD.PrintErr($"[CRITICAL JSON ERROR]: {e.Message}");
-            }
-            return true;
+
+        // ... reszta kodu (skip_turn, game_ended itd.) ...
         }
     // -----------------
         // Odebranie infomacji przez hosta o tym ze klient chce pominac ture

@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Godot;
 using hints;
 using AI;
+using System.Text.Json;
+using System;
 
 
 public partial class RightPanel : Node
@@ -35,12 +37,8 @@ public partial class RightPanel : Node
 
         eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
 
-        Node current = this;
-        while (current != null)
-        {
-            if (current is MainGame mg) { mainGame = mg; break; }
-            current = current.GetParent();
-        }
+        mainGame = GetTree().CurrentScene as MainGame;
+        
     }
 
     public void BroadcastHint(string word, int number, MainGame.Team team)
@@ -63,6 +61,23 @@ public partial class RightPanel : Node
 
             net.SendRpcToAllClients("hint_given", payload);
             GD.Print($"[RightPanel] Broadcasted hint: {word} (Team: {team})");
+        }
+    }
+
+    public void HandleHintPacket(JsonElement payload)
+    {
+        try
+        {
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var data = payload.Deserialize<MainGame.HintNetworkPayload>(options);
+
+            GD.Print($"[RightPanel] Packet received! Word={data.Word}, Num={data.Number}, Team={data.TurnTeam}");
+
+            UpdateHintDisplay(data.Word, data.Number, data.TurnTeam);
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[RightPanel] JSON Error: {e.Message}");
         }
     }
 
