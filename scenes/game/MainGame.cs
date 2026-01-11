@@ -491,6 +491,8 @@ public partial class MainGame : Control
 
             return true;
         }
+
+        return false; // nie obsłużyliśmy tego pakietu
     }
 
     private bool HandleGameStartPacket(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
@@ -846,24 +848,6 @@ public partial class MainGame : Control
 
         bool ok = p2pNet.SendRpcToHost("skip_turn_pressed", payload);
         GD.Print($"[MainGame] SendRpcToHost(skip_turn_pressed) ok={ok}");
-    }
-
-    private AgentCard TryFindCardById(int cardId)
-    {
-        if (cardManager == null) return null;
-        if (cardManager.Deck == null) return null;
-
-        foreach (var c in cardManager.Deck)
-        {
-            if (c == null) continue;
-
-            // TU jest jedyne miejsce, gdzie musisz dopasować nazwę pola ID w AgentCard.
-            // Jeśli to nie jest "Id", podmień na właściwą nazwę (np. CardId / cardId).
-            if (c.Id == cardId)
-                return c;
-        }
-
-        return null;
     }
 
     private void BroadcastTurnChanged()
