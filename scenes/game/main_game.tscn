@@ -19,7 +19,7 @@
 [ext_resource type="PackedScene" uid="uid://b6bdhq5ktk0vo" path="res://scenes/components/main_game/end_game_screen.tscn" id="16_eixuh"]
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="16_v72ow"]
 [ext_resource type="Script" uid="uid://d355aol0ujbg" path="res://scripts/P2PNetworkManager.cs" id="19_stils"]
-[ext_resource type="PackedScene" uid="uid://da78r3ltx830e" path="res://scenes/loadingscreen/LoadingScreen.tscn" id="20_mssxc"]
+[ext_resource type="PackedScene" uid="uid://da78r3ltx830e" path="res://scenes/loadingscreen/loadingscreen.tscn" id="20_mssxc"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
