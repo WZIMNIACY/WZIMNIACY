@@ -1,5 +1,5 @@
 using Godot;
-
+//Nazwa wszedzie powinna byc LoadingScreen.cs
 public partial class LoadingScreen : Control
 {
 	public void ShowLoading()
