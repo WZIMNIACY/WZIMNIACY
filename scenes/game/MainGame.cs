@@ -322,6 +322,7 @@ public partial class MainGame : Control
         }
 
         // Odebranie informacji przez hosta o tym ze klient chce zatwierdzic karte
+        // Odebranie informacji przez hosta o tym ze klient chce zatwierdzic karte
         if (packet.type == "card_confirm_pressed" && isHost)
         {
             if (!isGameStarted)
@@ -349,59 +350,7 @@ public partial class MainGame : Control
 
             GD.Print($"[MainGame] RPC card_confirm_pressed received: cardId={payload.cardId} by={payload.by}");
 
-            // Anty-duplikaty
-            if (confirmedCardIds.Contains(payload.cardId))
-            {
-                GD.Print($"[MainGame] Ignoring duplicate card_confirm_pressed: cardId={payload.cardId}");
-                return true;
-            }
-            confirmedCardIds.Add(payload.cardId);
-
-            if (cardManager == null)
-            {
-                GD.PrintErr("[MainGame] cardManager is null on host");
-                return true;
-            }
-
-            // cardId = indeks dziecka w CardManager (GridContainer)
-            if (payload.cardId < 0 || payload.cardId >= cardManager.GetChildCount())
-            {
-                GD.PrintErr($"[MainGame] Invalid cardId={payload.cardId} (out of range)");
-                return true;
-            }
-
-            AgentCard cardNode = cardManager.GetChild(payload.cardId) as AgentCard;
-            if (cardNode == null)
-            {
-                GD.PrintErr($"[MainGame] Child at index {payload.cardId} is not AgentCard");
-                return true;
-            }
-
-            bool isAssassin = cardNode.Type == CardManager.CardType.Assassin;
-
-            // 1) Host wysyła informację do WSZYSTKICH (klienci robią UI/deck dopiero tutaj)
-            var revealPayload = new CardRevealedPayload
-            {
-                cardId = payload.cardId,
-                confirmedBy = payload.by,
-                isAssassin = isAssassin
-            };
-
-            int revealedSent = p2pNet.SendRpcToAllClients("card_revealed", revealPayload);
-            GD.Print($"[MainGame] SendRpcToAllClients(card_revealed) sent={revealedSent} cardId={payload.cardId} isAssassin={isAssassin}");
-
-            // 2) Host wykonuje logikę gry lokalnie
-            Team beforeTurn = currentTurn;
-            int beforeTurnCounter = turnCounter;
-
-            cardManager.ApplyCardConfirmedHost(cardNode);
-
-            // 3) Jeśli zmieniła się tura/licznik -> broadcast
-            if (currentTurn != beforeTurn || turnCounter != beforeTurnCounter)
-            {
-                BroadcastTurnChanged();
-            }
-
+            HostConfirmCardAndBroadcast(payload.cardId, payload.by);
             return true;
         }
 
@@ -865,6 +814,72 @@ public partial class MainGame : Control
         GD.Print($"[MainGame] SendRpcToAllClients(turn_changed) sent={sent} currentTurn={currentTurn} turnCounter={turnCounter}");
     }
 
+    // Wspólna ścieżka: host potwierdza kartę i rozsyła efekty do klientów
+    public void HostConfirmCardAndBroadcast(int cardId, string confirmedBy)
+    {
+        if (!isHost) return;
+        if (!isGameStarted)
+        {
+            GD.Print("[MainGame] Ignoring HostConfirmCardAndBroadcast (game not started yet)");
+            return;
+        }
+
+        // Anty-duplikaty (ten sam mechanizm dla host-click i client-click)
+        if (confirmedCardIds.Contains(cardId))
+        {
+            GD.Print($"[MainGame] Ignoring duplicate confirm: cardId={cardId}");
+            return;
+        }
+        confirmedCardIds.Add(cardId);
+
+        if (cardManager == null)
+        {
+            GD.PrintErr("[MainGame] cardManager is null on host");
+            return;
+        }
+
+        if (cardId < 0 || cardId >= cardManager.GetChildCount())
+        {
+            GD.PrintErr($"[MainGame] Invalid cardId={cardId} (out of range)");
+            return;
+        }
+
+        AgentCard cardNode = cardManager.GetChild(cardId) as AgentCard;
+        if (cardNode == null)
+        {
+            GD.PrintErr($"[MainGame] Child at index {cardId} is not AgentCard");
+            return;
+        }
+
+        bool isAssassin = cardNode.Type == CardManager.CardType.Assassin;
+
+        // Zapisujemy stan tury PRZED logiką, żeby wykryć zmianę po ApplyCardConfirmedHost
+        Team beforeTurn = currentTurn;
+        int beforeTurnCounter = turnCounter;
+
+        // 1) Host wykonuje logikę gry lokalnie (źródło prawdy)
+        cardManager.ApplyCardConfirmedHost(cardNode);
+
+        // 2) Host wysyła informację do WSZYSTKICH klientów (klienci dopiero teraz robią UI/deck)
+        if (p2pNet != null)
+        {
+            var revealPayload = new CardRevealedPayload
+            {
+                cardId = cardId,
+                confirmedBy = confirmedBy,
+                isAssassin = isAssassin
+            };
+
+            int revealedSent = p2pNet.SendRpcToAllClients("card_revealed", revealPayload);
+            GD.Print($"[MainGame] SendRpcToAllClients(card_revealed) sent={revealedSent} cardId={cardId} isAssassin={isAssassin}");
+        }
+
+        // 3) Jeśli zmieniła się tura/licznik -> broadcast
+        if (currentTurn != beforeTurn || turnCounter != beforeTurnCounter)
+        {
+            BroadcastTurnChanged();
+        }
+    }
 
     public void OnCardConfirmPressedClient(int cardId)
     {

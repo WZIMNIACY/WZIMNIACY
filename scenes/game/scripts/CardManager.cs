@@ -123,8 +123,8 @@ public partial class CardManager : GridContainer
 			return;
 		}
 
-		// Host wykonuje pełną ścieżkę lokalnie
-		ApplyCardConfirmedHost(card);
+		// Host też przechodzi przez wspólną ścieżkę (broadcast do klientów + logika lokalna)
+		mainGame.HostConfirmCardAndBroadcast(cardId, eosManager.localProductUserIdString);
 	}
 
 
