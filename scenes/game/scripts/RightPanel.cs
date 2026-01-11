@@ -5,6 +5,7 @@ using Godot;
 using hints;
 using AI;
 using System.Text.Json;
+using Epic.OnlineServices;
 using System;
 
 
@@ -25,6 +26,12 @@ public partial class RightPanel : Node
     private Godot.Timer hintGenerationAnimationTimer;
 
     private CancellationTokenSource hintGeneratorCancellation;
+    public sealed class HintNetworkPayload
+    {
+        public string Word { get; set; }
+        public int Number { get; set; }
+        public MainGame.Team TurnTeam { get; set; }
+    }
 
     public override void _Ready()
     {
@@ -38,7 +45,47 @@ public partial class RightPanel : Node
         eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
 
         mainGame = GetTree().CurrentScene as MainGame;
+
+        CallDeferred(nameof(SubscribeToNetwork));
         
+    }
+
+    private void SubscribeToNetwork()
+    {
+        if (mainGame != null && mainGame.P2PNet != null)
+        {
+            mainGame.P2PNet.PacketHandlers += HandlePackets;
+            GD.Print("[RightPanel] Successfully subscribed to P2P packets.");
+        }
+        else
+        {
+            GD.PrintErr("[RightPanel] CRITICAL: Could not subscribe to network. MainGame or P2PNet is null.");
+        }
+    }
+
+    private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
+    {
+        if (packet.type != "hint_given") return false;
+
+        if (mainGame.isHost) return false;
+
+        try
+        {
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            
+            var data = packet.payload.Deserialize<HintNetworkPayload>(options);
+
+            GD.Print($"[RightPanel] Received Hint: {data.Word} for {data.TurnTeam}");
+
+            UpdateHintDisplay(data.Word, data.Number, data.TurnTeam);
+            
+            return true; 
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[RightPanel] Error parsing hint: {e.Message}");
+            return true;
+        }
     }
 
     public void BroadcastHint(string word, int number, MainGame.Team team)
@@ -52,7 +99,7 @@ public partial class RightPanel : Node
 
         if (net != null)
         {
-            var payload = new MainGame.HintNetworkPayload
+            var payload = new HintNetworkPayload
             {
                 Word = word,
                 Number = number,
@@ -69,7 +116,7 @@ public partial class RightPanel : Node
         try
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var data = payload.Deserialize<MainGame.HintNetworkPayload>(options);
+            var data = payload.Deserialize<HintNetworkPayload>(options);
 
             GD.Print($"[RightPanel] Packet received! Word={data.Word}, Num={data.Number}, Team={data.TurnTeam}");
 

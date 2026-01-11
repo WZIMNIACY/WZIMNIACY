@@ -59,13 +59,6 @@ public partial class MainGame : Control
         None
     }
 
-    public sealed class HintNetworkPayload
-    {
-        public string Word { get; set; }
-        public int Number { get; set; }
-        public Team TurnTeam { get; set; }
-    }
-
     private int turnCounter = 1;
     Team startingTeam;
     public Team StartingTeam
@@ -337,20 +330,7 @@ public partial class MainGame : Control
 
             return true; // zjedliśmy pakiet
         }
-
-        if (packet.type == "hint_given" && !isHost)
-        {
-            if (packet.type == "hint_given" && !isHost)
-            {
-                if (gameRightPanel != null)
-                {
-                    gameRightPanel.HandleHintPacket(packet.payload);
-                }
-                return true;
-            }
-
-        // ... reszta kodu (skip_turn, game_ended itd.) ...
-        }
+        
     // -----------------
         // Odebranie infomacji przez hosta o tym ze klient chce pominac ture
         if (packet.type == "skip_turn_pressed" && isHost)
