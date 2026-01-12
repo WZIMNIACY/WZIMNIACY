@@ -71,9 +71,8 @@ public partial class RightPanel : Node
 
         try
         {
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             
-            var data = packet.payload.Deserialize<HintNetworkPayload>(options);
+            var data = packet.payload.Deserialize<HintNetworkPayload>();
 
             GD.Print($"[RightPanel] Received Hint: {data.Word} for {data.TurnTeam}");
 
