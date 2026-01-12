@@ -74,6 +74,7 @@ public partial class MainGame : Control
 
     // === P2P (DODANE) ===
     private P2PNetworkManager p2pNet;
+    public P2PNetworkManager P2PNet => p2pNet;
 
     // Przykładowy payload do RPC "card_selected" (logika gry → tu, nie w P2P)
     private sealed class CardSelectedPayload
@@ -268,7 +269,8 @@ public partial class MainGame : Control
 
             return true; // zjedliśmy pakiet
         }
-
+        
+    // -----------------
         // Odebranie infomacji przez hosta o tym ze klient chce pominac ture
         if (packet.type == "skip_turn_pressed" && isHost)
         {
@@ -655,7 +657,9 @@ public partial class MainGame : Control
         GD.Print($"{word} [{number}]");
         if (gameRightPanel != null)
         {
-            gameRightPanel.UpdateHintDisplay(word, number, currentTurn == Team.Blue);
+            bool isBlue = currentTurn == Team.Blue;
+            gameRightPanel.UpdateHintDisplay(word, number, isBlue);
+            gameRightPanel.BroadcastHint(word, number, currentTurn);
         }
     }
 
