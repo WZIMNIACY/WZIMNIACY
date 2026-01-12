@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://bfxpcutxox0tt"]
 
-[ext_resource type="Script" uid="uid://opxogrio063d" path="res://scenes/settings/Settings.cs" id="1_gaid6"]
+[ext_resource type="Script" uid="uid://dqocg7ni7ph2" path="res://scenes/settings/Settings.cs" id="1_gaid6"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="2_fa6u7"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="3_6agbc"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="3_oerk1"]
@@ -103,8 +103,10 @@ vertical_alignment = 1
 [node name="SFXSlider" type="HSlider" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
 layout_mode = 2
 mouse_default_cursor_shape = 10
-max_value = 1.0
-step = 0.01
+min_value = 0.5
+max_value = 2.0
+step = 0.1
+value = 1.0
 
 [node name="MuteCheckBox" type="CheckButton" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
 layout_mode = 2

@@ -3,7 +3,6 @@ using Godot;
 public partial class Settings : Control
 {
 	// --- UI ELEMENTS (Przypisz w Inspektorze!) ---
-	// Zmieniono nazwy: usunięto "_" i upewniono się, że zaczynają się z małej litery
 	[ExportGroup("Navigation")]
 	[Export] private Button backButton;
 	[Export] private Button saveButton;
@@ -21,6 +20,17 @@ public partial class Settings : Control
 
 	public override void _Ready()
 	{
+		// 0. KONFIGURACJA SUWAKA SKALI (Naprawa crasha i powiększenie zakresu)
+		if (scaleUISlider != null)
+		{
+			// Minimalna wartość 0.5 chroni przed crashem (nie można dzielić przez 0)
+			scaleUISlider.MinValue = 0.5f; 
+			// Maksymalna wartość 2.0 pozwala na 200% powiększenia (możesz dać więcej np. 2.5f)
+			scaleUISlider.MaxValue = 2.0f; 
+			// Krok suwaka - co 0.1 dla precyzji
+			scaleUISlider.Step = 0.1f;
+		}
+
 		// 1. Wypełnij listy rozwijane danymi z Managera
 		SetupVideoOptions();
 
@@ -71,13 +81,11 @@ public partial class Settings : Control
 		// Video
 		if (screenModeOptionButton != null)
 		{
-			// NAPRAWA CS0266: Rzutujemy Enum na int, żeby Dropdown to zrozumiał
 			screenModeOptionButton.Selected = (int)sm.Video.DisplayMode;
 		}
 
 		if (resolutionOptionButton != null)
 		{
-			// NAPRAWA CS1061: Nie bierzemy Indexu z danych, tylko pytamy Managera, który to index
 			resolutionOptionButton.Selected = sm.GetCurrentResolutionIndex();
 		}
 
@@ -111,21 +119,20 @@ public partial class Settings : Control
 
 	private void OnWindowModeSelected(long index)
 	{
-		// NAPRAWA CS1503: Rzutujemy int (z dropdowna) na Enum (dla Managera)
 		SettingsManager.Instance.SetDisplayMode((SettingsManager.WindowMode)index);
-		
-		CheckResolutionLock();
+		CheckResolutionLock(); // Sprawdzamy blokadę po zmianie trybu
 	}
 
 	private void OnResolutionSelected(long index)
 	{
-		// NAPRAWA CS1061: Używamy nowej metody SetResolutionByIndex
 		SettingsManager.Instance.SetResolutionByIndex((int)index);
 	}
 
 	private void OnUIScaleChanged(double value)
 	{
-		SettingsManager.Instance.SetUiScale((float)value);
+		// Zabezpieczenie przed zerem (Mathf.Max), chociaż MinValue suwaka też to robi
+		float safeValue = Mathf.Max((float)value, 0.1f);
+		SettingsManager.Instance.SetUiScale(safeValue);
 	}
 
 	private void OnSavePressed()
@@ -142,12 +149,17 @@ public partial class Settings : Control
 		GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
 	}
 
-	// Blokujemy zmianę rozdzielczości, jeśli jesteśmy w Fullscreen
+	// Blokujemy zmianę rozdzielczości w trybie Fullscreen ORAZ Borderless
 	private void CheckResolutionLock()
 	{
 		if (resolutionOptionButton == null) return;
 		
-		bool isFullscreen = SettingsManager.Instance.Video.DisplayMode == SettingsManager.WindowMode.Fullscreen;
-		resolutionOptionButton.Disabled = isFullscreen;
+		var mode = SettingsManager.Instance.Video.DisplayMode;
+
+		// Blokujemy, jeśli jest Fullscreen LUB Borderless
+		bool shouldLock = (mode == SettingsManager.WindowMode.Fullscreen) || 
+						  (mode == SettingsManager.WindowMode.Borderless);
+
+		resolutionOptionButton.Disabled = shouldLock;
 	}
 }

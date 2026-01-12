@@ -34,7 +34,6 @@ public partial class SettingsManager : Node
 	public SoundSettings Sound { get; private set; } = new SoundSettings();
 	public VideoSettings Video { get; private set; } = new VideoSettings();
 
-	// POPRAWKA: Usunięto "_" z nazw zmiennych, aby zadowolić kompilator na GitHubie
 	private int busIndexMaster;
 	private int busIndexMusic;
 	private int busIndexSfx;
@@ -62,37 +61,27 @@ public partial class SettingsManager : Node
 		busIndexMusic  = AudioServer.GetBusIndex("Music");
 		busIndexSfx    = AudioServer.GetBusIndex("SFX");
 
+		// Najpierw dodajemy natywną rozdzielczość monitora do listy
 		AddNativeResolution();
+		
+		// Próbujemy wczytać config
 		LoadConfig();
+		
+		// Aplikujemy wszystko (głośność, ekran, v-sync)
 		ApplyAllSettings();
 
-		GD.Print("✅ SettingsManager gotowy.");
+		GD.Print("✅ SettingsManager gotowy i wczytany.");
 	}
 
 	private void AddNativeResolution()
 	{
 		Vector2I screenRes = DisplayServer.ScreenGetSize();
-		if (availableResolutions.Contains(screenRes)) return;
-
-		bool inserted = false;
-		for (int i = 0; i < availableResolutions.Count; i++)
+		if (!availableResolutions.Contains(screenRes))
 		{
-			bool isSmaller = (availableResolutions[i].X < screenRes.X) || 
-							 (availableResolutions[i].X == screenRes.X && availableResolutions[i].Y < screenRes.Y);
-			
-			if (isSmaller)
-			{
-				availableResolutions.Insert(i, screenRes);
-				inserted = true;
-				break;
-			}
+			// Dodaj na początek listy (lub posortuj)
+			availableResolutions.Insert(0, screenRes);
+			GD.Print($"🖥️ Wykryto i dodano natywną rozdzielczość: {screenRes}");
 		}
-
-		if (!inserted)
-		{
-			availableResolutions.Add(screenRes);
-		}
-		GD.Print($"🖥️ Wstawiono natywną rozdzielczość gracza: {screenRes}");
 	}
 	
 	public void LoadConfig()
@@ -102,7 +91,8 @@ public partial class SettingsManager : Node
 
 		if (err != Error.Ok)
 		{
-			GD.Print("⚠ Brak pliku ustawień, używam domyślnych.");
+			GD.Print("⚠ Brak pliku ustawień (pierwsze uruchomienie). Ustawiam wartości domyślne pod sprzęt.");
+			SetDefaultDefaultsBasedOnHardware();
 			return;
 		}
 
@@ -112,6 +102,7 @@ public partial class SettingsManager : Node
 		Sound.SfxVolume    = (float)config.GetValue("Sound", "SfxVolume",    1.0f);
 		Sound.Muted        = (bool) config.GetValue("Sound", "Muted",        false);
 
+		// Video
 		int modeInt = (int)config.GetValue("Video", "DisplayMode", (int)WindowMode.Windowed);
 		Video.DisplayMode = (WindowMode)modeInt;
 
@@ -119,19 +110,33 @@ public partial class SettingsManager : Node
 		int resY = (int)config.GetValue("Video", "ResolutionHeight", 1080);
 		Video.Resolution = new Vector2I(resX, resY);
 
-		Video.UiScale = (float)config.GetValue("Video", "UiScale", 1.0f);
-		Video.VSync   = (bool) config.GetValue("Video", "VSync",   true);
+		// ZABEZPIECZENIE: Clampujemy wczytaną wartość, żeby nie wczytać np. 0.0
+		float rawScale = (float)config.GetValue("Video", "UiScale", 1.0f);
+		Video.UiScale = Mathf.Clamp(rawScale, 0.5f, 2.0f);
 
+		Video.VSync = (bool)config.GetValue("Video", "VSync", true);
+
+		// Upewniamy się, że wczytana rozdzielczość jest na liście (jeśli to niestandardowa)
 		if (!availableResolutions.Contains(Video.Resolution))
 		{
 			availableResolutions.Add(Video.Resolution);
-			availableResolutions.Sort((a, b) => 
-			{
-				int res = b.X.CompareTo(a.X);
-				return res == 0 ? b.Y.CompareTo(a.Y) : res;
-			});
 		}
+		
 		GD.Print("📂 Ustawienia załadowane z pliku.");
+	}
+
+	// Metoda pomocnicza dla "Świeżych graczy"
+	private void SetDefaultDefaultsBasedOnHardware()
+	{
+		// Domyślnie bierzemy natywną rozdzielczość ekranu
+		Vector2I screenRes = DisplayServer.ScreenGetSize();
+		Video.Resolution = screenRes;
+		
+		// Domyślnie Fullscreen dla wygody
+		Video.DisplayMode = WindowMode.Fullscreen;
+		
+		// Domyślna skala
+		Video.UiScale = 1.0f;
 	}
 
 	public void SaveConfig()
@@ -153,29 +158,16 @@ public partial class SettingsManager : Node
 		GD.Print("💾 Ustawienia zapisane na dysku.");
 	}
 
-	public void SetMasterVolume(float linear)
-	{
-		Sound.MasterVolume = linear;
-		ApplyVolume(busIndexMaster, linear);
-	}
+	// --- SETTERY ---
 
-	public void SetMusicVolume(float linear)
-	{
-		Sound.MusicVolume = linear;
-		ApplyVolume(busIndexMusic, linear);
-	}
-
-	public void SetSfxVolume(float linear)
-	{
-		Sound.SfxVolume = linear;
-		ApplyVolume(busIndexSfx, linear);
-	}
+	public void SetMasterVolume(float linear) { Sound.MasterVolume = linear; ApplyVolume(busIndexMaster, linear); }
+	public void SetMusicVolume(float linear)  { Sound.MusicVolume = linear; ApplyVolume(busIndexMusic, linear); }
+	public void SetSfxVolume(float linear)    { Sound.SfxVolume = linear; ApplyVolume(busIndexSfx, linear); }
 
 	public void SetMuted(bool muted)
 	{
 		Sound.Muted = muted;
-		if (busIndexMaster != -1)
-			AudioServer.SetBusMute(busIndexMaster, muted);
+		if (busIndexMaster != -1) AudioServer.SetBusMute(busIndexMaster, muted);
 	}
 
 	private void ApplyVolume(int busIndex, float linear)
@@ -205,23 +197,19 @@ public partial class SettingsManager : Node
 		}
 	}
 	
-	public int GetCurrentResolutionIndex()
-	{
-		return availableResolutions.IndexOf(Video.Resolution);
-	}
+	public int GetCurrentResolutionIndex() => availableResolutions.IndexOf(Video.Resolution);
 
-	public void SetUiScale(float scale)
+	public void SetUiScale(float value)
 	{
-		Video.UiScale = scale;
-		GetTree().Root.ContentScaleFactor = scale;
+		float safeValue = Mathf.Clamp(value, 0.5f, 2.0f);
+		Video.UiScale = safeValue; // Aktualizujemy w modelu danych!
+		GetTree().Root.ContentScaleFactor = safeValue;
 	}
 
 	public void SetVSync(bool enabled)
 	{
 		Video.VSync = enabled;
-		DisplayServer.WindowSetVsyncMode(
-			enabled ? DisplayServer.VSyncMode.Enabled : DisplayServer.VSyncMode.Disabled
-		);
+		DisplayServer.WindowSetVsyncMode(enabled ? DisplayServer.VSyncMode.Enabled : DisplayServer.VSyncMode.Disabled);
 	}
 
 	public void ApplyAllSettings()
@@ -230,14 +218,16 @@ public partial class SettingsManager : Node
 		SetMusicVolume(Sound.MusicVolume);
 		SetSfxVolume(Sound.SfxVolume);
 		SetMuted(Sound.Muted);
-
-		SetUiScale(Video.UiScale);
+		SetUiScale(Video.UiScale); // To zaaplikuje skalę UI przy starcie
 		SetVSync(Video.VSync);
 		ApplyWindowMode();
 	}
 
 	private void ApplyWindowMode()
 	{
+		// Zapobiegamy błędom przy zmianie trybu, wykonując to "deferred" jeśli trzeba, 
+		// ale zazwyczaj bezpośrednie wywołanie jest OK.
+		
 		switch (Video.DisplayMode)
 		{
 			case WindowMode.Windowed:
@@ -247,6 +237,9 @@ public partial class SettingsManager : Node
 				break;
 
 			case WindowMode.Borderless:
+				// W trybie Borderless ustawiamy rozmiar na ten wybrany w rozdzielczości,
+				// ale zazwyczaj gracze oczekują, że borderless = native resolution.
+				// Twoja implementacja pozwala na "mniejsze okno bez ramek".
 				DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
 				DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.Borderless, true);
 				SetWindowSizeAndCenter();
@@ -261,15 +254,15 @@ public partial class SettingsManager : Node
 	private void SetWindowSizeAndCenter()
 	{
 		DisplayServer.WindowSetSize(Video.Resolution);
-		CenterWindow();
-	}
-
-	private void CenterWindow()
-	{
-		int screenId    = DisplayServer.WindowGetCurrentScreen();
-		Vector2I screen = DisplayServer.ScreenGetSize(screenId);
-		Vector2I win    = DisplayServer.WindowGetSize();
-		Vector2I pos    = (screen / 2) - (win / 2);
+		// Wyśrodkowanie okna
+		Vector2I screenRes = DisplayServer.ScreenGetSize();
+		Vector2I pos = (screenRes / 2) - (Video.Resolution / 2);
+		
+		// Zabezpieczenie, żeby nie ustawiło okna poza ekranem
+		if (pos.X < 0) pos.X = 0;
+		if (pos.Y < 0) pos.Y = 0;
+		
 		DisplayServer.WindowSetPosition(pos);
 	}
 }
+	
