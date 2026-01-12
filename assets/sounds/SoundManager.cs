@@ -139,13 +139,11 @@ public partial class SoundManager : Node
 			sfxClick.Play();
 		}
 	}
-
 	public override void _ExitTree()
 	{
-		// Sprzątanie tylko jeśli nie jesteśmy w edytorze
-		if (!Engine.IsEditorHint() && GetTree() != null)
-		{
-			GetTree().NodeAdded -= OnNodeAdded;
-		}
+	if (GetTree() != null)
+	{
+		GetTree().NodeAdded -= OnNodeAdded;
+	}
 	}
 }
