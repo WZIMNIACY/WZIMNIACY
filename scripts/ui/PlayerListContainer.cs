@@ -4,8 +4,7 @@ public partial class PlayerListContainer : PanelContainer
 	[Export] VBoxContainer playerListVBox;
 	private MainGame mainGame;
 
-	public enum PlayerTeam { None, Blue, Red }
-	[Export] public PlayerTeam team;
+	[Export] public MainGame.Team team;
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
@@ -24,21 +23,18 @@ public partial class PlayerListContainer : PanelContainer
 	}
 
 	public void SetPlayerListVBox(){
+		int index = 0;
 		foreach(var member in mainGame.PlayersByIndex)
 		{
-			if((member.Value.team.ToString() == team.ToString()))
-			{
-				foreach (Node child in playerListVBox.GetChildren())
+			if((member.Value.team == team))
+			{	
+				var child = playerListVBox.GetChildren();
+				if (index < 5 && child[index] is RichTextLabel label)
 				{
-					if (child is RichTextLabel label && label.Text == "")
-					{
-						label.Text = member.Value.name;
-						break;
-					}
+					label.Text = member.Value.name;
+					index++;
 				}
 			}
-
 		}
-		
 	}
 }
