@@ -1,16 +1,25 @@
 using Godot;
 using System;
-
-public class TeamGameStats
-{
-    public int Found { get; set; }    
-    public int Neutral { get; set; }  
-    public int Opponent { get; set; } 
-    public int Streak { get; set; }  
-}
+using System.Text.Json;
+using Epic.OnlineServices;
 
 public partial class EndGameScreen : Control
 {
+    public sealed class EndGamePayload
+    {
+        public MainGame.Team Winner { get; set; }
+        public TeamGameStats BlueStats { get; set; }
+        public TeamGameStats RedStats { get; set; }
+    }
+
+    public class TeamGameStats
+    {
+        public int Found { get; set; }
+        public int Neutral { get; set; }
+        public int Opponent { get; set; }
+        public int Streak { get; set; }
+    }
+
     [ExportGroup("General")] 
     [Export] public Label winnerTitle;
     [Export] public Label subTitle;
@@ -46,21 +55,121 @@ public partial class EndGameScreen : Control
     [Export(PropertyHint.File, "*.tscn")] public string menuScenePath;
 
     private EOSManager eosManager;
+    private MainGame mainGame;
 
     public override void _Ready()
     {
         base._Ready();
 
+        eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
+        mainGame = GetTree().CurrentScene as MainGame;
+
         if (lobbyButton != null) lobbyButton.Pressed += OnLobbyPressed;
         if (menuButton != null) menuButton.Pressed += OnMenuPressed;
 
-        eosManager = GetNode<EOSManager>("/root/EOSManager");
+        CallDeferred(nameof(SubscribeToNetwork));
     }
 
-    public void ShowGameOver(TeamGameStats blueStats, TeamGameStats redStats)
+    public override void _ExitTree()
+    {
+        if (mainGame != null && mainGame.P2PNet != null)
+        {
+            mainGame.P2PNet.PacketHandlers -= HandlePackets;
+        }
+        base._ExitTree();
+    }
+
+    private void SubscribeToNetwork()
+    {
+        if (mainGame != null && mainGame.P2PNet != null)
+        {
+            mainGame.P2PNet.PacketHandlers += HandlePackets;
+        }
+    }
+
+    public void TriggerGameOver(MainGame.Team winner)
+    {
+        if (mainGame == null) return;
+
+        int maxBlue = (mainGame.StartingTeam == MainGame.Team.Blue) ? 9 : 8;
+        int maxRed = (mainGame.StartingTeam == MainGame.Team.Red) ? 9 : 8;
+
+        int foundBlue = maxBlue - mainGame.PointsBlue;
+        int foundRed = maxRed - mainGame.PointsRed;
+
+        TeamGameStats blueStats = new TeamGameStats
+        {
+            Found = foundBlue,
+            Neutral = mainGame.BlueNeutralFound,
+            Opponent = mainGame.BlueOpponentFound,
+            Streak = mainGame.BlueMaxStreak
+        };
+
+        TeamGameStats redStats = new TeamGameStats
+        {
+            Found = foundRed,
+            Neutral = mainGame.RedNeutralFound,
+            Opponent = mainGame.RedOpponentFound,
+            Streak = mainGame.RedMaxStreak
+        };
+
+        if (mainGame.isHost && mainGame.P2PNet != null)
+        {
+            var payload = new EndGamePayload
+            {
+                Winner = winner,
+                BlueStats = blueStats,
+                RedStats = redStats
+            };
+            
+            mainGame.P2PNet.SendRpcToAllClients("game_ended", payload);
+            GD.Print("[EndGameScreen] Stats calculated and RPC sent.");
+        }
+
+        ShowGameOver(blueStats, redStats, winner);
+    }
+
+    private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
+    {
+        if (packet.type != "game_ended") return false;
+        
+        if (mainGame != null && mainGame.isHost) return false;
+
+        try
+        {
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var data = packet.payload.Deserialize<EndGamePayload>(options);
+
+            GD.Print($"[EndGameScreen] Received Game Over! Winner: {data.Winner}");
+
+            ShowGameOver(data.BlueStats, data.RedStats, data.Winner);
+            return true;
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[EndGameScreen] Error parsing game_ended: {e.Message}");
+            return true;
+        }
+    }
+
+    public void ShowGameOver(TeamGameStats blueStats, TeamGameStats redStats, MainGame.Team winner)
     {
         Visible = true;
         ZIndex = 100;
+
+        if (winnerTitle != null)
+        {
+            if (winner == MainGame.Team.Blue)
+            {
+                winnerTitle.Text = "NIEBIESCY WYGRYWAJĄ!";
+                winnerTitle.Modulate = new Color("5AD2C8");
+            }
+            else
+            {
+                winnerTitle.Text = "CZERWONI WYGRYWAJĄ!";
+                winnerTitle.Modulate = new Color("E65050");
+            }
+        }
 
         UpdateStat(blueVal1, blueBar1, blueStats.Found, redStats.Found);
         UpdateStat(redVal1, redBar1, redStats.Found, blueStats.Found);
@@ -92,7 +201,6 @@ public partial class EndGameScreen : Control
         if (bar != null)
         {
             bar.MaxValue = maxValue;
-            
             Tween tween = CreateTween();
             tween.SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.Out);
             tween.TweenProperty(bar, "value", mainValue, 1.0f).From(0.0f);

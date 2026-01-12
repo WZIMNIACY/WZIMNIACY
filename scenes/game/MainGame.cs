@@ -57,6 +57,14 @@ public partial class MainGame : Control
     private int blueMaxStreak = 0;
     private int redMaxStreak = 0;
 
+    public int BlueMaxStreak => blueMaxStreak;
+    public int RedMaxStreak => redMaxStreak;
+
+    public int BlueNeutralFound => blueNeutralFound;
+    public int RedNeutralFound => redNeutralFound;
+    public int BlueOpponentFound => blueOpponentFound;
+    public int RedOpponentFound => redOpponentFound;
+
     public enum Team
     {
         Blue,
@@ -74,6 +82,7 @@ public partial class MainGame : Control
 
     // === P2P (DODANE) ===
     private P2PNetworkManager p2pNet;
+    public P2PNetworkManager P2PNet => p2pNet;
 
     // Przykładowy payload do RPC "card_selected" (logika gry → tu, nie w P2P)
     private sealed class CardSelectedPayload
@@ -933,28 +942,9 @@ public partial class MainGame : Control
         GD.Print($"Koniec gry! Wygrywa: {winner}");
         UpdateMaxStreak();
 
-        int maxBlue = (startingTeam == Team.Blue) ? 9 : 8;
-        int maxRed = (startingTeam == Team.Red) ? 9 : 8;
-
-        int foundBlue = maxBlue - pointsBlue;
-        int foundRed = maxRed - pointsRed;
-
-        TeamGameStats blueStats = new TeamGameStats
+        if (endGameScreen != null)
         {
-            Found = foundBlue,
-            Neutral = blueNeutralFound,
-            Opponent = blueOpponentFound,
-            Streak = blueMaxStreak
-        };
-
-        TeamGameStats redStats = new TeamGameStats
-        {
-            Found = foundRed,
-            Neutral = redNeutralFound,
-            Opponent = redOpponentFound,
-            Streak = redMaxStreak
-        };
-
-        endGameScreen.ShowGameOver(blueStats, redStats);
+            endGameScreen.TriggerGameOver(winner);
+        }
     }
 }
