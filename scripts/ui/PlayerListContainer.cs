@@ -2,30 +2,18 @@ using Godot;
 public partial class PlayerListContainer : PanelContainer
 {
 	[Export] VBoxContainer playerListVBox;
-	private EOSManager eosManager;
-	
+	private MainGame mainGame;
+
 	public enum PlayerTeam { None, Blue, Red }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	[Export] public PlayerTeam team;
-=======
-	[Export] public PlayerTeam Team;
->>>>>>> 4076424 (Wyswietlanie graczy na liscie)
-=======
-	[Export] public PlayerTeam team;
->>>>>>> 5ef2641 (Wyswietlanie graczy na liscie)
-=======
-	[Export] public PlayerTeam team;
->>>>>>> 5ef264103785f83ad5ac74266eed639d1789103e
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		base._Ready();
-		eosManager = GetNode<EOSManager>("/root/EOSManager");
-
-		GD.Print("EOSManager found: " + (eosManager != null));
-		SetPlayerListVBox();
+		mainGame = GetNode<MainGame>("/root/Control");
+		GD.Print("MainGame found: " + (mainGame != null));
+		
+		mainGame.GameReady += SetPlayerListVBox;
 		
 	}
 
@@ -35,44 +23,21 @@ public partial class PlayerListContainer : PanelContainer
 		base._Process(delta);
 	}
 
-	public void SetPlayerListVBox()
-	{
-		foreach (var member in eosManager.GetCurrentLobbyMembers())
+	public void SetPlayerListVBox(){
+		foreach(var member in mainGame.PlayersByIndex)
 		{
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-			if((member["team"].ToString() == team.ToString()))
-=======
-			if((member["team"].ToString() == Team.ToString()))
->>>>>>> 4076424 (Wyswietlanie graczy na liscie)
-=======
-			if((member["team"].ToString() == team.ToString()))
->>>>>>> 5ef2641 (Wyswietlanie graczy na liscie)
-=======
-			if((member["team"].ToString() == team.ToString()))
->>>>>>> 5ef264103785f83ad5ac74266eed639d1789103e
+			if((member.Value.team.ToString() == team.ToString()))
 			{
 				foreach (Node child in playerListVBox.GetChildren())
 				{
 					if (child is RichTextLabel label && label.Text == "")
 					{
-						label.Text = member["displayName"].ToString();
+						label.Text = member.Value.name;
 						break;
 					}
 				}
 			}
 
-		}
-		
-		int i = 0;
-		foreach (Node child in playerListVBox.GetChildren())
-		{
-			if (child is RichTextLabel label && label.Text == "")
-			{
-				label.Text = "Gracz " + i.ToString();
-				i++;
-			}
 		}
 		
 	}
