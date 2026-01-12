@@ -1,8 +1,9 @@
+using game;
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using System.Collections.Generic;
 
 public partial class CardManager : GridContainer
 {
@@ -40,10 +41,14 @@ public partial class CardManager : GridContainer
 		eosManager = GetNode<EOSManager>("/root/EOSManager");
 		rand = new Random((int)eosManager.CurrentGameSession.Seed);
 
-		foreach (var card in GetTree().GetNodesInGroup("cards"))
+        byte id = 0;
+		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
 		{
+			card.Connect("CardSelected", new Callable(this, nameof(OnCardSelected)));
 			card.Connect("CardConfirmed", new Callable(this, nameof(OnCardConfirmed)));
-		}
+            card.SetId(id);
+            id++;
+        }
 	}
 
 	private void OnGameReady()
@@ -78,7 +83,71 @@ public partial class CardManager : GridContainer
         return card;
     }
 
-	private void OnCardConfirmed(AgentCard card)
+    private void OnCardSelected(AgentCard card)
+    {
+        mainGame.OnCardSelected(card);
+    }
+
+    private AgentCard GetCardOfId(byte cardId)
+    {
+        foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
+        {
+            if (card.Id == cardId)
+            {
+                return card;
+            }
+        }
+        GD.PrintErr($"Cant find card with id={cardId}");
+        return null;
+    }
+
+    public void ModifySelection(byte cardId, int playerIndex, bool unselect)
+    {
+        AgentCard card = GetCardOfId(cardId);
+        if (unselect)
+            card?.RemoveSelection(playerIndex);
+        else
+            card?.AddSelection(playerIndex);
+    }
+
+    public void ModifyAllSelections(Dictionary<byte, ushort> cardsSelections)
+    {
+        foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
+        {
+            byte cardId = card.Id!.Value;
+            if (cardsSelections.ContainsKey(cardId))
+            {
+                card.SetSelections(cardsSelections[cardId]);
+            }
+            else
+            {
+                card.ClearSelections();
+            }
+        }
+    }
+
+    public Dictionary<byte, ushort> GetAllSelections()
+    {
+        Dictionary<byte, ushort> allSelections = new();
+
+        foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
+        {
+            if (card.HowMuchSelections() == 0)
+            {
+                continue;
+            }
+            else
+            {
+                byte cardId = card.Id!.Value;
+                ushort selections = card.GetSelectionsAsUshort();
+                allSelections.Add(cardId, selections);
+            }
+        }
+
+        return allSelections;
+    }
+
+    private void OnCardConfirmed(AgentCard card)
 	{
 		GD.Print("Karta kliknięta: " + card.Name);
 		card.SetColor();
@@ -104,7 +173,7 @@ public partial class CardManager : GridContainer
 	{
 		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
 		{
-			card.Unselect();
+			card.ClearSelections();
 		}
 	}
 }

@@ -1,9 +1,9 @@
-using System.Collections.Generic;
+using AI;
+using Epic.OnlineServices;
 using Godot;
 using System;
-using AI;
+using System.Collections.Generic;
 using System.Text.Json;
-using Epic.OnlineServices;
 
 public partial class MainGame : Control
 {
@@ -78,9 +78,15 @@ public partial class MainGame : Control
     // Przykładowy payload do RPC "card_selected" (logika gry → tu, nie w P2P)
     private sealed class CardSelectedPayload
     {
-        public int cardId { get; set; }
-        public string by { get; set; }
+        public byte cardId { get; set; }
+        public byte playerIndex { get; set; }
+        public bool unselect { get; set; }
     }
+
+    private sealed class CardsSelectionsPayload
+    {
+        public Dictionary<byte, ushort> cardsSelections { get; set; }
+}
 
     private sealed class TestAckPayload
     {
@@ -252,7 +258,7 @@ public partial class MainGame : Control
                 return true; // zjadamy, bo to był JSON RPC tego typu
             }
 
-            GD.Print($"[MainGame] RPC card_selected received: cardId={payload.cardId} by={payload.by} fromPeer={fromPeer}");
+            GD.Print($"[MainGame] RPC card_selected received: playerIndex={payload.playerIndex} cardId={payload.cardId} unselected={payload.unselect} fromPeer={fromPeer}");
 
             var ack = new
             {
@@ -266,7 +272,28 @@ public partial class MainGame : Control
             // TODO: tutaj podłączasz właściwą logikę gry
             // np. wybór/confirm karty, synchronizacja stanu, broadcast do wszystkich itp.
 
+            OnCardSelectedHost(payload.cardId, payload.playerIndex, payload.unselect);
+
             return true; // zjedliśmy pakiet
+        }
+
+        // Odebranie infomacji przez clienta o zaznaczonych kartach
+        if (packet.type == "selected_cards" && !isHost)
+        {
+            CardsSelectionsPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<CardsSelectionsPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC selected_cards payload parse error: {e.Message}");
+                return true;
+            }
+
+            GD.Print($"[MainGame] RPC selected_cards received: cards={payload.cardsSelections.Count}");
+
+            cardManager.ModifyAllSelections(payload.cardsSelections);
         }
 
         // Odebranie infomacji przez hosta o tym ze klient chce pominac ture
@@ -623,25 +650,6 @@ public partial class MainGame : Control
         return isGameStarted;
     }
 
-    // Opcjonalny przykład wysyłki (np. lokalny gracz kliknął kartę)
-    // W praktyce wywołasz to z UI / CardManager / AgentCard
-    public void SendCardSelectedRpc_ToHost(int cardId)
-    {
-        if (!CanInteractWithGame()) return;
-
-        if (p2pNet == null) return;
-
-        var payload = new
-        {
-            cardId = cardId,
-            by = eosManager?.localProductUserIdString
-        };
-
-        bool ok = p2pNet.SendRpcToHost("card_selected", payload);
-        GD.Print($"[MainGame] SendRpcToHost(card_selected) ok={ok} cardId={cardId}");
-    }
-    // =====================
-
     private void StartCaptainPhase()
     {
         if(gameInputPanel != null)
@@ -878,6 +886,53 @@ public partial class MainGame : Control
         teamListRed.Modulate = new Color(2.8f, 2.8f, 2.8f, 1f);
     }
 
+    public void OnCardSelected(AgentCard card)
+    {
+        byte cardId = card.Id!.Value;
+        string puid = eosManager?.localProductUserIdString;
+        int playerIndex = PuidToIndex(puid);
+        bool unselect = card.IsSelectedBy(playerIndex);
+        GD.Print($"[MainGame][Conversion] Converting puid={puid} hsot={isHost} to index={playerIndex}");
+        if (isHost)
+            OnCardSelectedHost(cardId, playerIndex, unselect);
+        else
+            OnCardSelectedClient(cardId, playerIndex, unselect);
+    }
+
+    public void OnCardSelectedHost(byte cardId, int playerIndex, bool unselect)
+    {
+        // select locally
+        cardManager.ModifySelection(cardId, playerIndex, unselect);
+
+        // send selections to clients
+        if (!CanInteractWithGame()) return;
+        if (p2pNet == null) return;
+
+        var payload = new
+        {
+            cardsSelections = cardManager.GetAllSelections()
+        };
+
+        int RPCsSent = p2pNet.SendRpcToAllClients("selected_cards", payload);
+        GD.Print($"[MainGame] SendRpcToAllClients(selected_cards) RPCsSent={RPCsSent}");
+    }
+
+    public void OnCardSelectedClient(byte cardId, int playerIndex, bool unselect)
+    {
+        if (!CanInteractWithGame()) return;
+        if (p2pNet == null) return;
+
+        var payload = new
+        {
+            cardId = cardId,
+            playerIndex = (byte)playerIndex,
+            unselect = unselect
+        };
+
+        bool ok = p2pNet.SendRpcToHost("card_selected", payload);
+        GD.Print($"[MainGame] SendRpcToHost(card_selected) ok={ok}");
+    }
+
     public void CardConfirm(AgentCard card)
     {
         if (!CanInteractWithGame()) return;
@@ -956,5 +1011,16 @@ public partial class MainGame : Control
         };
 
         endGameScreen.ShowGameOver(blueStats, redStats);
+    }
+
+    public int PuidToIndex(string puid)
+    {
+        foreach (var player in playersByIndex)
+        {
+            if (player.Value.puid == puid)
+                return player.Key;
+        }
+        GD.PrintErr($"Cant find player with puid={puid}");
+        return -1;
     }
 }

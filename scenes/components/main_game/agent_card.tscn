@@ -30,7 +30,7 @@ corner_radius_top_right = 100
 corner_radius_bottom_right = 100
 corner_radius_bottom_left = 100
 
-[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage", "selectButton")]
+[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage", "debugSelectionsDisplay", "selectButton")]
 offset_right = 110.0
 offset_bottom = 110.0
 script = ExtResource("1_m8y6f")
@@ -38,6 +38,7 @@ highlightBorder = NodePath("HighlightBorder")
 contentContainer = NodePath(".")
 textLabel = NodePath("MarginContainer/Label")
 cardImage = NodePath("AgentCard")
+debugSelectionsDisplay = NodePath("DebugSelectionsDisplay")
 selectButton = NodePath("Control/SelectButton")
 
 [node name="AgentCard" type="TextureRect" parent="."]
@@ -79,4 +80,8 @@ offset_bottom = 28.0
 theme_override_styles/normal = SubResource("StyleBoxFlat_7al6y")
 theme_override_styles/hover = SubResource("StyleBoxFlat_yxvjk")
 
-[connection signal="pressed" from="Control/SelectButton" to="." method="OnSelectButtonPressed"]
+[node name="DebugSelectionsDisplay" type="Label" parent="."]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0, 1, 1)
+
+[connection signal="pressed" from="Control/SelectButton" to="." method="OnConfirmButtonPressed"]
