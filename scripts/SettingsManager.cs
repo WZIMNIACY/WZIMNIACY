@@ -61,13 +61,8 @@ public partial class SettingsManager : Node
 		busIndexMusic  = AudioServer.GetBusIndex("Music");
 		busIndexSfx    = AudioServer.GetBusIndex("SFX");
 
-		// Najpierw dodajemy natywną rozdzielczość monitora do listy
 		AddNativeResolution();
-		
-		// Próbujemy wczytać config
 		LoadConfig();
-		
-		// Aplikujemy wszystko (głośność, ekran, v-sync)
 		ApplyAllSettings();
 
 		GD.Print("✅ SettingsManager gotowy i wczytany.");
@@ -78,7 +73,6 @@ public partial class SettingsManager : Node
 		Vector2I screenRes = DisplayServer.ScreenGetSize();
 		if (!availableResolutions.Contains(screenRes))
 		{
-			// Dodaj na początek listy (lub posortuj)
 			availableResolutions.Insert(0, screenRes);
 			GD.Print($"🖥️ Wykryto i dodano natywną rozdzielczość: {screenRes}");
 		}
@@ -91,7 +85,7 @@ public partial class SettingsManager : Node
 
 		if (err != Error.Ok)
 		{
-			GD.Print("⚠ Brak pliku ustawień (pierwsze uruchomienie). Ustawiam wartości domyślne pod sprzęt.");
+			GD.Print("⚠ Brak pliku ustawień (pierwsze uruchomienie).");
 			SetDefaultDefaultsBasedOnHardware();
 			return;
 		}
@@ -110,13 +104,11 @@ public partial class SettingsManager : Node
 		int resY = (int)config.GetValue("Video", "ResolutionHeight", 1080);
 		Video.Resolution = new Vector2I(resX, resY);
 
-		// ZABEZPIECZENIE: Clampujemy wczytaną wartość, żeby nie wczytać np. 0.0
 		float rawScale = (float)config.GetValue("Video", "UiScale", 1.0f);
 		Video.UiScale = Mathf.Clamp(rawScale, 0.5f, 2.0f);
 
 		Video.VSync = (bool)config.GetValue("Video", "VSync", true);
 
-		// Upewniamy się, że wczytana rozdzielczość jest na liście (jeśli to niestandardowa)
 		if (!availableResolutions.Contains(Video.Resolution))
 		{
 			availableResolutions.Add(Video.Resolution);
@@ -125,17 +117,11 @@ public partial class SettingsManager : Node
 		GD.Print("📂 Ustawienia załadowane z pliku.");
 	}
 
-	// Metoda pomocnicza dla "Świeżych graczy"
 	private void SetDefaultDefaultsBasedOnHardware()
 	{
-		// Domyślnie bierzemy natywną rozdzielczość ekranu
 		Vector2I screenRes = DisplayServer.ScreenGetSize();
 		Video.Resolution = screenRes;
-		
-		// Domyślnie Fullscreen dla wygody
 		Video.DisplayMode = WindowMode.Fullscreen;
-		
-		// Domyślna skala
 		Video.UiScale = 1.0f;
 	}
 
@@ -202,7 +188,7 @@ public partial class SettingsManager : Node
 	public void SetUiScale(float value)
 	{
 		float safeValue = Mathf.Clamp(value, 0.5f, 2.0f);
-		Video.UiScale = safeValue; // Aktualizujemy w modelu danych!
+		Video.UiScale = safeValue;
 		GetTree().Root.ContentScaleFactor = safeValue;
 	}
 
@@ -218,31 +204,31 @@ public partial class SettingsManager : Node
 		SetMusicVolume(Sound.MusicVolume);
 		SetSfxVolume(Sound.SfxVolume);
 		SetMuted(Sound.Muted);
-		SetUiScale(Video.UiScale); // To zaaplikuje skalę UI przy starcie
+		SetUiScale(Video.UiScale);
 		SetVSync(Video.VSync);
 		ApplyWindowMode();
 	}
 
 	private void ApplyWindowMode()
 	{
-		// Zapobiegamy błędom przy zmianie trybu, wykonując to "deferred" jeśli trzeba, 
-		// ale zazwyczaj bezpośrednie wywołanie jest OK.
-		
 		switch (Video.DisplayMode)
 		{
 			case WindowMode.Windowed:
 				DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
 				DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.Borderless, false);
-				SetWindowSizeAndCenter();
+				SetWindowSizeAndCenter(); // Używa Video.Resolution
 				break;
 
 			case WindowMode.Borderless:
-				// W trybie Borderless ustawiamy rozmiar na ten wybrany w rozdzielczości,
-				// ale zazwyczaj gracze oczekują, że borderless = native resolution.
-				// Twoja implementacja pozwala na "mniejsze okno bez ramek".
+				// FIX: Pobieramy aktualną rozdzielczość monitora "na sztywno"
+				Vector2I nativeRes = DisplayServer.ScreenGetSize();
+				
 				DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
 				DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.Borderless, true);
-				SetWindowSizeAndCenter();
+				
+				// Ustawiamy rozmiar i pozycję na cały ekran
+				DisplayServer.WindowSetSize(nativeRes);
+				DisplayServer.WindowSetPosition(Vector2I.Zero);
 				break;
 
 			case WindowMode.Fullscreen:
@@ -254,15 +240,12 @@ public partial class SettingsManager : Node
 	private void SetWindowSizeAndCenter()
 	{
 		DisplayServer.WindowSetSize(Video.Resolution);
-		// Wyśrodkowanie okna
 		Vector2I screenRes = DisplayServer.ScreenGetSize();
 		Vector2I pos = (screenRes / 2) - (Video.Resolution / 2);
 		
-		// Zabezpieczenie, żeby nie ustawiło okna poza ekranem
 		if (pos.X < 0) pos.X = 0;
 		if (pos.Y < 0) pos.Y = 0;
 		
 		DisplayServer.WindowSetPosition(pos);
 	}
 }
-	
