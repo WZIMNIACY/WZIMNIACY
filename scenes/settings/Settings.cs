@@ -4,7 +4,7 @@ public partial class Settings : Control
 {
 	// --- UI ELEMENTS (Przypisz w Inspektorze!) ---
 	// Zmieniono nazwy: usunięto "_" i upewniono się, że zaczynają się z małej litery
-	[ExportGroup("Nawigacja")]
+	[ExportGroup("Navigation")]
 	[Export] private Button backButton;
 	[Export] private Button saveButton;
 
@@ -14,7 +14,7 @@ public partial class Settings : Control
 	[Export] private HSlider sfxVolumeSlider;
 	[Export] private CheckButton mutedCheckBox;
 
-	[ExportGroup("Wideo")]
+	[ExportGroup("Video")]
 	[Export] private OptionButton screenModeOptionButton; // Dropdown trybu okna
 	[Export] private OptionButton resolutionOptionButton; // Dropdown rozdzielczości
 	[Export] private HSlider scaleUISlider;
@@ -68,7 +68,7 @@ public partial class Settings : Control
 		if (sfxVolumeSlider != null)    sfxVolumeSlider.Value    = sm.Sound.SfxVolume;
 		if (mutedCheckBox != null)      mutedCheckBox.ButtonPressed = sm.Sound.Muted;
 
-		// Wideo
+		// Video
 		if (screenModeOptionButton != null)
 		{
 			// NAPRAWA CS0266: Rzutujemy Enum na int, żeby Dropdown to zrozumiał
@@ -91,7 +91,7 @@ public partial class Settings : Control
 
 	private void ConnectSignals()
 	{
-		// Nawigacja
+		// Navigation
 		if (backButton != null) backButton.Pressed += OnBackButtonPressed;
 		if (saveButton != null) saveButton.Pressed += OnSavePressed;
 
@@ -101,7 +101,7 @@ public partial class Settings : Control
 		if (sfxVolumeSlider != null)    sfxVolumeSlider.ValueChanged    += (v) => SettingsManager.Instance.SetSfxVolume((float)v);
 		if (mutedCheckBox != null)      mutedCheckBox.Toggled           += (v) => SettingsManager.Instance.SetMuted(v);
 
-		// Wideo
+		// Video
 		if (screenModeOptionButton != null) screenModeOptionButton.ItemSelected += OnWindowModeSelected;
 		if (resolutionOptionButton != null) resolutionOptionButton.ItemSelected += OnResolutionSelected;
 		if (scaleUISlider != null)          scaleUISlider.ValueChanged          += OnUIScaleChanged;

@@ -35,24 +35,20 @@ public partial class MainMenu : Node
 	{
 		base._Ready();
 
-		// 1. Sprawdź czy przyciski są przypisane w Inspektorze
+		// 1. RYGORYSTYCZNE SPRAWDZANIE: Czy przyciski są przypisane?
+		// Jeśli nie -> Krzyczymy błędem i przerywamy, żadnego naprawiania w tle.
 		if (!AreNodesAssigned())
 		{
-			// Fallback dla starego systemu (jeśli exporty są puste, spróbuj znaleźć po ścieżce)
-			GD.Print("⚠ MainMenu: Exporty puste, próbuję znaleźć węzły ręcznie...");
-			AssignNodesManually();
-		}
-
-		if (!AreNodesAssigned())
-		{
-			GD.PrintErr("❌ MainMenu: Krytyczny błąd - nie znaleziono przycisków!");
-			return;
+			GD.PrintErr("❌❌❌ MainMenu CRITICAL ERROR ❌❌❌");
+			GD.PrintErr("Nie przypisano przycisków w Inspektorze! Uzupełnij pola [Export].");
+			GD.PrintErr("Gra nie będzie działać poprawnie bez tych referencji.");
+			return; // Przerywamy działanie, nie podłączamy nic dalej
 		}
 
 		// 2. Pobierz Managera (Autoload)
 		eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
 
-		// 3. Podłącz sygnały przycisków
+		// 3. Podłącz sygnały przycisków (teraz mamy pewność, że nie są null)
 		createButton.Pressed   += OnCreateGamePressed;
 		joinButton.Pressed     += OnJoinGamePressed;
 		quitButton.Pressed     += OnQuitPressed;
@@ -106,28 +102,14 @@ public partial class MainMenu : Node
 	// Metoda walidująca przypisania
 	private bool AreNodesAssigned()
 	{
-		return createButton != null && 
-			   joinButton != null && 
-			   quitButton != null && 
-			   settingsButton != null && 
-			   helpButton != null;
-	}
+		// Sprawdzamy czy którykolwiek jest nullem
+		bool missing = createButton == null || 
+					   joinButton == null || 
+					   quitButton == null || 
+					   settingsButton == null || 
+					   helpButton == null;
 
-	// Metoda awaryjna do ręcznego przypisania (jeśli exporty nie działają)
-	private void AssignNodesManually()
-	{
-		try 
-		{
-			createButton = GetNode<Button>("Panel/MenuCenter/VMenu/CreateGame/CreateGameButton");
-			joinButton = GetNode<Button>("Panel/MenuCenter/VMenu/JoinGame/JoinGameButton");
-			quitButton = GetNode<Button>("Panel/MenuCenter/VMenu/Quit/QuitButton");
-			settingsButton = GetNode<Button>("Panel/MenuCenter/VMenu/Settings/SettingsButton");
-			helpButton = GetNode<Button>("Panel/MenuCenter/VMenu/Help/HelpButton");
-		}
-		catch (Exception e)
-		{
-			GD.PrintErr($"Błąd ręcznego przypisywania węzłów: {e.Message}");
-		}
+		return !missing;
 	}
 
 	private void OnCreateGamePressed()
