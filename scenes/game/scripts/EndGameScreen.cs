@@ -137,8 +137,7 @@ public partial class EndGameScreen : Control
 
         try
         {
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var data = packet.payload.Deserialize<EndGamePayload>(options);
+            var data = packet.payload.Deserialize<EndGamePayload>();
 
             GD.Print($"[EndGameScreen] Received Game Over! Winner: {data.Winner}");
 
