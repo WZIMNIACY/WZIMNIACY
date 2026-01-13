@@ -306,20 +306,31 @@ public partial class MainGame : Control
                 return true;
             }
 
-            GD.Print($"[MainGame] RPC skip_turn_pressed received: by={payload.by}");
-
-            EOSManager.Team senderTeam = eosManager.GetTeamForUser(payload.by.ToString());
-
-            if (currentTurn.ToEOSManagerTeam() != senderTeam)
+            if (payload == null || string.IsNullOrEmpty(payload.by))
             {
-                GD.Print("[MainGame] Refusing to skip turn.");
+                GD.PrintErr("[MainGame] RPC skip_turn_pressed payload invalid (null/empty by)");
                 return true;
             }
 
             string senderPuid = payload.by.ToString();
+            GD.Print($"[MainGame] RPC skip_turn_pressed received: by={senderPuid}");
+
+            // Bierzemy team z danych z game_start (playersByIndex), a nie z EOSManager
+            Team senderTeamLocal = GetTeamForPuidFromGameStart(senderPuid);
+
+            if (senderTeamLocal == Team.None)
+            {
+                GD.PrintErr($"[MainGame] Refusing to skip turn (unknown sender team). puid={senderPuid}");
+                return true;
+            }
+
+            if (currentTurn != senderTeamLocal)
+            {
+                GD.Print($"[MainGame] Refusing to skip turn (wrong team). currentTurn={currentTurn} senderTeam={senderTeamLocal} puid={senderPuid}");
+                return true;
+            }
 
             OnSkipTurnPressedHost(senderPuid);
-
             return true;
         }
 
@@ -719,6 +730,21 @@ public partial class MainGame : Control
 
         // fallback jakby coś poszło nie tak z cache
         return $"Player_{puid.Substring(Math.Max(0, puid.Length - 4))}";
+    }
+
+    private Team GetTeamForPuidFromGameStart(string puid)
+    {
+        if (string.IsNullOrEmpty(puid)) return Team.None;
+
+        foreach (var kv in playersByIndex)
+        {
+            var p = kv.Value;
+            if (p == null) continue;
+            if (p.puid == puid)
+                return p.team;
+        }
+
+        return Team.None;
     }
 
     private bool CanInteractWithGame()
