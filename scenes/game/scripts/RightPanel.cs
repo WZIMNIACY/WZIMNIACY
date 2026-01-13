@@ -1,12 +1,14 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Godot;
 using hints;
 using AI;
 using System.Text.Json;
 using Epic.OnlineServices;
 using System;
+
 
 
 public partial class RightPanel : Node
@@ -33,8 +35,13 @@ public partial class RightPanel : Node
         public MainGame.Team TurnTeam { get; set; }
     }
 
+    private Dictionary<MainGame.Team, List<string>> oldHints;
+
     public override void _Ready()
     {
+        oldHints = new Dictionary<MainGame.Team, List<string>>();
+        oldHints.Add(MainGame.Team.Red, new List<string>());
+        oldHints.Add(MainGame.Team.Blue, new List<string>());
         hintGenerationAnimationTimer = new Godot.Timer();
         hintGenerationAnimationTimer.WaitTime = 0.5f;
         hintGenerationAnimationTimer.OneShot = false;
@@ -183,6 +190,9 @@ public partial class RightPanel : Node
 
 	public void UpdateHintDisplay(string word, int count, bool isBlueTeam)
     {
+        MainGame.Team team = isBlueTeam ? MainGame.Team.Blue : MainGame.Team.Red;
+        oldHints[team].Add(word);
+
 		CommitToHistory();
 
 		if(currentWordLabel != null)
@@ -270,6 +280,6 @@ public partial class RightPanel : Node
 
     private async Task<Hint> GenerateHint(ILLM llm, game.Deck deck, MainGame.Team currentTurn)
     {
-        return await Hint.Create(deck, llm, currentTurn.ToAiLibTeam());
+        return await Hint.Create(deck, llm, currentTurn.ToAiLibTeam(), oldHints[currentTurn]);
     }
 }
