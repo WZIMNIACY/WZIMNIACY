@@ -78,27 +78,56 @@ public partial class CardManager : GridContainer
         return card;
     }
 
-	private void OnCardConfirmed(AgentCard card)
+	public void ApplyCardRevealed(AgentCard card)
 	{
+		if (card == null) return;
+
 		GD.Print("Karta kliknięta: " + card.Name);
 		card.SetColor();
 		card.MouseFilter = MouseFilterEnum.Ignore;
 		HideAllCards();
 
-        string cardName = card.cardInfo.Word;
-        GD.Print($"About to delete {cardName} card from deck");
-        for (var i = 0; i < Deck.Cards.Count; i++)
-        {
-            if (Deck.Cards[i].Word == cardName)
-            {
-                GD.Print($"Deleting card {cardName} from deck");
-                Deck.Cards.SwapRemove(i);
-                break;
-            }
-        }
+		if (Deck == null) return;
 
-        mainGame.CardConfirm(card);
-    }
+		string cardName = card.cardInfo.Word;
+		GD.Print($"About to delete {cardName} card from deck");
+		for (var i = 0; i < Deck.Cards.Count; i++)
+		{
+			if (Deck.Cards[i].Word == cardName)
+			{
+				GD.Print($"Deleting card {cardName} from deck");
+				Deck.Cards.SwapRemove(i);
+				break;
+			}
+		}
+	}
+
+	public void ApplyCardConfirmedHost(AgentCard card)
+	{
+		ApplyCardRevealed(card);
+		mainGame.CardConfirm(card);
+	}
+
+	private void OnCardConfirmed(AgentCard card)
+	{
+		if (card == null) return;
+
+		// cardId = indeks slotu w GridContainer (deterministyczny na wszystkich maszynach)
+		int cardId = card.GetIndex();
+
+		if (!mainGame.isHost)
+		{
+			// Klient nie wykonuje logiki i nie zmienia lokalnie decka/UI.
+			// Klient tylko prosi hosta (jak skip turn).
+			mainGame.OnCardConfirmPressedClient(cardId);
+			return;
+		}
+
+		// Host też przechodzi przez wspólną ścieżkę (broadcast do klientów + logika lokalna)
+		mainGame.HostConfirmCardAndBroadcast(cardId, eosManager.localProductUserIdString);
+	}
+
+
 
 	private void HideAllCards()
 	{
