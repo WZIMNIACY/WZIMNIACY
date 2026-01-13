@@ -103,18 +103,41 @@ public partial class MainGame : Control
         public string by { get; set; }
     }
 
+    // Po przejściu na autorytatywny model (turn_changed) payload nie jest już używany(TurnSkipPayload). Potencjalnie do usunięcia
     private sealed class TurnSkipPayload
     {
         public string skippedBy { get; set; }
     }
+    
 
     private sealed class RemovePointAckPayload
     {
         public Team team { get; set; }
     }
 
+    private sealed class CardConfirmPressedPayload
+    {
+        public int cardId { get; set; }
+        public string by { get; set; }
+    }
+
+    private sealed class CardRevealedPayload
+    {
+        public int cardId { get; set; }
+        public string confirmedBy { get; set; }
+        public bool isAssassin { get; set; }
+    }
+
+    private sealed class TurnChangedPayload
+    {
+        public Team currentTurn { get; set; }
+        public int turnCounter { get; set; }
+    }
+
     private bool p2pJsonTestSent = false;
     // =====================
+
+    private readonly HashSet<int> confirmedCardIds = new();
 
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
@@ -294,70 +317,159 @@ public partial class MainGame : Control
                 return true;
             }
 
-            GD.Print($"[MainGame] RPC skip_turn_pressed received: by={payload.by}");
-
-            EOSManager.Team senderTeam = eosManager.GetTeamForUser(payload.by.ToString());
-
-            if (currentTurn.ToEOSManagerTeam() != senderTeam)
+            if (payload == null || string.IsNullOrEmpty(payload.by))
             {
-                GD.Print("[MainGame] Refusing to skip turn.");
+                GD.PrintErr("[MainGame] RPC skip_turn_pressed payload invalid (null/empty by)");
                 return true;
             }
 
             string senderPuid = payload.by.ToString();
+            GD.Print($"[MainGame] RPC skip_turn_pressed received: by={senderPuid}");
+
+            // Bierzemy team z danych z game_start (playersByIndex), a nie z EOSManager
+            Team senderTeamLocal = GetTeamForPuidFromGameStart(senderPuid);
+
+            if (senderTeamLocal == Team.None)
+            {
+                GD.PrintErr($"[MainGame] Refusing to skip turn (unknown sender team). puid={senderPuid}");
+                return true;
+            }
+
+            if (currentTurn != senderTeamLocal)
+            {
+                GD.Print($"[MainGame] Refusing to skip turn (wrong team). currentTurn={currentTurn} senderTeam={senderTeamLocal} puid={senderPuid}");
+                return true;
+            }
 
             OnSkipTurnPressedHost(senderPuid);
-
             return true;
         }
 
-        // Odebranie infomacji przez clienta o tym ze nalezy pominac ture
-        if (packet.type == "skip_turn" && !isHost)
+        // Odebranie informacji przez hosta o tym ze klient chce zatwierdzic karte
+        // Odebranie informacji przez hosta o tym ze klient chce zatwierdzic karte
+        if (packet.type == "card_confirm_pressed" && isHost)
         {
-            TurnSkipPayload payload;
-            try
+            if (!isGameStarted)
             {
-                payload = packet.payload.Deserialize<TurnSkipPayload>();
-            }
-            catch (Exception e)
-            {
-                GD.PrintErr($"[MainGame] RPC skip_turn payload parse error: {e.Message}");
+                GD.Print("[MainGame] Ignoring card_confirm_pressed (game not started yet)");
                 return true;
             }
 
-            GD.Print($"[MainGame] RPC skip_turn received: skippedBy={payload.skippedBy}");
-
-            UpdateMaxStreak();
-
-            TurnChange();
-
-            return true;
-        }
-
-        if(packet.type == "remove_point_ack" && !isHost)
-        {
-            RemovePointAckPayload ack;
+            CardConfirmPressedPayload payload;
             try
             {
-                ack = packet.payload.Deserialize<RemovePointAckPayload>();
+                payload = packet.payload.Deserialize<CardConfirmPressedPayload>();
             }
             catch (Exception e)
             {
-                GD.PrintErr($"[MainGame] RPC remove_point_ack payload parse error: {e.Message}");
+                GD.PrintErr($"[MainGame] RPC card_confirm_pressed payload parse error: {e.Message}");
                 return true;
             }
 
-            GD.Print($"[MainGame][P2P-TEST] CLIENT received remove_point_ack from host: removing point from: {ack.team} fromPeer={fromPeer}");
-            if(ack.team == Team.Blue) RemovePointBlue();
-            if(ack.team == Team.Red) RemovePointRed();
+            if (payload == null)
+            {
+                GD.PrintErr("[MainGame] card_confirm_pressed payload is null");
+                return true;
+            }
+
+            GD.Print($"[MainGame] RPC card_confirm_pressed received: cardId={payload.cardId} by={payload.by}");
+
+            HostConfirmCardAndBroadcast(payload.cardId, payload.by);
             return true;
         }
 
-        // Tu dopisujecie kolejne RPC:
-        // if (packet.type == "hint_given" && isHost) { ... return true; }
-        // if (packet.type == "starting_team" && !isHost) { ... return true; }
+        // Odebranie informacji przez clienta o tym ze host zatwierdzil karte
+        if (packet.type == "card_revealed" && !isHost)
+        {
+            CardRevealedPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<CardRevealedPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC card_revealed payload parse error: {e.Message}");
+                return true;
+            }
 
-        return false;
+            if (payload == null)
+            {
+                GD.PrintErr("[MainGame] card_revealed payload is null");
+                return true;
+            }
+
+            GD.Print($"[MainGame] RPC card_revealed received: cardId={payload.cardId} confirmedBy={payload.confirmedBy} isAssassin={payload.isAssassin}");
+
+            // TODO (#30): tutaj finalnie podepniemy odsloniecie karty / zablokowanie ponownego klikniecia w UI
+            // Celowo NIE robimy tutaj EndGame() - tym zajmuje sie zadanie #31.
+            if (cardManager == null)
+            {
+                GD.PrintErr("[MainGame] cardManager is null on client");
+                return true;
+            }
+
+            if (payload.cardId < 0 || payload.cardId >= cardManager.GetChildCount())
+            {
+                GD.PrintErr($"[MainGame] Invalid cardId={payload.cardId} (out of range)");
+                return true;
+            }
+
+            AgentCard cardNode = cardManager.GetChild(payload.cardId) as AgentCard;
+            if (cardNode == null)
+            {
+                GD.PrintErr($"[MainGame] Child at index {payload.cardId} is not AgentCard");
+                return true;
+            }
+
+            // Klient dopiero teraz aplikuje reveal (UI + usunięcie z decka)
+            cardManager.ApplyCardRevealed(cardNode);
+
+            // Nie robimy EndGame() — to jest zadanie #31.
+
+
+            return true;
+        }
+
+        // Odebranie informacji przez clienta o zmianie tury (np. po zatwierdzeniu karty)
+        if (packet.type == "turn_changed" && !isHost)
+        {
+            TurnChangedPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<TurnChangedPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC turn_changed payload parse error: {e.Message}");
+                return true;
+            }
+
+            if (payload == null)
+            {
+                GD.PrintErr("[MainGame] turn_changed payload is null");
+                return true;
+            }
+
+            GD.Print($"[MainGame] RPC turn_changed received: currentTurn={payload.currentTurn} turnCounter={payload.turnCounter}");
+
+            // Ustawiamy licznik tury dokładnie na wartość z hosta
+            turnCounter = payload.turnCounter;
+            UpdateTurnDisplay();
+
+            // Ustawiamy turę bez wywoływania TurnChange() (żeby nie inkrementować drugi raz)
+            if (payload.currentTurn == Team.Blue)
+                SetTurnBlue();
+            else if (payload.currentTurn == Team.Red)
+                SetTurnRed();
+
+            // W starym flow TurnChange() emitował NewTurnStart.
+            // Teraz klient nie woła TurnChange(), więc musimy odpalić start tury ręcznie.
+            EmitSignal(SignalName.NewTurnStart);
+
+            return true;
+        }
+
+        return false; // nie obsłużyliśmy tego pakietu
     }
 
     private bool HandleGameStartPacket(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
@@ -412,6 +524,8 @@ public partial class MainGame : Control
         }
 
         isGameStarted = true;
+
+        confirmedCardIds.Clear();
 
         if (payload == null || payload.players == null || payload.players.Length == 0)
         {
@@ -629,6 +743,21 @@ public partial class MainGame : Control
         return $"Player_{puid.Substring(Math.Max(0, puid.Length - 4))}";
     }
 
+    private Team GetTeamForPuidFromGameStart(string puid)
+    {
+        if (string.IsNullOrEmpty(puid)) return Team.None;
+
+        foreach (var kv in playersByIndex)
+        {
+            var p = kv.Value;
+            if (p == null) continue;
+            if (p.puid == puid)
+                return p.team;
+        }
+
+        return Team.None;
+    }
+
     private bool CanInteractWithGame()
     {
         return isGameStarted;
@@ -691,15 +820,10 @@ public partial class MainGame : Control
 
         TurnChange();
 
-        if (p2pNet == null) return;
+        // Zamiast starego RPC "skip_turn" wysyłamy autorytatywny stan tury
+        BroadcastTurnChanged();
 
-        var payload = new
-        {
-            skippedBy = skippedBy
-        };
-
-        int RPCsSent = p2pNet.SendRpcToAllClients("skip_turn", payload);
-        GD.Print($"[MainGame] SendRpcToAllClients(skip_turn) RPCsSent={RPCsSent}");
+        GD.Print($"[MainGame] Skip turn processed by host. skippedBy={skippedBy}");
     }
 
     public void OnSkipTurnPressedClient()
@@ -714,6 +838,104 @@ public partial class MainGame : Control
         bool ok = p2pNet.SendRpcToHost("skip_turn_pressed", payload);
         GD.Print($"[MainGame] SendRpcToHost(skip_turn_pressed) ok={ok}");
     }
+
+    private void BroadcastTurnChanged()
+    {
+        if (p2pNet == null) return;
+        if (!isHost) return;
+
+        var payload = new TurnChangedPayload
+        {
+            currentTurn = currentTurn,
+            turnCounter = turnCounter
+        };
+
+        int sent = p2pNet.SendRpcToAllClients("turn_changed", payload);
+        GD.Print($"[MainGame] SendRpcToAllClients(turn_changed) sent={sent} currentTurn={currentTurn} turnCounter={turnCounter}");
+    }
+
+    // Wspólna ścieżka: host potwierdza kartę i rozsyła efekty do klientów
+    public void HostConfirmCardAndBroadcast(int cardId, string confirmedBy)
+    {
+        if (!isHost) return;
+        if (!isGameStarted)
+        {
+            GD.Print("[MainGame] Ignoring HostConfirmCardAndBroadcast (game not started yet)");
+            return;
+        }
+
+        // Anty-duplikaty (ten sam mechanizm dla host-click i client-click)
+        if (confirmedCardIds.Contains(cardId))
+        {
+            GD.Print($"[MainGame] Ignoring duplicate confirm: cardId={cardId}");
+            return;
+        }
+        confirmedCardIds.Add(cardId);
+
+        if (cardManager == null)
+        {
+            GD.PrintErr("[MainGame] cardManager is null on host");
+            return;
+        }
+
+        if (cardId < 0 || cardId >= cardManager.GetChildCount())
+        {
+            GD.PrintErr($"[MainGame] Invalid cardId={cardId} (out of range)");
+            return;
+        }
+
+        AgentCard cardNode = cardManager.GetChild(cardId) as AgentCard;
+        if (cardNode == null)
+        {
+            GD.PrintErr($"[MainGame] Child at index {cardId} is not AgentCard");
+            return;
+        }
+
+        bool isAssassin = cardNode.Type == CardManager.CardType.Assassin;
+
+        // Zapisujemy stan tury PRZED logiką, żeby wykryć zmianę po ApplyCardConfirmedHost
+        Team beforeTurn = currentTurn;
+        int beforeTurnCounter = turnCounter;
+
+        // 1) Host wykonuje logikę gry lokalnie (źródło prawdy)
+        cardManager.ApplyCardConfirmedHost(cardNode);
+
+        // 2) Host wysyła informację do WSZYSTKICH klientów (klienci dopiero teraz robią UI/deck)
+        if (p2pNet != null)
+        {
+            var revealPayload = new CardRevealedPayload
+            {
+                cardId = cardId,
+                confirmedBy = confirmedBy,
+                isAssassin = isAssassin
+            };
+
+            int revealedSent = p2pNet.SendRpcToAllClients("card_revealed", revealPayload);
+            GD.Print($"[MainGame] SendRpcToAllClients(card_revealed) sent={revealedSent} cardId={cardId} isAssassin={isAssassin}");
+        }
+
+        // 3) Jeśli zmieniła się tura/licznik -> broadcast
+        if (currentTurn != beforeTurn || turnCounter != beforeTurnCounter)
+        {
+            BroadcastTurnChanged();
+        }
+    }
+
+    public void OnCardConfirmPressedClient(int cardId)
+    {
+        if (!CanInteractWithGame()) return;
+        if (p2pNet == null) return;
+
+        var payload = new CardConfirmPressedPayload
+        {
+            cardId = cardId,
+            by = eosManager?.localProductUserIdString
+        };
+
+        bool ok = p2pNet.SendRpcToHost("card_confirm_pressed", payload);
+        GD.Print($"[MainGame] SendRpcToHost(card_confirm_pressed) ok={ok} cardId={cardId}");
+    }
+
 
     private async void OnNewTurnStart()
     {
@@ -894,6 +1116,12 @@ public partial class MainGame : Control
     public void CardConfirm(AgentCard card)
     {
         if (!CanInteractWithGame()) return;
+
+        if (!isHost)
+        {
+            OnCardConfirmPressedClient(card.GetIndex());
+            return;
+        }
 
         Team teamToRemovePoint = Team.None;
         switch (card.Type)
