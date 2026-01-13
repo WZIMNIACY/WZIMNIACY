@@ -164,14 +164,14 @@ public partial class AgentCard : PanelContainer
 
     public void ClearSelections()
     {
-        GD.Print($"[MainGame][Card] Clearing selectinon of card={id}");
+        GD.Print($"[MainGame][Card] Clearing selections of card={id}");
         selectedBy.Clear();
         UpdateSelectionDisplay();
     }
 
     public void SetSelections(ushort selections) // n-th bit represents whether selected by player of n-th index
     {
-        GD.Print($"[MainGame][Card] Setting selectinon to card={id} by selections_ushort={selectButton}");
+        GD.Print($"[MainGame][Card] Setting selections of card={id} by selections_ushort={Convert.ToString(selections, 2)}");
         selectedBy.Clear();
         for (int i = 0; i < 10; i++)
         {
@@ -195,7 +195,7 @@ public partial class AgentCard : PanelContainer
 
     public void AddSelection(int playerIndex)
     {
-        GD.Print($"[MainGame][Card] Adding selectinon to card={id} by player={playerIndex}");
+        GD.Print($"[MainGame][Card] Adding a selection to card={id} by player={playerIndex}");
         if (!selectedBy.Contains(playerIndex))
         {
             selectedBy.Add(playerIndex);
@@ -205,7 +205,7 @@ public partial class AgentCard : PanelContainer
 
     public void RemoveSelection(int playerIndex)
     {
-        GD.Print($"[MainGame][Card] Removing selectinon to card={id} by player={playerIndex}");
+        GD.Print($"[MainGame][Card] Removing a selection from card={id} by player={playerIndex}");
         if (selectedBy.Contains(playerIndex))
         {
             selectedBy.Remove(playerIndex);
@@ -216,6 +216,7 @@ public partial class AgentCard : PanelContainer
     public void UpdateSelectionDisplay()
     {
         // temp
+        // TODO: display user avatars
         string indexes = string.Join(", ", selectedBy);
         debugSelectionsDisplay.Text = indexes;
     }

@@ -97,7 +97,7 @@ public partial class CardManager : GridContainer
                 return card;
             }
         }
-        GD.PrintErr($"Cant find card with id={cardId}");
+        GD.PrintErr($"Cant find a card with id={cardId}");
         return null;
     }
 

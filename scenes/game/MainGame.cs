@@ -892,6 +892,7 @@ public partial class MainGame : Control
         string puid = eosManager?.localProductUserIdString;
         int playerIndex = PuidToIndex(puid);
         bool unselect = card.IsSelectedBy(playerIndex);
+
         GD.Print($"[MainGame][Conversion] Converting puid={puid} hsot={isHost} to index={playerIndex}");
         if (isHost)
             OnCardSelectedHost(cardId, playerIndex, unselect);
@@ -901,10 +902,8 @@ public partial class MainGame : Control
 
     public void OnCardSelectedHost(byte cardId, int playerIndex, bool unselect)
     {
-        // select locally
         cardManager.ModifySelection(cardId, playerIndex, unselect);
 
-        // send selections to clients
         if (!CanInteractWithGame()) return;
         if (p2pNet == null) return;
 
@@ -1020,7 +1019,7 @@ public partial class MainGame : Control
             if (player.Value.puid == puid)
                 return player.Key;
         }
-        GD.PrintErr($"Cant find player with puid={puid}");
+        GD.PrintErr($"Cant find a player with puid={puid}");
         return -1;
     }
 }
