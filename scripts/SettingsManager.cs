@@ -237,12 +237,22 @@ public partial class SettingsManager : Node
 		}
 	}
 	
-	private void SetWindowSizeAndCenter()
+// Zmieniamy sygnaturę na 'async void', żeby móc użyć 'await'
+	private async void SetWindowSizeAndCenter()
 	{
+		// 1. Najpierw ustawiamy rozmiar
 		DisplayServer.WindowSetSize(Video.Resolution);
+		
+		// 2. Czekamy 2 klatki, żeby silnik i system operacyjny przetworzyły zmianę rozmiaru.
+		// To kluczowe dla naprawienia buga z "uciekającymi przyciskami".
+		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+		// 3. Dopiero teraz pobieramy rozmiar ekranu i centrujemy
 		Vector2I screenRes = DisplayServer.ScreenGetSize();
 		Vector2I pos = (screenRes / 2) - (Video.Resolution / 2);
 		
+		// Zabezpieczenie, żeby nie ustawiło okna poza ekranem (np. u góry)
 		if (pos.X < 0) pos.X = 0;
 		if (pos.Y < 0) pos.Y = 0;
 		
