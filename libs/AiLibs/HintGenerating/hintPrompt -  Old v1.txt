@@ -3,11 +3,10 @@
 Dane:
 - _actualDeck – wszystkie karty.
 - _nowTour – drużyna, dla której generujesz podpowiedź.
-- _createdHints – lista STRINGÓW zawierająca wszystkie WCZEŚNIEJ użyte podpowiedzi (nie wolno ich powtarzać ani semantycznie parafrazować)
 Karta: { "Word": "...", "Vector": [...], "Team": "..." }
 
 Cel:
-Znajdź jedno słowo łączące 2,3 lub 4 słowa drużyny (_nowTour) na podstawie podobieństwa wektorowego i sensu.
+Znajdź jedno słowo łączące ≥2 słowa drużyny (_nowTour) na podstawie podobieństwa wektorowego i sensu.
 
 Zasady:
 1. Analiza:
@@ -23,7 +22,6 @@ Zasady:
 - Na dotyczyć znaczenia, nie ma podpowiadać w kontekście rymu
 - Nie może być żadnym słowem z _actualDeck.
 - Musi składać się tylko z jednego słowa - Rzeczownika w mianowniku w liczbie pojedynczej
-- Nie może być żadnym słowem pojawiającym się w _createdHints.
 
 3. Unikanie ryzyka:
 - Sprawdź dystans do słów przeciwnika, neutralnych i Zabójcy.
