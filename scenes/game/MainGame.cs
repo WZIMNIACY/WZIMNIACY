@@ -301,7 +301,7 @@ public partial class MainGame : Control
 
             return true; // zjedliśmy pakiet
         }
-        
+
     // -----------------
         // Odebranie infomacji przez hosta o tym ze klient chce pominac ture
         if (packet.type == "skip_turn_pressed" && isHost)

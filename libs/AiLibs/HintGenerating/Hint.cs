@@ -27,7 +27,7 @@ namespace hints
             this.Cards = cards;
         }
 
-        public async static Task<Hint> Create(Deck deck, ILLM llm, Team nowTour)
+        public async static Task<Hint> Create(Deck deck, ILLM llm, Team nowTour, List<string> createdHints)
         {
             //Prompt set up
             string _nowTour = nowTour.ToString();
@@ -50,28 +50,37 @@ namespace hints
             }
 
             string userPromptHint = $"" +
-                $"_nowTour = {_nowTour}\n" +
-                $"_actualDeck = {_actualDeck}";
+            $"_nowTour = {_nowTour}\n" +
+            $"_actualDeck = {_actualDeck}" +
+            $"_createdHints = {createdHints}";
 
             //Genereting hint
             while (true)
             {
-                Console.WriteLine("Generating hint...");
-                string response = await llm.SendRequestAsync(systemPromptHint, userPromptHint);
-                Hint hint = Hint.FromJson(response);
-
-                bool hintInDeck = deck.Cards.Any(card => card.Word.Equals(hint.Word, StringComparison.OrdinalIgnoreCase));
-                bool hintIsEmpty = string.IsNullOrWhiteSpace(hint.Word);
-                bool teamOK = hint.Cards != null && hint.Cards.All(card => card.Team == nowTour);
-
-                if (hintInDeck || hintIsEmpty || !teamOK)
+                try
                 {
-                    Console.WriteLine("Generated hint is invalid, regenerating...");
-                    continue;
+                    Console.WriteLine("Generating hint...");
+                    string response = await llm.SendRequestAsync(systemPromptHint, userPromptHint);
+                    Hint hint = Hint.FromJson(response);
+
+                    bool hintInDeck = deck.Cards.Any(card => card.Word.Equals(hint.Word, StringComparison.OrdinalIgnoreCase));
+                    bool hintIsEmpty = string.IsNullOrWhiteSpace(hint.Word);
+                    bool teamOK = hint.Cards != null && hint.Cards.All(card => card.Team == nowTour);
+
+                    if (hintInDeck || hintIsEmpty || !teamOK)
+                    {
+                        Console.WriteLine("Generated hint is invalid, regenerating...");
+                        continue;
+                    }
+                    else
+                    {
+                        return hint;
+                    }
                 }
-                else
+                catch (HintException ex)
                 {
-                    return hint;
+                    Console.WriteLine($"Failed to parse hint response: {ex.Message}, regenerating...");
+                    continue;
                 }
             }
         }
@@ -135,6 +144,18 @@ namespace hints
             return $"{Word} | {NoumberOfSimilarWords}";
         }
 
+        public string listToString(List<string> list)
+        {
+            StringBuilder sb = new();
+
+
+            foreach (string item in list)
+            {
+                sb.AppendLine(item);
+            }
+
+            return sb.ToString();
+        }
 
         [Serializable]
         public class HintException : Exception
