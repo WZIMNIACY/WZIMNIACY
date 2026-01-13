@@ -938,6 +938,8 @@ public partial class MainGame : Control
 
     public void EndGame(Team winner)
     {
+        if(!isHost) return;
+
         gameRightPanel.CancelHintGeneration();
         GD.Print($"Koniec gry! Wygrywa: {winner}");
         UpdateMaxStreak();
