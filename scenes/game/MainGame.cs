@@ -27,6 +27,7 @@ public partial class MainGame : Control
 
     private bool isGameStarted = false;
     private readonly Dictionary<int, P2PNetworkManager.GamePlayer> playersByIndex = new();
+    private Godot.Timer sendSelectionsTimer;
 
     private EOSManager eosManager;
 
@@ -202,8 +203,12 @@ public partial class MainGame : Control
             );
         }
 
-
-
+        sendSelectionsTimer = new Timer();
+        sendSelectionsTimer.WaitTime = 0.05f;
+        sendSelectionsTimer.OneShot = false;
+        sendSelectionsTimer.Autostart = false;
+        sendSelectionsTimer.Timeout += SendSelectionsToClients;
+        AddChild(sendSelectionsTimer);
     }
 
     // === P2P (DODANE) ===
@@ -545,6 +550,7 @@ public partial class MainGame : Control
 
         EmitSignal(SignalName.GameReady);
         EmitSignal(SignalName.NewTurnStart);
+        sendSelectionsTimer.Start();
     }
 
     private P2PNetworkManager.GameStartPayload BuildGameStartPayloadFromLobby()
@@ -903,17 +909,6 @@ public partial class MainGame : Control
     public void OnCardSelectedHost(byte cardId, int playerIndex, bool unselect)
     {
         cardManager.ModifySelection(cardId, playerIndex, unselect);
-
-        if (!CanInteractWithGame()) return;
-        if (p2pNet == null) return;
-
-        var payload = new
-        {
-            cardsSelections = cardManager.GetAllSelections()
-        };
-
-        int RPCsSent = p2pNet.SendRpcToAllClients("selected_cards", payload);
-        GD.Print($"[MainGame] SendRpcToAllClients(selected_cards) RPCsSent={RPCsSent}");
     }
 
     public void OnCardSelectedClient(byte cardId, int playerIndex, bool unselect)
@@ -930,6 +925,20 @@ public partial class MainGame : Control
 
         bool ok = p2pNet.SendRpcToHost("card_selected", payload);
         GD.Print($"[MainGame] SendRpcToHost(card_selected) ok={ok}");
+    }
+
+    public void SendSelectionsToClients()
+    {
+        if (!CanInteractWithGame()) return;
+        if (p2pNet == null) return;
+
+        var payload = new
+        {
+            cardsSelections = cardManager.GetAllSelections()
+        };
+
+        int RPCsSent = p2pNet.SendRpcToAllClients("selected_cards", payload);
+        GD.Print($"[MainGame] SendRpcToAllClients(selected_cards) RPCsSent={RPCsSent}");
     }
 
     public void CardConfirm(AgentCard card)
@@ -983,6 +992,8 @@ public partial class MainGame : Control
 
     public void EndGame(Team winner)
     {
+        sendSelectionsTimer.Stop();
+
         gameRightPanel.CancelHintGeneration();
         GD.Print($"Koniec gry! Wygrywa: {winner}");
         UpdateMaxStreak();
