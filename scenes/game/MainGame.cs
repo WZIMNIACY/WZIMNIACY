@@ -27,6 +27,7 @@ public partial class MainGame : Control
 
     private bool isGameStarted = false;
     private readonly Dictionary<int, P2PNetworkManager.GamePlayer> playersByIndex = new();
+    public Dictionary<int, P2PNetworkManager.GamePlayer> PlayersByIndex => playersByIndex;
 
     private EOSManager eosManager;
 
