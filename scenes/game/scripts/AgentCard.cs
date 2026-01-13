@@ -36,8 +36,11 @@ public partial class AgentCard : PanelContainer
 	{
 		get { return type; }
 	}
-    [Obsolete] bool selected = false;
     private List<int> selectedBy; // list of indexes of players who selected this card
+    public int SelectionsCount
+    {
+        get { return selectedBy.Count; }
+    }
 
     public override void _Ready()
 	{
@@ -148,20 +151,6 @@ public partial class AgentCard : PanelContainer
         }
     }
 
-    [Obsolete]
-    public void Unselect()
-	{
-		selected = false;
-		selectButton.Visible = false;
-	}
-
-    [Obsolete]
-    public void ToggleSelected()
-	{
-		selected = !selected;
-		selectButton.Visible = selected;
-	}
-
     public void ClearSelections()
     {
         GD.Print($"[MainGame][Card] Clearing selections of card={id}");
@@ -219,11 +208,6 @@ public partial class AgentCard : PanelContainer
         // TODO: display user avatars
         string indexes = string.Join(", ", selectedBy);
         debugSelectionsDisplay.Text = indexes;
-    }
-
-    public int HowMuchSelections()
-    {
-        return selectedBy.Count;
     }
 
     public bool IsSelectedBy(int playerIndex)

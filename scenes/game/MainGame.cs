@@ -225,23 +225,6 @@ public partial class MainGame : Control
     // Handler pakietów z sieci (zgodnie z propozycją kolegi)
     private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
     {
-        if (packet.type == "test_ack" && !isHost)
-        {
-            TestAckPayload ack;
-            try
-            {
-                ack = packet.payload.Deserialize<TestAckPayload>();
-            }
-            catch (Exception e)
-            {
-                GD.PrintErr($"[MainGame] RPC test_ack payload parse error: {e.Message}");
-                return true;
-            }
-
-            GD.Print($"[MainGame][P2P-TEST] CLIENT received ACK from host: msg={ack.msg} cardId={ack.cardId} fromPeer={fromPeer}");
-            return true;
-        }
-
         // Przykład: "card_selected" ma sens tylko gdy jesteśmy hostem (host rozstrzyga)
         if (packet.type == "card_selected" && isHost)
         {
@@ -264,18 +247,6 @@ public partial class MainGame : Control
             }
 
             GD.Print($"[MainGame] RPC card_selected received: playerIndex={payload.playerIndex} cardId={payload.cardId} unselected={payload.unselect} fromPeer={fromPeer}");
-
-            var ack = new
-            {
-                msg = "HOST_ACK_OK",
-                cardId = payload.cardId
-            };
-
-            bool sent = p2pNet.SendRpcToPeer(fromPeer, "test_ack", ack);
-            GD.Print($"[MainGame][P2P-TEST] HOST sent test_ack back to {fromPeer} ok={sent}");
-
-            // TODO: tutaj podłączasz właściwą logikę gry
-            // np. wybór/confirm karty, synchronizacja stanu, broadcast do wszystkich itp.
 
             OnCardSelectedHost(payload.cardId, payload.playerIndex, payload.unselect);
 
