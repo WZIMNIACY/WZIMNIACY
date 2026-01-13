@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://cu6vu1ayjqexh"]
 
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="2_joa0n"]
-[ext_resource type="Script" uid="uid://do7melntu2xr" path="res://scenes/help/Help.cs" id="2_vxrbp"]
+[ext_resource type="Script" uid="uid://dfksn3d2c0owx" path="res://scenes/help/Help.cs" id="2_vxrbp"]
 [ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://assets/buttons/button_border2.tres" id="3_yqd7e"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="4_ah480"]
 
