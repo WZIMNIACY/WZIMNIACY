@@ -11,9 +11,9 @@ public partial class CardManager : GridContainer
 	[Signal] public delegate void CardManagerReadyEventHandler();
 
 	[Export] private MainGame mainGame;
-	
+
 	private EOSManager eosManager;
-	private Random rand; 
+	private Random rand;
 
     public game.Deck Deck { get; private set; }
     private Dictionary<string, List<double>> namesVectorDb;
@@ -39,6 +39,8 @@ public partial class CardManager : GridContainer
 
 		eosManager = GetNode<EOSManager>("/root/EOSManager");
 		rand = new Random((int)eosManager.CurrentGameSession.Seed);
+
+        LoadDeck();
 
 		foreach (var card in GetTree().GetNodesInGroup("cards"))
 		{
