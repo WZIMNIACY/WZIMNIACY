@@ -93,10 +93,12 @@ public partial class MainGame : Control
         public string by { get; set; }
     }
 
+    // Po przejściu na autorytatywny model (turn_changed) payload nie jest już używany(TurnSkipPayload). Potencjalnie do usunięcia
     private sealed class TurnSkipPayload
     {
         public string skippedBy { get; set; }
     }
+    
 
     private sealed class RemovePointAckPayload
     {
@@ -438,6 +440,10 @@ public partial class MainGame : Control
             else if (payload.currentTurn == Team.Red)
                 SetTurnRed();
 
+            // W starym flow TurnChange() emitował NewTurnStart.
+            // Teraz klient nie woła TurnChange(), więc musimy odpalić start tury ręcznie.
+            EmitSignal(SignalName.NewTurnStart);
+
             return true;
         }
 
@@ -775,15 +781,10 @@ public partial class MainGame : Control
 
         TurnChange();
 
-        if (p2pNet == null) return;
+        // Zamiast starego RPC "skip_turn" wysyłamy autorytatywny stan tury
+        BroadcastTurnChanged();
 
-        var payload = new
-        {
-            skippedBy = skippedBy
-        };
-
-        int RPCsSent = p2pNet.SendRpcToAllClients("skip_turn", payload);
-        GD.Print($"[MainGame] SendRpcToAllClients(skip_turn) RPCsSent={RPCsSent}");
+        GD.Print($"[MainGame] Skip turn processed by host. skippedBy={skippedBy}");
     }
 
     public void OnSkipTurnPressedClient()
