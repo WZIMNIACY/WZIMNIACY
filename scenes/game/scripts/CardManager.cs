@@ -7,18 +7,18 @@ using System.Text.Json;
 
 public partial class CardManager : GridContainer
 {
-    public const int DECK_CARD_COUNT = 25;
+	public const int DECK_CARD_COUNT = 25;
 
 	[Signal] public delegate void CardManagerReadyEventHandler();
 
 	[Export] private MainGame mainGame;
-	
-	private EOSManager eosManager;
-	private Random rand; 
 
-    public game.Deck Deck { get; private set; }
-    private Dictionary<string, List<double>> namesVectorDb;
-    private int takenCards = 0;
+	private EOSManager eosManager;
+	private Random rand;
+
+	public game.Deck Deck { get; private set; }
+	private Dictionary<string, List<double>> namesVectorDb;
+	private int takenCards = 0;
 	private int commonCards = 0;
 	private int blueCards = 0;
 	private int redCards = 0;
@@ -41,6 +41,8 @@ public partial class CardManager : GridContainer
 		eosManager = GetNode<EOSManager>("/root/EOSManager");
 		rand = new Random((int)eosManager.CurrentGameSession.Seed);
 
+        LoadDeck();
+
         byte id = 0;
 		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
 		{
@@ -57,13 +59,13 @@ public partial class CardManager : GridContainer
 	}
 
 	public void LoadDeck(){
-        string json = File.ReadAllText("assets/WordVectorBase.json");
-        namesVectorDb = JsonSerializer.Deserialize<Dictionary<string, List<double>>>(json);
-        game.Team cardTeam = mainGame.StartingTeam == MainGame.Team.Red
-            ? game.Team.Red
-            : game.Team.Blue;
+		string json = File.ReadAllText("assets/WordVectorBase.json");
+		namesVectorDb = JsonSerializer.Deserialize<Dictionary<string, List<double>>>(json);
+		game.Team cardTeam = mainGame.StartingTeam == MainGame.Team.Red
+			? game.Team.Red
+			: game.Team.Blue;
 
-        Deck = game.Deck.CreateFromDictionary(namesVectorDb, cardTeam, rand);
+		Deck = game.Deck.CreateFromDictionary(namesVectorDb, cardTeam, rand);
 	}
 
     public game.Card TakeCard()
@@ -132,7 +134,7 @@ public partial class CardManager : GridContainer
 
         foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
         {
-            if (card.HowMuchSelections() == 0)
+            if (card.SelectionsCount == 0)
             {
                 continue;
             }
@@ -147,27 +149,57 @@ public partial class CardManager : GridContainer
         return allSelections;
     }
 
-    private void OnCardConfirmed(AgentCard card)
+	public void ApplyCardRevealed(AgentCard card)
 	{
+		if (card == null) return;
+
 		GD.Print("Karta kliknięta: " + card.Name);
 		card.SetColor();
 		card.MouseFilter = MouseFilterEnum.Ignore;
 		HideAllCards();
 
-        string cardName = card.cardInfo.Word;
-        GD.Print($"About to delete {cardName} card from deck");
-        for (var i = 0; i < Deck.Cards.Count; i++)
+		if (Deck == null)
         {
-            if (Deck.Cards[i].Word == cardName)
-            {
-                GD.Print($"Deleting card {cardName} from deck");
-                Deck.Cards.SwapRemove(i);
-                break;
-            }
+            LoadDeck();
         }
 
-        mainGame.CardConfirm(card);
-    }
+		string cardName = card.cardInfo.Word;
+		GD.Print($"About to delete {cardName} card from deck");
+		for (var i = 0; i < Deck.Cards.Count; i++)
+		{
+			if (Deck.Cards[i].Word == cardName)
+			{
+				GD.Print($"Deleting card {cardName} from deck");
+				Deck.Cards.SwapRemove(i);
+				break;
+			}
+		}
+	}
+
+	public void ApplyCardConfirmedHost(AgentCard card)
+	{
+		ApplyCardRevealed(card);
+		mainGame.CardConfirm(card);
+	}
+
+	private void OnCardConfirmed(AgentCard card)
+	{
+		if (card == null) return;
+
+		// cardId = indeks slotu w GridContainer (deterministyczny na wszystkich maszynach)
+		int cardId = card.GetIndex();
+
+		if (!mainGame.isHost)
+		{
+			// Klient nie wykonuje logiki i nie zmienia lokalnie decka/UI.
+			// Klient tylko prosi hosta (jak skip turn).
+			mainGame.OnCardConfirmPressedClient(cardId);
+			return;
+		}
+
+		// Host też przechodzi przez wspólną ścieżkę (broadcast do klientów + logika lokalna)
+		mainGame.HostConfirmCardAndBroadcast(cardId, eosManager.localProductUserIdString);
+	}
 
 	private void HideAllCards()
 	{

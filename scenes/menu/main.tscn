@@ -6,7 +6,7 @@
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="2_0xm2m"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="3_1bvp3"]
 
-[node name="Main" type="Control"]
+[node name="Main" type="Control" node_paths=PackedStringArray("createButton", "joinButton", "settingsButton", "helpButton", "quitButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,6 +14,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_3xm2k")
+createButton = NodePath("Panel/MenuCenter/VMenu/CreateGame/CreateGameButton")
+joinButton = NodePath("Panel/MenuCenter/VMenu/JoinGame/JoinGameButton")
+settingsButton = NodePath("Panel/MenuCenter/VMenu/Settings/SettingsButton")
+helpButton = NodePath("Panel/MenuCenter/VMenu/Help/HelpButton")
+quitButton = NodePath("Panel/MenuCenter/VMenu/Quit/QuitButton")
 
 [node name="Panel" type="ColorRect" parent="."]
 layout_mode = 1
