@@ -187,7 +187,7 @@ public partial class SettingsManager : Node
 
 	public void SetUiScale(float value)
 	{
-		float safeValue = Mathf.Clamp(value, 0.5f, 2.0f);
+		float safeValue = Mathf.Clamp(value, 0.5f, 3.0f);
 		Video.UiScale = safeValue;
 		GetTree().Root.ContentScaleFactor = safeValue;
 	}

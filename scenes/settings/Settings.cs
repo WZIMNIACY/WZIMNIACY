@@ -23,7 +23,7 @@ public partial class Settings : Control
 		if (scaleUISlider != null)
 		{
 			scaleUISlider.MinValue = 0.5f; 
-			scaleUISlider.MaxValue = 2.0f; 
+			scaleUISlider.MaxValue = 3.0f; 
 			scaleUISlider.Step = 0.1f;
 		}
 
