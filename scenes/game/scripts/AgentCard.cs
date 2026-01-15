@@ -4,7 +4,8 @@ using System.Collections.Generic;
 
 public partial class AgentCard : PanelContainer
 {
-	[Export] public Control highlightBorder;
+    [Export] private MainGame mainGame;
+    [Export] public Control highlightBorder;
 	[Export] public Control contentContainer;
 	[Export] public Color darkColor = new Color(0.7f, 0.7f, 0.7f);
 	[Export] private CardManager cardManager;
@@ -12,7 +13,7 @@ public partial class AgentCard : PanelContainer
 	[Export] private TextureRect cardImage;
     [Export] private Label debugSelectionsDisplay;
 
-    [Export] private Button selectButton;
+    [Export] private Button confirmButton;
 
 	[Signal] public delegate void CardSelectedEventHandler(AgentCard card);
     [Signal] public delegate void CardConfirmedEventHandler(AgentCard card);
@@ -153,14 +154,14 @@ public partial class AgentCard : PanelContainer
 
     public void ClearSelections()
     {
-        GD.Print($"[MainGame][Card] Clearing selections of card={id}");
+        //GD.Print($"[MainGame][Card] Clearing selections of card={id}");
         selectedBy.Clear();
         UpdateSelectionDisplay();
     }
 
     public void SetSelections(ushort selections) // n-th bit represents whether selected by player of n-th index
     {
-        GD.Print($"[MainGame][Card] Setting selections of card={id} by selections_ushort={Convert.ToString(selections, 2)}");
+        //GD.Print($"[MainGame][Card] Setting selections of card={id} by selections_ushort={Convert.ToString(selections, 2)}");
         selectedBy.Clear();
         for (int i = 0; i < 10; i++)
         {
@@ -208,6 +209,12 @@ public partial class AgentCard : PanelContainer
         // TODO: display user avatars
         string indexes = string.Join(", ", selectedBy);
         debugSelectionsDisplay.Text = indexes;
+
+        int localPLayerIndex = mainGame.GetLocalPlayerIndex();
+        if (IsSelectedBy(localPLayerIndex))
+            confirmButton.Visible = true;
+        else
+            confirmButton.Visible = false;
     }
 
     public bool IsSelectedBy(int playerIndex)

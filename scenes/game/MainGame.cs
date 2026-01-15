@@ -301,9 +301,11 @@ public partial class MainGame : Control
                 return true;
             }
 
-            GD.Print($"[MainGame] RPC selected_cards received: cards={payload.cardsSelections.Count}");
+            //GD.Print($"[MainGame] RPC selected_cards received: cards={payload.cardsSelections.Count}");
 
             cardManager.ModifyAllSelections(payload.cardsSelections);
+
+            return true;
         }
 
         // Odebranie infomacji przez hosta o tym ze klient chce pominac ture
@@ -1144,7 +1146,7 @@ public partial class MainGame : Control
         };
 
         int RPCsSent = p2pNet.SendRpcToAllClients("selected_cards", payload);
-        GD.Print($"[MainGame] SendRpcToAllClients(selected_cards) RPCsSent={RPCsSent}");
+        //GD.Print($"[MainGame] SendRpcToAllClients(selected_cards) RPCsSent={RPCsSent}");
     }
 
     public void CardConfirm(AgentCard card)
@@ -1227,5 +1229,11 @@ public partial class MainGame : Control
         }
         GD.PrintErr($"Cant find a player with puid={puid}");
         return -1;
+    }
+
+    public int GetLocalPlayerIndex()
+    {
+        string localPuid = eosManager?.localProductUserIdString;
+        return PuidToIndex(localPuid);
     }
 }
