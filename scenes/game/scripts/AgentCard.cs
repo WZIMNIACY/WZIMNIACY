@@ -1,17 +1,21 @@
 using Godot;
+using System.Collections.Generic;
 
 public partial class AgentCard : PanelContainer
 {
-	[Export] public Control highlightBorder;
+    [Export] private MainGame mainGame;
+    [Export] public Control highlightBorder;
 	[Export] public Control contentContainer;
 	[Export] public Color darkColor = new Color(0.7f, 0.7f, 0.7f);
 	[Export] private CardManager cardManager;
 	[Export] private Label textLabel;
 	[Export] private TextureRect cardImage;
+    [Export] private Label debugSelectionsDisplay;
 
-	[Export] private Button selectButton;
+    [Export] private Button confirmButton;
 
-	[Signal] public delegate void CardConfirmedEventHandler(AgentCard card);
+	[Signal] public delegate void CardSelectedEventHandler(AgentCard card);
+    [Signal] public delegate void CardConfirmedEventHandler(AgentCard card);
 
     /// Mainly for AI lib
     public game.Card cardInfo;
@@ -22,14 +26,23 @@ public partial class AgentCard : PanelContainer
 	private Vector2 normalScale = Vector2.One;
 	private Tween tween;
 
-	private CardManager.CardType type;
+    private byte? id;
+    public byte? Id
+    {
+        get { return id; }
+    }
+    private CardManager.CardType type;
 	public CardManager.CardType Type
 	{
 		get { return type; }
 	}
-	private bool selected = false;
+    private List<int> selectedBy; // list of indexes of players who selected this card
+    public int SelectionsCount
+    {
+        get { return selectedBy.Count; }
+    }
 
-	public override void _Ready()
+    public override void _Ready()
 	{
 		base._Ready();
 		CallDeferred(nameof(SetPivotCenter));
@@ -43,9 +56,17 @@ public partial class AgentCard : PanelContainer
 		AddToGroup("cards");
 		MouseFilter = MouseFilterEnum.Pass;
 		SetProcessInput(true);
-	}
 
-	private void SetPivotCenter()
+        selectedBy = new List<int>();
+    }
+
+    public void SetId(byte newId)
+    {
+        if (id == null)
+            id = newId;
+    }
+
+    private void SetPivotCenter()
 	{
 		PivotOffset = Size / 2;
 	}
@@ -125,23 +146,82 @@ public partial class AgentCard : PanelContainer
 			mouseEvent.Pressed &&
 			mouseEvent.ButtonIndex == MouseButton.Left)
 		{
-			ToggleSelected();
-		}
-	}
+            //ToggleSelected();
+		    EmitSignal(SignalName.CardSelected, this);
+        }
+    }
 
-	public void Unselect()
-	{
-		selected = false;
-		selectButton.Visible = false;
-	}
+    public void ClearSelections()
+    {
+        //GD.Print($"[MainGame][Card] Clearing selections of card={id}");
+        selectedBy.Clear();
+        UpdateSelectionDisplay();
+    }
 
-	public void ToggleSelected()
-	{
-		selected = !selected;
-		selectButton.Visible = selected;
-	}
+    public void SetSelections(ushort selections) // n-th bit represents whether selected by player of n-th index
+    {
+        //GD.Print($"[MainGame][Card] Setting selections of card={id} by selections_ushort={Convert.ToString(selections, 2)}");
+        selectedBy.Clear();
+        for (int i = 0; i < 10; i++)
+        {
+            if ((selections & (1 << i)) != 0)
+            {
+                selectedBy.Add(i);
+            }
+        }
+        UpdateSelectionDisplay();
+    }
 
-	public void OnSelectButtonPressed()
+    public ushort GetSelectionsAsUshort()
+    {
+        ushort selections = 0b0;
+        foreach (int index in selectedBy)
+        {
+            selections |= (ushort)(1 << index);
+        }
+        return selections;
+    }
+
+    public void AddSelection(int playerIndex)
+    {
+        GD.Print($"[MainGame][Card] Adding a selection to card={id} by player={playerIndex}");
+        if (!selectedBy.Contains(playerIndex))
+        {
+            selectedBy.Add(playerIndex);
+            UpdateSelectionDisplay();
+        }
+    }
+
+    public void RemoveSelection(int playerIndex)
+    {
+        GD.Print($"[MainGame][Card] Removing a selection from card={id} by player={playerIndex}");
+        if (selectedBy.Contains(playerIndex))
+        {
+            selectedBy.Remove(playerIndex);
+            UpdateSelectionDisplay();
+        }
+    }
+
+    public void UpdateSelectionDisplay()
+    {
+        // temp
+        // TODO: display user avatars
+        string indexes = string.Join(", ", selectedBy);
+        debugSelectionsDisplay.Text = indexes;
+
+        int localPLayerIndex = mainGame.GetLocalPlayerIndex();
+        if (IsSelectedBy(localPLayerIndex))
+            confirmButton.Visible = true;
+        else
+            confirmButton.Visible = false;
+    }
+
+    public bool IsSelectedBy(int playerIndex)
+    {
+        return selectedBy.Contains(playerIndex);
+    }
+
+    public void OnConfirmButtonPressed()
 	{
 		EmitSignal(SignalName.CardConfirmed, this);
 	}

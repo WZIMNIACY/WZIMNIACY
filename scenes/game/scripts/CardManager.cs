@@ -1,8 +1,9 @@
+using game;
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using System.Collections.Generic;
 
 public partial class CardManager : GridContainer
 {
@@ -40,13 +41,16 @@ public partial class CardManager : GridContainer
 		eosManager = GetNode<EOSManager>("/root/EOSManager");
 		rand = new Random((int)eosManager.CurrentGameSession.Seed);
 
-		LoadDeck();
+        LoadDeck();
 
-
-		foreach (var card in GetTree().GetNodesInGroup("cards"))
+        byte id = 0;
+		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
 		{
+			card.Connect("CardSelected", new Callable(this, nameof(OnCardSelected)));
 			card.Connect("CardConfirmed", new Callable(this, nameof(OnCardConfirmed)));
-		}
+            card.SetId(id);
+            id++;
+        }
 	}
 
 	private void OnGameReady()
@@ -64,22 +68,86 @@ public partial class CardManager : GridContainer
 		Deck = game.Deck.CreateFromDictionary(namesVectorDb, cardTeam, rand);
 	}
 
-	public game.Card TakeCard()
-	{
-		if (Deck == null)
-		{
-			LoadDeck();
-		}
+    public game.Card TakeCard()
+    {
+        if (Deck == null)
+        {
+            LoadDeck();
+        }
 
-		if (takenCards > DECK_CARD_COUNT)
-		{
-			throw new Exception("Out of cards to take - taken too many");
-		}
+        if (takenCards > DECK_CARD_COUNT)
+        {
+            throw new Exception("Out of cards to take - taken too many");
+        }
 
-		game.Card card = Deck.Cards[takenCards];
-		takenCards += 1;
-		return card;
-	}
+        game.Card card = Deck.Cards[takenCards];
+        takenCards += 1;
+        return card;
+    }
+
+    private void OnCardSelected(AgentCard card)
+    {
+        mainGame.OnCardSelected(card);
+    }
+
+    private AgentCard GetCardOfId(byte cardId)
+    {
+        foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
+        {
+            if (card.Id == cardId)
+            {
+                return card;
+            }
+        }
+        GD.PrintErr($"Cant find a card with id={cardId}");
+        return null;
+    }
+
+    public void ModifySelection(byte cardId, int playerIndex, bool unselect)
+    {
+        AgentCard card = GetCardOfId(cardId);
+        if (unselect)
+            card?.RemoveSelection(playerIndex);
+        else
+            card?.AddSelection(playerIndex);
+    }
+
+    public void ModifyAllSelections(Dictionary<byte, ushort> cardsSelections)
+    {
+        foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
+        {
+            byte cardId = card.Id!.Value;
+            if (cardsSelections.ContainsKey(cardId))
+            {
+                card.SetSelections(cardsSelections[cardId]);
+            }
+            else
+            {
+                card.ClearSelections();
+            }
+        }
+    }
+
+    public Dictionary<byte, ushort> GetAllSelections()
+    {
+        Dictionary<byte, ushort> allSelections = new();
+
+        foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
+        {
+            if (card.SelectionsCount == 0)
+            {
+                continue;
+            }
+            else
+            {
+                byte cardId = card.Id!.Value;
+                ushort selections = card.GetSelectionsAsUshort();
+                allSelections.Add(cardId, selections);
+            }
+        }
+
+        return allSelections;
+    }
 
 	public void ApplyCardRevealed(AgentCard card)
 	{
@@ -137,7 +205,7 @@ public partial class CardManager : GridContainer
 	{
 		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
 		{
-			card.Unselect();
+			card.ClearSelections();
 		}
 	}
 }
