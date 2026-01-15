@@ -1,7 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://s7i54u0fg4ly"]
+[gd_scene load_steps=11 format=3 uid="uid://s7i54u0fg4ly"]
 
-[ext_resource type="Texture2D" uid="uid://c8ei6oqum8tx7" path="res://assets/textures/karta.png" id="1_hiodb"]
 [ext_resource type="Script" uid="uid://hwnq2i8b5xl4" path="res://scenes/game/scripts/AgentCard.cs" id="1_m8y6f"]
+[ext_resource type="Texture2D" uid="uid://baao70koi3hi7" path="res://assets/textures/card/agent_Blue.png" id="2_j4stv"]
+[ext_resource type="Texture2D" uid="uid://8kswc0oodq2g" path="res://assets/textures/card/A_side_min.png" id="2_m8y6f"]
+[ext_resource type="Texture2D" uid="uid://dririd41q3hpr" path="res://assets/textures/card/agent_Red.png" id="3_x1yns"]
+[ext_resource type="Texture2D" uid="uid://cp1v0gngm1uf6" path="res://assets/textures/card/agent_Yellow.png" id="4_8aqop"]
+[ext_resource type="Texture2D" uid="uid://0pts5w1ae6qx" path="res://assets/textures/card/agent_Assasin.png" id="5_bq2cd"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hiodb"]
 font_size = 11
@@ -30,7 +34,7 @@ corner_radius_top_right = 100
 corner_radius_bottom_right = 100
 corner_radius_bottom_left = 100
 
-[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage", "debugSelectionsDisplay", "confirmButton")]
+[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage")]
 offset_right = 110.0
 offset_bottom = 110.0
 script = ExtResource("1_m8y6f")
@@ -38,22 +42,25 @@ highlightBorder = NodePath("HighlightBorder")
 contentContainer = NodePath(".")
 textLabel = NodePath("MarginContainer/Label")
 cardImage = NodePath("AgentCard")
-debugSelectionsDisplay = NodePath("DebugSelectionsDisplay")
-confirmButton = NodePath("Control/ConfirmButton")
+blueCardTexture = ExtResource("2_j4stv")
+redCardTexture = ExtResource("3_x1yns")
+neutralCardTexture = ExtResource("4_8aqop")
+assassinCardTexture = ExtResource("5_bq2cd")
 
 [node name="AgentCard" type="TextureRect" parent="."]
 custom_minimum_size = Vector2(0, 110)
 layout_mode = 2
 size_flags_horizontal = 3
-texture = ExtResource("1_hiodb")
+texture = ExtResource("2_m8y6f")
 expand_mode = 2
 stretch_mode = 5
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
-theme_override_constants/margin_bottom = 14
+theme_override_constants/margin_bottom = 10
 
 [node name="Label" type="Label" parent="MarginContainer"]
+custom_minimum_size = Vector2(0, -10)
 layout_mode = 2
 size_flags_vertical = 8
 text = "Pseudomin"

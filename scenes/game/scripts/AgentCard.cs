@@ -11,8 +11,13 @@ public partial class AgentCard : PanelContainer
 	[Export] private Label textLabel;
 	[Export] private TextureRect cardImage;
     [Export] private Label debugSelectionsDisplay;
-
     [Export] private Button confirmButton;
+
+	[ExportGroup("Card Textures")]
+    [Export] private Texture2D blueCardTexture;
+    [Export] private Texture2D redCardTexture;
+    [Export] private Texture2D neutralCardTexture; 
+    [Export] private Texture2D assassinCardTexture;
 
 	[Signal] public delegate void CardSelectedEventHandler(AgentCard card);
     [Signal] public delegate void CardConfirmedEventHandler(AgentCard card);
@@ -123,19 +128,19 @@ public partial class AgentCard : PanelContainer
 	{
 		if(type == CardManager.CardType.Blue)
 		{
-			cardImage.Modulate = new Color("4597ffff");
+			cardImage.Texture = blueCardTexture;
 		}
 		else if(type == CardManager.CardType.Red)
 		{
-			cardImage.Modulate = new Color("ff627bff");
+			cardImage.Texture = redCardTexture;
 		}
 		else if(type == CardManager.CardType.Assassin)
 		{
-			cardImage.Modulate = new Color("767676aa");
+			cardImage.Texture = assassinCardTexture;
 		}
 		else
 		{
-			cardImage.Modulate = new Color("ffffbd");
+			cardImage.Texture = neutralCardTexture;
 		}
 	}
 
