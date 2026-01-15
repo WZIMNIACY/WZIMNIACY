@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://b8xk4j2p5n7qw"]
 
-[ext_resource type="Script" uid="uid://baqxgvwrnvlw" path="res://scripts/ui/PasteDetector.cs" id="1_paste"]
+[ext_resource type="Script" uid="uid://bwjgk2kjaa2yw" path="res://scripts/ui/EscapeBackHandler.cs" id="1_escape"]
 [ext_resource type="Script" uid="uid://ch0kcd7ixskvj" path="res://scripts/ui/PasteDetector.cs" id="1_paste"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="3_6mxdh"]
 [ext_resource type="StyleBox" uid="uid://dgkp41umsnv7g" path="res://assets/inputs/InputPlaceHolder.tres" id="3_mm0ga"]
