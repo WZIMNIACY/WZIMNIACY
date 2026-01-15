@@ -29,6 +29,9 @@ public partial class MainGame : Control
     private readonly Dictionary<int, P2PNetworkManager.GamePlayer> playersByIndex = new();
     public Dictionary<int, P2PNetworkManager.GamePlayer> PlayersByIndex => playersByIndex;
 
+    private readonly Dictionary<int, string> playerIconPathsByIndex = new();
+    public Dictionary<int, string> PlayerIconPathsByIndex => playerIconPathsByIndex;
+
     private Godot.Timer sendSelectionsTimer;
 
     private EOSManager eosManager;
@@ -98,7 +101,7 @@ public partial class MainGame : Control
     private sealed class CardsSelectionsPayload
     {
         public Dictionary<byte, ushort> cardsSelections { get; set; }
-}
+    }
 
     private sealed class TestAckPayload
     {
@@ -350,7 +353,7 @@ public partial class MainGame : Control
             return true;
         }
 
-        if(packet.type == "remove_point_ack" && !isHost)
+        if (packet.type == "remove_point_ack" && !isHost)
         {
             RemovePointAckPayload ack;
             try
@@ -364,8 +367,8 @@ public partial class MainGame : Control
             }
 
             GD.Print($"[MainGame][P2P-TEST] CLIENT received remove_point_ack from host: removing point from: {ack.team} fromPeer={fromPeer}");
-            if(ack.team == Team.Blue) RemovePointBlue();
-            if(ack.team == Team.Red) RemovePointRed();
+            if (ack.team == Team.Blue) RemovePointBlue();
+            if (ack.team == Team.Red) RemovePointRed();
             return true;
         }
 
@@ -560,12 +563,14 @@ public partial class MainGame : Control
 
 
         playersByIndex.Clear();
+        playerIconPathsByIndex.Clear();
         foreach (var p in payload.players)
         {
             if (p == null) continue;
             if (string.IsNullOrEmpty(p.puid)) continue;
 
             playersByIndex[p.index] = p; // trzymamy cały obiekt (puid + name + team)
+            playerIconPathsByIndex[p.index] = GetPlayerIconPath(p.index);
         }
 
 
@@ -790,7 +795,7 @@ public partial class MainGame : Control
 
     private void StartCaptainPhase()
     {
-        if(gameInputPanel != null)
+        if (gameInputPanel != null)
         {
             gameInputPanel.SetupTurn(currentTurn == Team.Blue);
         }
@@ -1136,6 +1141,12 @@ public partial class MainGame : Control
     public void OnCardSelectedHost(byte cardId, int playerIndex, bool unselect)
     {
         cardManager.ModifySelection(cardId, playerIndex, unselect);
+
+        foreach (var player in playerIconPathsByIndex)
+        {
+            GD.Print($"[ICON TEST] player id={player.Key} icon patb={player.Value}");
+            GD.Print($"[ICON TEST] ==================");
+        }
     }
 
     public void OnCardSelectedClient(byte cardId, int playerIndex, bool unselect)
@@ -1208,7 +1219,7 @@ public partial class MainGame : Control
         }
 
         //Narazie tylko host rozsyła info o usunięciu punktu do klientów
-        if(teamToRemovePoint != Team.None && isHost)
+        if (teamToRemovePoint != Team.None && isHost)
         {
             string str = eosManager.localProductUserIdString;
             ProductUserId fromPeer = ProductUserId.FromString(str);
@@ -1225,7 +1236,7 @@ public partial class MainGame : Control
 
     public void EndGame(Team winner)
     {
-        if(!isHost) return;
+        if (!isHost) return;
 
         sendSelectionsTimer.Stop();
 
@@ -1254,5 +1265,38 @@ public partial class MainGame : Control
     {
         string localPuid = eosManager?.localProductUserIdString;
         return PuidToIndex(localPuid);
+    }
+
+    public int GetPlayerIconIndex(int playerIndex)
+    {
+        var players = eosManager.GetCurrentLobbyMembers();
+        foreach (var player in players)
+        {
+            if (player == null)
+                continue;
+            if (!player.ContainsKey("userId"))
+                continue;
+
+            string puid = player["userId"].ToString();
+
+            if (puid == playersByIndex[playerIndex].puid)
+            {
+                return (int)player["profileIcon"];
+            }
+        }
+        return -1;
+    }
+
+    public string GetPlayerIconPath(int iconIndex, EOSManager.Team team)
+    {
+        return eosManager.GetProfileIconPath(team, iconIndex);
+    }
+
+    public string GetPlayerIconPath(int playerIndex)
+    {
+        int iconIndex = GetPlayerIconIndex(playerIndex);
+        EOSManager.Team team = playersByIndex[playerIndex].team.ToEOSManagerTeam();
+
+        return GetPlayerIconPath(iconIndex, team);
     }
 }
