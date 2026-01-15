@@ -243,6 +243,8 @@ public partial class EOSManager : Node
 	private const int MaxPlayersPerTeam = 5;
 	//Limit graczy w trybie AI vs Human (Universal Team)
 	private const int MaxPlayersInAIvsHuman = 5;
+	// Custom popup system
+	private PopupSystem popupSystem;
 
 	// Enum dla drużyn
 	public enum Team
@@ -300,6 +302,9 @@ public partial class EOSManager : Node
 	public override void _Ready()
 	{
 		base._Ready();
+
+		// Załaduj custom popup system
+		LoadPopupSystem();
 
 		// Opcjonalne opóźnienie sieci (do testów)
 		// uzycie: --delay-networking=value_in_ms dla kazdej instancji w cmdline
@@ -440,32 +445,26 @@ public partial class EOSManager : Node
 		// LoginWithDeviceId_P2P();
 	}
 
+	/// <summary>
+	/// Ładuje custom popup system ze sceny
+	/// </summary>
+	private void LoadPopupSystem()
+	{
+		var popupScene = GD.Load<PackedScene>("res://scenes/popup/PopupSystem.tscn");
+		if (popupScene != null)
+		{
+			popupSystem = popupScene.Instantiate<PopupSystem>();
+			AddChild(popupSystem);
+		}
+		else
+		{
+			GD.PrintErr("❌ Failed to load PopupSystem scene");
+		}
+	}
+
 	private void HandleKickedFromLobby()
 	{
 		GD.Print("🚪 Player was kicked from lobby - cleaning up and returning to main menu...");
-
-		// Pokaż popup z informacją o wyrzuceniu
-		if (GetTree() != null && GetTree().Root != null)
-		{
-			var popup = new AcceptDialog();
-			popup.DialogText = "Zostałeś wyrzucony przez hosta!";
-			popup.Title = "Wyrzucony";
-			popup.OkButtonText = "OK";
-
-			// Zamknij popup i wróć do menu po kliknięciu OK
-			popup.Confirmed += () =>
-			{
-				popup.QueueFree();
-				if (GetTree() != null)
-				{
-					GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
-				}
-			};
-
-			// Dodaj do root i wyświetl
-			GetTree().Root.AddChild(popup);
-			popup.PopupCentered();
-		}
 
 		// Zatrzymaj timer odświeżania jeśli jeszcze działa
 		if (lobbyRefreshTimer != null && lobbyRefreshTimer.TimeLeft > 0)
@@ -504,6 +503,29 @@ public partial class EOSManager : Node
 
 		// Wyślij sygnał do UI
 		EmitSignal(SignalName.LobbyLeft);
+
+		// Pokaż popup z informacją o wyrzuceniu
+		if (popupSystem != null)
+		{
+			popupSystem.ShowMessage(
+				"WYRZUCONY Z LOBBY",
+				"Zostałeś wyrzucony przez hosta!",
+				() =>
+				{
+					if (GetTree() != null)
+					{
+						GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
+					}
+				}
+			);
+		}
+		else
+		{
+			GD.PrintErr("❌ PopupSystem is null, cannot show kicked message");
+			// Fallback - wróć do menu nawet bez popupu
+			if (GetTree() != null)
+			{
+				GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
 	}
 
 	private void CreateLobbyRefreshTimer()
