@@ -116,7 +116,7 @@ public partial class MainGame : Control
     {
         public string skippedBy { get; set; }
     }
-    
+
 
     private sealed class RemovePointAckPayload
     {
@@ -347,6 +347,25 @@ public partial class MainGame : Control
             }
 
             OnSkipTurnPressedHost(senderPuid);
+            return true;
+        }
+
+        if(packet.type == "remove_point_ack" && !isHost)
+        {
+            RemovePointAckPayload ack;
+            try
+            {
+                ack = packet.payload.Deserialize<RemovePointAckPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC remove_point_ack payload parse error: {e.Message}");
+                return true;
+            }
+
+            GD.Print($"[MainGame][P2P-TEST] CLIENT received remove_point_ack from host: removing point from: {ack.team} fromPeer={fromPeer}");
+            if(ack.team == Team.Blue) RemovePointBlue();
+            if(ack.team == Team.Red) RemovePointRed();
             return true;
         }
 
