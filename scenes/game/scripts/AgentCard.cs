@@ -13,10 +13,10 @@ public partial class AgentCard : PanelContainer
     [Export] private Label debugSelectionsDisplay;
     [Export] private Button confirmButton;
 
-	[ExportGroup("Card Textures")]
-    [Export] private Texture2D blueCardTexture;
-    [Export] private Texture2D redCardTexture;
-    [Export] private Texture2D neutralCardTexture; 
+    [ExportGroup("Card Textures")]
+    [Export] private Texture2D[] blueCardTextures;
+    [Export] private Texture2D[] redCardTextures;
+    [Export] private Texture2D[] neutralCardTextures;
     [Export] private Texture2D assassinCardTexture;
 
 	[Signal] public delegate void CardSelectedEventHandler(AgentCard card);
@@ -126,23 +126,46 @@ public partial class AgentCard : PanelContainer
 
 	public void SetColor()
 	{
-		if(type == CardManager.CardType.Blue)
-		{
-			cardImage.Texture = blueCardTexture;
-		}
-		else if(type == CardManager.CardType.Red)
-		{
-			cardImage.Texture = redCardTexture;
-		}
-		else if(type == CardManager.CardType.Assassin)
-		{
-			cardImage.Texture = assassinCardTexture;
-		}
-		else
-		{
-			cardImage.Texture = neutralCardTexture;
-		}
+		if (cardImage == null) return;
+
+        cardImage.Modulate = Colors.White;
+
+        int cardIndex = (int)(id ?? 0); 
+
+        switch (type)
+        {
+            case CardManager.CardType.Blue:
+                SetTextureFromArray(blueCardTextures, cardIndex);
+                break;
+
+            case CardManager.CardType.Red:
+                SetTextureFromArray(redCardTextures, cardIndex);
+                break;
+
+            case CardManager.CardType.Assassin:
+                if (assassinCardTexture != null) 
+                    cardImage.Texture = assassinCardTexture;
+                break;
+
+            case CardManager.CardType.Common:
+            default:
+                SetTextureFromArray(neutralCardTextures, cardIndex);
+                break;
+        }
 	}
+
+    private void SetTextureFromArray(Texture2D[] textures, int seedIndex)
+    {
+        if (textures != null && textures.Length > 0)
+        {
+            int index = seedIndex % textures.Length;
+            
+            if (textures[index] != null)
+            {
+                cardImage.Texture = textures[index];
+            }
+        }
+    }
 
 	public override void _GuiInput(InputEvent @event)
 	{

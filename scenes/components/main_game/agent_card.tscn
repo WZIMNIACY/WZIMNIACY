@@ -1,11 +1,35 @@
-[gd_scene load_steps=11 format=3 uid="uid://s7i54u0fg4ly"]
+[gd_scene load_steps=35 format=3 uid="uid://s7i54u0fg4ly"]
 
 [ext_resource type="Script" uid="uid://hwnq2i8b5xl4" path="res://scenes/game/scripts/AgentCard.cs" id="1_m8y6f"]
-[ext_resource type="Texture2D" uid="uid://baao70koi3hi7" path="res://assets/textures/card/agent_Blue.png" id="2_j4stv"]
+[ext_resource type="Texture2D" uid="uid://baao70koi3hi7" path="res://assets/textures/card/agent_Blue (1).png" id="2_j4stv"]
 [ext_resource type="Texture2D" uid="uid://8kswc0oodq2g" path="res://assets/textures/card/A_side_min.png" id="2_m8y6f"]
-[ext_resource type="Texture2D" uid="uid://dririd41q3hpr" path="res://assets/textures/card/agent_Red.png" id="3_x1yns"]
-[ext_resource type="Texture2D" uid="uid://cp1v0gngm1uf6" path="res://assets/textures/card/agent_Yellow.png" id="4_8aqop"]
+[ext_resource type="Texture2D" uid="uid://dririd41q3hpr" path="res://assets/textures/card/agent_Red (1).png" id="3_x1yns"]
+[ext_resource type="Texture2D" uid="uid://dyd7lmwl1c8bp" path="res://assets/textures/card/agent_Blue (2).png" id="3_yjsox"]
+[ext_resource type="Texture2D" uid="uid://cp1v0gngm1uf6" path="res://assets/textures/card/agent_Yellow (1).png" id="4_8aqop"]
+[ext_resource type="Texture2D" uid="uid://ibv671egmfpe" path="res://assets/textures/card/agent_Blue (3).png" id="4_m1nus"]
 [ext_resource type="Texture2D" uid="uid://0pts5w1ae6qx" path="res://assets/textures/card/agent_Assasin.png" id="5_bq2cd"]
+[ext_resource type="Texture2D" uid="uid://dl04dryhw4li" path="res://assets/textures/card/agent_Blue (4).png" id="5_ek2h2"]
+[ext_resource type="Texture2D" uid="uid://cot881ny2fbyj" path="res://assets/textures/card/agent_Blue (5).png" id="6_k372n"]
+[ext_resource type="Texture2D" uid="uid://og31lcs0kdum" path="res://assets/textures/card/agent_Blue (6).png" id="7_jcbga"]
+[ext_resource type="Texture2D" uid="uid://7iypy34dbe12" path="res://assets/textures/card/agent_Blue (7).png" id="8_qtrba"]
+[ext_resource type="Texture2D" uid="uid://cmnn4h3of25kx" path="res://assets/textures/card/agent_Blue (8).png" id="9_pewy5"]
+[ext_resource type="Texture2D" uid="uid://ddv8yq463h7s2" path="res://assets/textures/card/agent_Blue (9).png" id="10_0g8n4"]
+[ext_resource type="Texture2D" uid="uid://bbora55wc1owo" path="res://assets/textures/card/agent_Red (2).png" id="12_ywob3"]
+[ext_resource type="Texture2D" uid="uid://cvhy530c20i0u" path="res://assets/textures/card/agent_Red (3).png" id="13_ljert"]
+[ext_resource type="Texture2D" uid="uid://crx6x4apptwp1" path="res://assets/textures/card/agent_Red (4).png" id="14_uu8dr"]
+[ext_resource type="Texture2D" uid="uid://bcgjdbix2xi3k" path="res://assets/textures/card/agent_Red (5).png" id="15_6d8uw"]
+[ext_resource type="Texture2D" uid="uid://5q5gda74dhci" path="res://assets/textures/card/agent_Red (6).png" id="16_qiw4n"]
+[ext_resource type="Texture2D" uid="uid://2pt7w5tx848c" path="res://assets/textures/card/agent_Red (7).png" id="17_vqsxn"]
+[ext_resource type="Texture2D" uid="uid://bjkcatwu8gjtf" path="res://assets/textures/card/agent_Red (8).png" id="18_i856i"]
+[ext_resource type="Texture2D" uid="uid://ja3kihcm81k0" path="res://assets/textures/card/agent_Red (9).png" id="19_8x3ig"]
+[ext_resource type="Texture2D" uid="uid://t76eshnnly80" path="res://assets/textures/card/agent_Yellow (2).png" id="21_h5h7b"]
+[ext_resource type="Texture2D" uid="uid://cs5u5qpmxs0s4" path="res://assets/textures/card/agent_Yellow (3).png" id="22_7huni"]
+[ext_resource type="Texture2D" uid="uid://nsv4aeba7kbp" path="res://assets/textures/card/agent_Yellow (4).png" id="23_x23sg"]
+[ext_resource type="Texture2D" uid="uid://cfbnsiivvh6pn" path="res://assets/textures/card/agent_Yellow (5).png" id="24_le00o"]
+[ext_resource type="Texture2D" uid="uid://cvk465on5etv2" path="res://assets/textures/card/agent_Yellow (6).png" id="25_61gdx"]
+[ext_resource type="Texture2D" uid="uid://ckaakfx5nhvxw" path="res://assets/textures/card/agent_Yellow (7).png" id="26_bt42a"]
+[ext_resource type="Texture2D" uid="uid://7l1lp2rbgmo6" path="res://assets/textures/card/agent_Yellow (8).png" id="27_2l58x"]
+[ext_resource type="Texture2D" uid="uid://dvyn0srg5ldbp" path="res://assets/textures/card/agent_Yellow (9).png" id="28_ryheo"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hiodb"]
 font_size = 11
@@ -44,9 +68,9 @@ textLabel = NodePath("MarginContainer/Label")
 cardImage = NodePath("AgentCard")
 debugSelectionsDisplay = NodePath("DebugSelectionsDisplay")
 confirmButton = NodePath("Control/ConfirmButton")
-blueCardTexture = ExtResource("2_j4stv")
-redCardTexture = ExtResource("3_x1yns")
-neutralCardTexture = ExtResource("4_8aqop")
+blueCardTextures = Array[Texture2D]([ExtResource("2_j4stv"), ExtResource("3_yjsox"), ExtResource("4_m1nus"), ExtResource("5_ek2h2"), ExtResource("6_k372n"), ExtResource("7_jcbga"), ExtResource("8_qtrba"), ExtResource("9_pewy5"), ExtResource("10_0g8n4")])
+redCardTextures = Array[Texture2D]([ExtResource("3_x1yns"), ExtResource("12_ywob3"), ExtResource("13_ljert"), ExtResource("14_uu8dr"), ExtResource("15_6d8uw"), ExtResource("16_qiw4n"), ExtResource("17_vqsxn"), ExtResource("18_i856i"), ExtResource("19_8x3ig")])
+neutralCardTextures = Array[Texture2D]([ExtResource("4_8aqop"), ExtResource("21_h5h7b"), ExtResource("22_7huni"), ExtResource("23_x23sg"), ExtResource("24_le00o"), ExtResource("25_61gdx"), ExtResource("26_bt42a"), ExtResource("27_2l58x"), ExtResource("28_ryheo")])
 assassinCardTexture = ExtResource("5_bq2cd")
 
 [node name="AgentCard" type="TextureRect" parent="."]

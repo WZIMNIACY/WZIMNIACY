@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cp1v0gngm1uf6"
-path="res://.godot/imported/agent_Yellow.png-6532ad5611aed6516612c914565ffe97.ctex"
+uid="uid://dyd7lmwl1c8bp"
+path="res://.godot/imported/agent_Blue (2).png-16b4f4e7d2e7a1690cea9935f41415d7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/card/agent_Yellow.png"
-dest_files=["res://.godot/imported/agent_Yellow.png-6532ad5611aed6516612c914565ffe97.ctex"]
+source_file="res://assets/textures/card/agent_Blue (2).png"
+dest_files=["res://.godot/imported/agent_Blue (2).png-16b4f4e7d2e7a1690cea9935f41415d7.ctex"]
 
 [params]
 
