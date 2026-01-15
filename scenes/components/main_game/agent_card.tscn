@@ -34,7 +34,7 @@ corner_radius_top_right = 100
 corner_radius_bottom_right = 100
 corner_radius_bottom_left = 100
 
-[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage")]
+[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage", "debugSelectionsDisplay", "confirmButton")]
 offset_right = 110.0
 offset_bottom = 110.0
 script = ExtResource("1_m8y6f")
@@ -42,6 +42,8 @@ highlightBorder = NodePath("HighlightBorder")
 contentContainer = NodePath(".")
 textLabel = NodePath("MarginContainer/Label")
 cardImage = NodePath("AgentCard")
+debugSelectionsDisplay = NodePath("DebugSelectionsDisplay")
+confirmButton = NodePath("Control/ConfirmButton")
 blueCardTexture = ExtResource("2_j4stv")
 redCardTexture = ExtResource("3_x1yns")
 neutralCardTexture = ExtResource("4_8aqop")
