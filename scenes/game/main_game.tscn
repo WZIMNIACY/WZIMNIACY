@@ -1,6 +1,6 @@
-[gd_scene load_steps=33 format=3 uid="uid://bqfm3bpx8hfit"]
+[gd_scene load_steps=34 format=3 uid="uid://bqfm3bpx8hfit"]
 
-[ext_resource type="Script" uid="uid://dyoy83uqb0wof" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
+[ext_resource type="Script" uid="uid://cxp073y36dgti" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://assets/themes/main_game.tres" id="1_s3esy"]
 [ext_resource type="PackedScene" uid="uid://vu4a6yutqy5e" path="res://scenes/components/main_game/blue_player_list.tscn" id="2_wi4c7"]
 [ext_resource type="PackedScene" uid="uid://r3ci44bvmc2j" path="res://scenes/components/main_game/red_player_list.tscn" id="3_wi4c7"]
@@ -8,17 +8,18 @@
 [ext_resource type="PackedScene" uid="uid://db8ggkdji87xs" path="res://scenes/components/main_game/red_score_container.tscn" id="5_ygxny"]
 [ext_resource type="PackedScene" uid="uid://s7i54u0fg4ly" path="res://scenes/components/main_game/agent_card.tscn" id="6_ygxny"]
 [ext_resource type="Texture2D" uid="uid://bjri1j0tawip8" path="res://assets/textures/gradients/game_skip_turn_button_gradient.tres" id="7_wi4c7"]
-[ext_resource type="Script" uid="uid://c6763jmkxnoou" path="res://scenes/game/scripts/CardManager.cs" id="7_xgagw"]
-[ext_resource type="Script" uid="uid://dsswor3dmxdlv" path="res://scenes/game/scripts/RightPanel.cs" id="8_cn0rj"]
+[ext_resource type="Script" uid="uid://bjp0j1005te6u" path="res://scenes/game/scripts/CardManager.cs" id="7_xgagw"]
+[ext_resource type="Script" uid="uid://c2fao10cjps23" path="res://scenes/game/scripts/RightPanel.cs" id="8_cn0rj"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="9_nqdth"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="9_o6v7o"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="10_5cypo"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="10_wjob3"]
-[ext_resource type="Script" uid="uid://bhdawio8cc0ed" path="res://scenes/game/scripts/CaptainInput.cs" id="10_xgagw"]
+[ext_resource type="Script" uid="uid://cwoeunougbv2x" path="res://scenes/game/scripts/CaptainInput.cs" id="10_xgagw"]
 [ext_resource type="PackedScene" uid="uid://bfxpcutxox0tt" path="res://scenes/settings/Settings.tscn" id="15_eixuh"]
 [ext_resource type="PackedScene" uid="uid://b6bdhq5ktk0vo" path="res://scenes/components/main_game/end_game_screen.tscn" id="16_eixuh"]
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="16_v72ow"]
-[ext_resource type="Script" uid="uid://d355aol0ujbg" path="res://scripts/P2PNetworkManager.cs" id="19_stils"]
+[ext_resource type="Script" uid="uid://cfufconx8s1kg" path="res://scripts/P2PNetworkManager.cs" id="19_stils"]
+[ext_resource type="PackedScene" uid="uid://da78r3ltx830e" path="res://scenes/loadingscreen/loadingscreen.tscn" id="20_mssxc"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -92,7 +93,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager")]
+[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager", "loadingScreen")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -112,6 +113,7 @@ turnLabel = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/TopBar/TurnCo
 settingsScene = NodePath("Settings")
 helpScene = NodePath("HelpScene")
 cardManager = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer")
+loadingScreen = NodePath("LoadingScreen")
 metadata/_edit_horizontal_guides_ = [-92.0]
 
 [node name="Panel" type="Panel" parent="."]
@@ -227,104 +229,129 @@ columns = 5
 script = ExtResource("7_xgagw")
 mainGame = NodePath("../../../../..")
 
-[node name="AgentCard" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard2" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard2" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard3" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard3" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard4" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard4" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard5" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard5" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard6" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard6" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard7" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard7" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard8" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard8" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard9" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard9" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard10" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard10" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard11" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard11" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard12" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard12" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard13" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard13" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard14" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard14" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard15" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard15" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard16" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard16" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard17" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard17" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard18" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard18" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard19" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard19" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard20" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard20" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard21" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard21" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard22" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard22" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard23" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard23" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard24" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard24" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="AgentCard25" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("cardManager") instance=ExtResource("6_ygxny")]
+[node name="AgentCard25" parent="Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer" node_paths=PackedStringArray("mainGame", "cardManager") instance=ExtResource("6_ygxny")]
 layout_mode = 2
+mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
 [node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll", "skipButton")]
@@ -582,6 +609,9 @@ layout_mode = 1
 
 [node name="P2PNetworkManager" type="Node" parent="."]
 script = ExtResource("19_stils")
+
+[node name="LoadingScreen" parent="." instance=ExtResource("20_mssxc")]
+layout_mode = 1
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
 [connection signal="pressed" from="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer/Button" to="." method="OnSkipTurnPressed"]

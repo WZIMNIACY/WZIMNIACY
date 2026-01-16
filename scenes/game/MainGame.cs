@@ -1,9 +1,9 @@
-using System.Collections.Generic;
+using AI;
+using Epic.OnlineServices;
 using Godot;
 using System;
-using AI;
+using System.Collections.Generic;
 using System.Text.Json;
-using Epic.OnlineServices;
 
 public partial class MainGame : Control
 {
@@ -22,6 +22,14 @@ public partial class MainGame : Control
     [Export] Control settingsScene;
     [Export] Control helpScene;
     [Export] CardManager cardManager;
+    [Export] LoadingScreen loadingScreen;
+
+
+    private bool isGameStarted = false;
+    private readonly Dictionary<int, P2PNetworkManager.GamePlayer> playersByIndex = new();
+    public Dictionary<int, P2PNetworkManager.GamePlayer> PlayersByIndex => playersByIndex;
+
+    private Godot.Timer sendSelectionsTimer;
 
     private EOSManager eosManager;
 
@@ -52,6 +60,14 @@ public partial class MainGame : Control
     private int blueMaxStreak = 0;
     private int redMaxStreak = 0;
 
+    public int BlueMaxStreak => blueMaxStreak;
+    public int RedMaxStreak => redMaxStreak;
+
+    public int BlueNeutralFound => blueNeutralFound;
+    public int RedNeutralFound => redNeutralFound;
+    public int BlueOpponentFound => blueOpponentFound;
+    public int RedOpponentFound => redOpponentFound;
+
     public enum Team
     {
         Blue,
@@ -69,13 +85,20 @@ public partial class MainGame : Control
 
     // === P2P (DODANE) ===
     private P2PNetworkManager p2pNet;
+    public P2PNetworkManager P2PNet => p2pNet;
 
     // Przykładowy payload do RPC "card_selected" (logika gry → tu, nie w P2P)
     private sealed class CardSelectedPayload
     {
-        public int cardId { get; set; }
-        public string by { get; set; }
+        public byte cardId { get; set; }
+        public byte playerIndex { get; set; }
+        public bool unselect { get; set; }
     }
+
+    private sealed class CardsSelectionsPayload
+    {
+        public Dictionary<byte, ushort> cardsSelections { get; set; }
+}
 
     private sealed class TestAckPayload
     {
@@ -83,8 +106,46 @@ public partial class MainGame : Control
         public int cardId { get; set; }
     }
 
+    private sealed class TurnSkipPressedPayload
+    {
+        public string by { get; set; }
+    }
+
+    // Po przejściu na autorytatywny model (turn_changed) payload nie jest już używany(TurnSkipPayload). Potencjalnie do usunięcia
+    private sealed class TurnSkipPayload
+    {
+        public string skippedBy { get; set; }
+    }
+
+
+    private sealed class RemovePointAckPayload
+    {
+        public Team team { get; set; }
+    }
+
+    private sealed class CardConfirmPressedPayload
+    {
+        public int cardId { get; set; }
+        public string by { get; set; }
+    }
+
+    private sealed class CardRevealedPayload
+    {
+        public int cardId { get; set; }
+        public string confirmedBy { get; set; }
+        public bool isAssassin { get; set; }
+    }
+
+    private sealed class TurnChangedPayload
+    {
+        public Team currentTurn { get; set; }
+        public int turnCounter { get; set; }
+    }
+
     private bool p2pJsonTestSent = false;
     // =====================
+
+    private readonly HashSet<int> confirmedCardIds = new();
 
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
@@ -97,6 +158,10 @@ public partial class MainGame : Control
         menuPanel.Visible = false;
         settingsScene.Visible = false;
         helpScene.Visible = false;
+
+        isGameStarted = false;
+
+        loadingScreen.ShowLoading();
 
         // Ustalanie czy lokalny gracz jest hostem na podstawie właściciela lobby EOS
         isHost = eosManager != null && eosManager.isLobbyOwner;
@@ -114,10 +179,9 @@ public partial class MainGame : Control
         }
         else
         {
-            // Tymczasowe zachowanie klienta:
-            startingTeam = Team.Blue;
-            GD.Print("Starting team (CLIENT TEMP): " + startingTeam.ToString());
+            GD.Print("Starting team (CLIENT): waiting for game_start...");
         }
+
 
         // === P2P (DODANE) ===
         p2pNet = GetNode<P2PNetworkManager>("P2PNetworkManager");
@@ -125,10 +189,11 @@ public partial class MainGame : Control
         {
             // Podpinamy handler JAK NAJWCZEŚNIEJ (bez bufora)
             p2pNet.PacketHandlers += HandlePackets;
+            p2pNet.PacketHandlers += HandleGameStartPacket;
 
-            if (!isHost)
+            if (isHost)
             {
-                p2pNet.HandshakeCompleted += OnP2PHandshakeCompletedTest;
+                p2pNet.hostBuildGameStartPayload = BuildGameStartPayloadFromLobby;
             }
         }
         // =====================
@@ -172,6 +237,375 @@ public partial class MainGame : Control
             );
         }
 
+        sendSelectionsTimer = new Timer();
+        sendSelectionsTimer.WaitTime = 0.05f;
+        sendSelectionsTimer.OneShot = false;
+        sendSelectionsTimer.Autostart = false;
+        sendSelectionsTimer.Timeout += SendSelectionsToClients;
+        AddChild(sendSelectionsTimer);
+    }
+
+    // === P2P (DODANE) ===
+    public override void _ExitTree()
+    {
+        if (p2pNet != null)
+        {
+            p2pNet.PacketHandlers -= HandlePackets;
+            p2pNet.PacketHandlers -= HandleGameStartPacket;
+        }
+        base._ExitTree();
+    }
+
+    // Handler pakietów z sieci (zgodnie z propozycją kolegi)
+    private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
+    {
+        // Przykład: "card_selected" ma sens tylko gdy jesteśmy hostem (host rozstrzyga)
+        if (packet.type == "card_selected" && isHost)
+        {
+            if (!isGameStarted)
+            {
+                GD.Print("[MainGame] Ignoring card_selected (game not started yet)");
+                return true;
+            }
+
+            CardSelectedPayload payload;
+            try
+            {
+                // JsonElement -> obiekt
+                payload = packet.payload.Deserialize<CardSelectedPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC card_selected payload parse error: {e.Message}");
+                return true; // zjadamy, bo to był JSON RPC tego typu
+            }
+
+            GD.Print($"[MainGame] RPC card_selected received: playerIndex={payload.playerIndex} cardId={payload.cardId} unselected={payload.unselect} fromPeer={fromPeer}");
+
+            OnCardSelectedHost(payload.cardId, payload.playerIndex, payload.unselect);
+
+            return true; // zjedliśmy pakiet
+        }
+
+        // Odebranie infomacji przez clienta o zaznaczonych kartach
+        if (packet.type == "selected_cards" && !isHost)
+        {
+            CardsSelectionsPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<CardsSelectionsPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC selected_cards payload parse error: {e.Message}");
+                return true;
+            }
+
+            //GD.Print($"[MainGame] RPC selected_cards received: cards={payload.cardsSelections.Count}");
+
+            cardManager.ModifyAllSelections(payload.cardsSelections);
+
+            return true;
+        }
+
+        // Odebranie infomacji przez hosta o tym ze klient chce pominac ture
+        if (packet.type == "skip_turn_pressed" && isHost)
+        {
+            TurnSkipPressedPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<TurnSkipPressedPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC skip_turn_pressed payload parse error: {e.Message}");
+                return true;
+            }
+
+            if (payload == null || string.IsNullOrEmpty(payload.by))
+            {
+                GD.PrintErr("[MainGame] RPC skip_turn_pressed payload invalid (null/empty by)");
+                return true;
+            }
+
+            string senderPuid = payload.by.ToString();
+            GD.Print($"[MainGame] RPC skip_turn_pressed received: by={senderPuid}");
+
+            // Bierzemy team z danych z game_start (playersByIndex), a nie z EOSManager
+            Team senderTeamLocal = GetTeamForPuidFromGameStart(senderPuid);
+
+            if (senderTeamLocal == Team.None)
+            {
+                GD.PrintErr($"[MainGame] Refusing to skip turn (unknown sender team). puid={senderPuid}");
+                return true;
+            }
+
+            if (currentTurn != senderTeamLocal)
+            {
+                GD.Print($"[MainGame] Refusing to skip turn (wrong team). currentTurn={currentTurn} senderTeam={senderTeamLocal} puid={senderPuid}");
+                return true;
+            }
+
+            OnSkipTurnPressedHost(senderPuid);
+            return true;
+        }
+
+        if(packet.type == "remove_point_ack" && !isHost)
+        {
+            RemovePointAckPayload ack;
+            try
+            {
+                ack = packet.payload.Deserialize<RemovePointAckPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC remove_point_ack payload parse error: {e.Message}");
+                return true;
+            }
+
+            GD.Print($"[MainGame][P2P-TEST] CLIENT received remove_point_ack from host: removing point from: {ack.team} fromPeer={fromPeer}");
+            if(ack.team == Team.Blue) RemovePointBlue();
+            if(ack.team == Team.Red) RemovePointRed();
+            return true;
+        }
+
+        // Odebranie informacji przez hosta o tym ze klient chce zatwierdzic karte
+        // Odebranie informacji przez hosta o tym ze klient chce zatwierdzic karte
+        if (packet.type == "card_confirm_pressed" && isHost)
+        {
+            if (!isGameStarted)
+            {
+                GD.Print("[MainGame] Ignoring card_confirm_pressed (game not started yet)");
+                return true;
+            }
+
+            CardConfirmPressedPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<CardConfirmPressedPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC card_confirm_pressed payload parse error: {e.Message}");
+                return true;
+            }
+
+            if (payload == null)
+            {
+                GD.PrintErr("[MainGame] card_confirm_pressed payload is null");
+                return true;
+            }
+
+            GD.Print($"[MainGame] RPC card_confirm_pressed received: cardId={payload.cardId} by={payload.by}");
+
+            HostConfirmCardAndBroadcast(payload.cardId, payload.by);
+            return true;
+        }
+
+        // Odebranie informacji przez clienta o tym ze host zatwierdzil karte
+        if (packet.type == "card_revealed" && !isHost)
+        {
+            CardRevealedPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<CardRevealedPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC card_revealed payload parse error: {e.Message}");
+                return true;
+            }
+
+            if (payload == null)
+            {
+                GD.PrintErr("[MainGame] card_revealed payload is null");
+                return true;
+            }
+
+            GD.Print($"[MainGame] RPC card_revealed received: cardId={payload.cardId} confirmedBy={payload.confirmedBy} isAssassin={payload.isAssassin}");
+
+            // TODO (#30): tutaj finalnie podepniemy odsloniecie karty / zablokowanie ponownego klikniecia w UI
+            // Celowo NIE robimy tutaj EndGame() - tym zajmuje sie zadanie #31.
+            if (cardManager == null)
+            {
+                GD.PrintErr("[MainGame] cardManager is null on client");
+                return true;
+            }
+
+            if (payload.cardId < 0 || payload.cardId >= cardManager.GetChildCount())
+            {
+                GD.PrintErr($"[MainGame] Invalid cardId={payload.cardId} (out of range)");
+                return true;
+            }
+
+            AgentCard cardNode = cardManager.GetChild(payload.cardId) as AgentCard;
+            if (cardNode == null)
+            {
+                GD.PrintErr($"[MainGame] Child at index {payload.cardId} is not AgentCard");
+                return true;
+            }
+
+            // Klient dopiero teraz aplikuje reveal (UI + usunięcie z decka)
+            cardManager.ApplyCardRevealed(cardNode);
+
+            // Nie robimy EndGame() — to jest zadanie #31.
+
+
+            return true;
+        }
+
+        // Odebranie informacji przez clienta o zmianie tury (np. po zatwierdzeniu karty)
+        if (packet.type == "turn_changed" && !isHost)
+        {
+            TurnChangedPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<TurnChangedPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC turn_changed payload parse error: {e.Message}");
+                return true;
+            }
+
+            if (payload == null)
+            {
+                GD.PrintErr("[MainGame] turn_changed payload is null");
+                return true;
+            }
+
+            GD.Print($"[MainGame] RPC turn_changed received: currentTurn={payload.currentTurn} turnCounter={payload.turnCounter}");
+
+            // Ustawiamy licznik tury dokładnie na wartość z hosta
+            turnCounter = payload.turnCounter;
+            UpdateTurnDisplay();
+
+            // Ustawiamy turę bez wywoływania TurnChange() (żeby nie inkrementować drugi raz)
+            if (payload.currentTurn == Team.Blue)
+                SetTurnBlue();
+            else if (payload.currentTurn == Team.Red)
+                SetTurnRed();
+
+            // W starym flow TurnChange() emitował NewTurnStart.
+            // Teraz klient nie woła TurnChange(), więc musimy odpalić start tury ręcznie.
+            EmitSignal(SignalName.NewTurnStart);
+
+            return true;
+        }
+
+        return false; // nie obsłużyliśmy tego pakietu
+    }
+
+    private bool HandleGameStartPacket(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
+    {
+        if (packet.type != "game_start")
+        {
+            return false;
+        }
+
+        P2PNetworkManager.GameStartPayload payload;
+        try
+        {
+            payload = packet.payload.Deserialize<P2PNetworkManager.GameStartPayload>();
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[MainGame] game_start payload parse error: {e.Message}");
+            return true;
+        }
+
+        if (payload == null || payload.players == null || payload.players.Length == 0)
+        {
+            GD.PrintErr("[MainGame] game_start payload invalid (no players)");
+            return true;
+        }
+
+        // Jeśli lokalna sesja ISTNIEJE, sprawdzamy zgodność ID
+        if (eosManager != null && eosManager.CurrentGameSession != null)
+        {
+            if (!string.IsNullOrEmpty(payload.sessionId) &&
+                payload.sessionId != eosManager.CurrentGameSession.SessionId)
+            {
+                GD.PrintErr(
+                    $"[MainGame] game_start ignored (session mismatch): payload={payload.sessionId} local={eosManager.CurrentGameSession.SessionId}"
+                );
+                return true;
+            }
+        }
+        // Jeśli lokalna sesja NIE istnieje → pozwalamy wystartować grę
+
+
+        ApplyGameStart(payload);
+        return true;
+    }
+
+    private void ApplyGameStart(P2PNetworkManager.GameStartPayload payload)
+    {
+        if (isGameStarted)
+        {
+            GD.Print("[MainGame] ApplyGameStart ignored (already started)");
+            return;
+        }
+
+        isGameStarted = true;
+
+        confirmedCardIds.Clear();
+
+        if (payload == null || payload.players == null || payload.players.Length == 0)
+        {
+            GD.PrintErr("[MainGame] ApplyGameStart: payload/players invalid");
+            isGameStarted = false;
+            return;
+        }
+
+
+        playersByIndex.Clear();
+        foreach (var p in payload.players)
+        {
+            if (p == null) continue;
+            if (string.IsNullOrEmpty(p.puid)) continue;
+
+            playersByIndex[p.index] = p; // trzymamy cały obiekt (puid + name + team)
+        }
+
+
+        string local = eosManager.localProductUserIdString;
+        playerTeam = Team.None;
+
+        foreach (var p in payload.players)
+        {
+            if (p == null) continue;
+            if (p.puid != local) continue;
+
+            playerTeam = p.team;
+            break;
+        }
+
+        if (playerTeam == Team.None)
+        {
+            GD.PrintErr("[MainGame] GAME START: local player not found in payload.players (playerTeam=None)");
+            // fallback na wszelki wypadek (tylko gdyby payload był uszkodzony)
+            playerTeam = Team.Blue;
+        }
+
+
+        if (!string.IsNullOrEmpty(payload.startingTeam) && Enum.TryParse<Team>(payload.startingTeam, out var parsedStart))
+        {
+            startingTeam = parsedStart;
+        }
+        else
+        {
+            GD.PrintErr($"[MainGame] GAME START missing/invalid startingTeam={payload.startingTeam}");
+            startingTeam = Team.Blue;
+        }
+
+        GD.Print($"[MainGame] GAME START seed={payload.seed}");
+
+
+        GD.Print($"[MainGame] GAME START: players={playersByIndex.Count} sessionId={payload.sessionId}");
+
+        loadingScreen.HideLoading();
+
         // Assing initianl points and turn
         if (startingTeam == Team.Blue)
         {
@@ -201,9 +635,8 @@ public partial class MainGame : Control
             GD.PrintErr("Error");
         }
 
-        string userID = eosManager.localProductUserIdString;
-        EOSManager.Team team = eosManager.GetTeamForUser(userID);
-        playerTeam = (team == EOSManager.Team.Blue) ? Team.Blue : Team.Red;
+        // playerTeam jest już ustawiony z game_start (RPC) i w trakcie gry się nie zmienia.
+        // Nie nadpisujemy go danymi z lobby.
         if (playerTeam == startingTeam)
         {
             gameRightPanel.EnableSkipButton();
@@ -212,6 +645,7 @@ public partial class MainGame : Control
         {
             gameRightPanel.DisableSkipButton();
         }
+
 
         if (eosManager.isLobbyOwner)
         {
@@ -233,122 +667,126 @@ public partial class MainGame : Control
 
         EmitSignal(SignalName.GameReady);
         EmitSignal(SignalName.NewTurnStart);
+        sendSelectionsTimer.Start();
     }
 
-    // === P2P (DODANE) ===
-    public override void _ExitTree()
+    private P2PNetworkManager.GameStartPayload BuildGameStartPayloadFromLobby()
     {
-        if (p2pNet != null)
-        {
-            p2pNet.PacketHandlers -= HandlePackets;
+        // Kolejność graczy: host (index 0) + reszta według lobby (albo sort fallback)
+        var players = new List<P2PNetworkManager.GamePlayer>();
 
-            if (!isHost)
-            {
-                p2pNet.HandshakeCompleted -= OnP2PHandshakeCompletedTest;
-            }
+        // Host jako index 0
+        players.Add(new P2PNetworkManager.GamePlayer
+        {
+            index = 0,
+            puid = eosManager.localProductUserIdString,
+            name = GetDisplayNameFromLobby(eosManager.localProductUserIdString),
+            team = eosManager.GetTeamForUser(eosManager.localProductUserIdString) == EOSManager.Team.Blue
+                ? Team.Blue
+                : Team.Red
+        });
+
+        // Klienci z lobby
+        var members = eosManager.GetCurrentLobbyMembers();
+        var clientPuids = new List<string>();
+
+        foreach (var member in members)
+        {
+            if (member == null || !member.ContainsKey("userId")) continue;
+
+            string puid = member["userId"].ToString();
+            if (string.IsNullOrEmpty(puid)) continue;
+            if (puid == eosManager.localProductUserIdString) continue;
+
+            clientPuids.Add(puid);
         }
-        base._ExitTree();
-    }
 
-    private void OnP2PHandshakeCompletedTest()
-    {
-        if (p2pNet == null) return;
-        if (isHost) return;
-        if (p2pJsonTestSent) return;
+        // Stabilna kolejność (żeby indexy były deterministyczne nawet jak lobby zwróci inaczej)
+        clientPuids.Sort(StringComparer.Ordinal);
 
-        p2pJsonTestSent = true;
-
-        GD.Print("[MainGame][P2P-TEST] Handshake completed -> sending TEST JSON RPC card_selected to host...");
-
-        int testCardId = 123;
-
-        var payload = new
+        int index = 1;
+        foreach (string puid in clientPuids)
         {
-            cardId = testCardId,
-            by = eosManager?.localProductUserIdString,
-            test = true
+            players.Add(new P2PNetworkManager.GamePlayer
+            {
+                index = index,
+                puid = puid,
+                name = GetDisplayNameFromLobby(puid),
+                team = eosManager.GetTeamForUser(puid) == EOSManager.Team.Blue
+                    ? Team.Blue
+                    : Team.Red
+            });
+
+            index++;
+        }
+
+        return new P2PNetworkManager.GameStartPayload
+        {
+            sessionId = eosManager.CurrentGameSession.SessionId,
+            players = players.ToArray(),
+            startingTeam = startingTeam.ToString(),
+            seed = eosManager.CurrentGameSession.Seed
         };
 
-        bool ok = p2pNet.SendRpcToHost("card_selected", payload);
-        GD.Print($"[MainGame][P2P-TEST] SendRpcToHost(card_selected) ok={ok} testCardId={testCardId}");
     }
 
-    // Handler pakietów z sieci (zgodnie z propozycją kolegi)
-    private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
+    private string GetDisplayNameFromLobby(string puid)
     {
-        if (packet.type == "test_ack" && !isHost)
+        if (eosManager == null || string.IsNullOrEmpty(puid))
         {
-            TestAckPayload ack;
-            try
-            {
-                ack = packet.payload.Deserialize<TestAckPayload>();
-            }
-            catch (Exception e)
-            {
-                GD.PrintErr($"[MainGame] RPC test_ack payload parse error: {e.Message}");
-                return true;
-            }
-
-            GD.Print($"[MainGame][P2P-TEST] CLIENT received ACK from host: msg={ack.msg} cardId={ack.cardId} fromPeer={fromPeer}");
-            return true;
+            return "";
         }
 
-        // Przykład: "card_selected" ma sens tylko gdy jesteśmy hostem (host rozstrzyga)
-        if (packet.type == "card_selected" && isHost)
+        // To jest to samo cache, które budujesz w EOSManager.GetLobbyMembers()
+        var members = eosManager.GetCurrentLobbyMembers();
+        if (members == null)
         {
-            CardSelectedPayload payload;
-            try
-            {
-                // JsonElement -> obiekt
-                payload = packet.payload.Deserialize<CardSelectedPayload>();
-            }
-            catch (Exception e)
-            {
-                GD.PrintErr($"[MainGame] RPC card_selected payload parse error: {e.Message}");
-                return true; // zjadamy, bo to był JSON RPC tego typu
-            }
-
-            GD.Print($"[MainGame] RPC card_selected received: cardId={payload.cardId} by={payload.by} fromPeer={fromPeer}");
-
-            var ack = new
-            {
-                msg = "HOST_ACK_OK",
-                cardId = payload.cardId
-            };
-
-            bool sent = p2pNet.SendRpcToPeer(fromPeer, "test_ack", ack);
-            GD.Print($"[MainGame][P2P-TEST] HOST sent test_ack back to {fromPeer} ok={sent}");
-
-            // TODO: tutaj podłączasz właściwą logikę gry
-            // np. wybór/confirm karty, synchronizacja stanu, broadcast do wszystkich itp.
-
-            return true; // zjedliśmy pakiet
+            return "";
         }
 
-        // Tu dopisujecie kolejne RPC:
-        // if (packet.type == "hint_given" && isHost) { ... return true; }
-        // if (packet.type == "turn_skip" && isHost) { ... return true; }
-        // if (packet.type == "starting_team" && !isHost) { ... return true; }
-
-        return false;
-    }
-
-    // Opcjonalny przykład wysyłki (np. lokalny gracz kliknął kartę)
-    // W praktyce wywołasz to z UI / CardManager / AgentCard
-    public void SendCardSelectedRpc_ToHost(int cardId)
-    {
-        if (p2pNet == null) return;
-
-        var payload = new
+        foreach (var member in members)
         {
-            cardId = cardId,
-            by = eosManager?.localProductUserIdString
-        };
+            if (member == null) continue;
+            if (!member.ContainsKey("userId")) continue;
 
-        bool ok = p2pNet.SendRpcToHost("card_selected", payload);
-        GD.Print($"[MainGame] SendRpcToHost(card_selected) ok={ok} cardId={cardId}");
+            string memberPuid = member["userId"].ToString();
+            if (memberPuid != puid) continue;
+
+            if (member.ContainsKey("displayName"))
+            {
+                string displayName = member["displayName"].ToString();
+                if (!string.IsNullOrEmpty(displayName))
+                {
+                    return displayName;
+                }
+            }
+
+            break;
+        }
+
+        // fallback jakby coś poszło nie tak z cache
+        return $"Player_{puid.Substring(Math.Max(0, puid.Length - 4))}";
     }
-    // =====================
+
+    private Team GetTeamForPuidFromGameStart(string puid)
+    {
+        if (string.IsNullOrEmpty(puid)) return Team.None;
+
+        foreach (var kv in playersByIndex)
+        {
+            var p = kv.Value;
+            if (p == null) continue;
+            if (p.puid == puid)
+                return p.team;
+        }
+
+        return Team.None;
+    }
+
+    private bool CanInteractWithGame()
+    {
+        return isGameStarted;
+    }
 
     private void StartCaptainPhase()
     {
@@ -363,18 +801,147 @@ public partial class MainGame : Control
         GD.Print($"{word} [{number}]");
         if (gameRightPanel != null)
         {
-            gameRightPanel.UpdateHintDisplay(word, number, currentTurn == Team.Blue);
+            bool isBlue = currentTurn == Team.Blue;
+            gameRightPanel.UpdateHintDisplay(word, number, isBlue);
+            gameRightPanel.BroadcastHint(word, number, currentTurn);
         }
     }
 
     public void OnSkipTurnPressed()
     {
-        GD.Print("Koniec tury");
+        if (!CanInteractWithGame()) return;
 
+        GD.Print("Koniec tury");
+        GD.Print("SkipTurnButton pressed...");
+
+        if (isHost)
+            OnSkipTurnPressedHost(eosManager?.localProductUserIdString);
+        else
+            OnSkipTurnPressedClient();
+    }
+
+    public void OnSkipTurnPressedHost(string skippedBy)
+    {
         UpdateMaxStreak();
 
         TurnChange();
+
+        // Zamiast starego RPC "skip_turn" wysyłamy autorytatywny stan tury
+        BroadcastTurnChanged();
+
+        GD.Print($"[MainGame] Skip turn processed by host. skippedBy={skippedBy}");
     }
+
+    public void OnSkipTurnPressedClient()
+    {
+        if (p2pNet == null) return;
+
+        var payload = new
+        {
+            by = eosManager?.localProductUserIdString
+        };
+
+        bool ok = p2pNet.SendRpcToHost("skip_turn_pressed", payload);
+        GD.Print($"[MainGame] SendRpcToHost(skip_turn_pressed) ok={ok}");
+    }
+
+    private void BroadcastTurnChanged()
+    {
+        if (p2pNet == null) return;
+        if (!isHost) return;
+
+        var payload = new TurnChangedPayload
+        {
+            currentTurn = currentTurn,
+            turnCounter = turnCounter
+        };
+
+        int sent = p2pNet.SendRpcToAllClients("turn_changed", payload);
+        GD.Print($"[MainGame] SendRpcToAllClients(turn_changed) sent={sent} currentTurn={currentTurn} turnCounter={turnCounter}");
+    }
+
+    // Wspólna ścieżka: host potwierdza kartę i rozsyła efekty do klientów
+    public void HostConfirmCardAndBroadcast(int cardId, string confirmedBy)
+    {
+        if (!isHost) return;
+        if (!isGameStarted)
+        {
+            GD.Print("[MainGame] Ignoring HostConfirmCardAndBroadcast (game not started yet)");
+            return;
+        }
+
+        // Anty-duplikaty (ten sam mechanizm dla host-click i client-click)
+        if (confirmedCardIds.Contains(cardId))
+        {
+            GD.Print($"[MainGame] Ignoring duplicate confirm: cardId={cardId}");
+            return;
+        }
+        confirmedCardIds.Add(cardId);
+
+        if (cardManager == null)
+        {
+            GD.PrintErr("[MainGame] cardManager is null on host");
+            return;
+        }
+
+        if (cardId < 0 || cardId >= cardManager.GetChildCount())
+        {
+            GD.PrintErr($"[MainGame] Invalid cardId={cardId} (out of range)");
+            return;
+        }
+
+        AgentCard cardNode = cardManager.GetChild(cardId) as AgentCard;
+        if (cardNode == null)
+        {
+            GD.PrintErr($"[MainGame] Child at index {cardId} is not AgentCard");
+            return;
+        }
+
+        bool isAssassin = cardNode.Type == CardManager.CardType.Assassin;
+
+        // Zapisujemy stan tury PRZED logiką, żeby wykryć zmianę po ApplyCardConfirmedHost
+        Team beforeTurn = currentTurn;
+        int beforeTurnCounter = turnCounter;
+
+        // 1) Host wykonuje logikę gry lokalnie (źródło prawdy)
+        cardManager.ApplyCardConfirmedHost(cardNode);
+
+        // 2) Host wysyła informację do WSZYSTKICH klientów (klienci dopiero teraz robią UI/deck)
+        if (p2pNet != null)
+        {
+            var revealPayload = new CardRevealedPayload
+            {
+                cardId = cardId,
+                confirmedBy = confirmedBy,
+                isAssassin = isAssassin
+            };
+
+            int revealedSent = p2pNet.SendRpcToAllClients("card_revealed", revealPayload);
+            GD.Print($"[MainGame] SendRpcToAllClients(card_revealed) sent={revealedSent} cardId={cardId} isAssassin={isAssassin}");
+        }
+
+        // 3) Jeśli zmieniła się tura/licznik -> broadcast
+        if (currentTurn != beforeTurn || turnCounter != beforeTurnCounter)
+        {
+            BroadcastTurnChanged();
+        }
+    }
+
+    public void OnCardConfirmPressedClient(int cardId)
+    {
+        if (!CanInteractWithGame()) return;
+        if (p2pNet == null) return;
+
+        var payload = new CardConfirmPressedPayload
+        {
+            cardId = cardId,
+            by = eosManager?.localProductUserIdString
+        };
+
+        bool ok = p2pNet.SendRpcToHost("card_confirm_pressed", payload);
+        GD.Print($"[MainGame] SendRpcToHost(card_confirm_pressed) ok={ok} cardId={cardId}");
+    }
+
 
     private async void OnNewTurnStart()
     {
@@ -411,6 +978,8 @@ public partial class MainGame : Control
 
     public void OnMenuButtonPressed()
     {
+        if (!CanInteractWithGame()) return;
+
         GD.Print("Menu button pressed");
         menuPanel.Visible = true;
     }
@@ -550,18 +1119,78 @@ public partial class MainGame : Control
         teamListRed.Modulate = new Color(2.8f, 2.8f, 2.8f, 1f);
     }
 
+    public void OnCardSelected(AgentCard card)
+    {
+        byte cardId = card.Id!.Value;
+        string puid = eosManager?.localProductUserIdString;
+        int playerIndex = PuidToIndex(puid);
+        bool unselect = card.IsSelectedBy(playerIndex);
+
+        GD.Print($"[MainGame][Conversion] Converting puid={puid} hsot={isHost} to index={playerIndex}");
+        if (isHost)
+            OnCardSelectedHost(cardId, playerIndex, unselect);
+        else
+            OnCardSelectedClient(cardId, playerIndex, unselect);
+    }
+
+    public void OnCardSelectedHost(byte cardId, int playerIndex, bool unselect)
+    {
+        cardManager.ModifySelection(cardId, playerIndex, unselect);
+    }
+
+    public void OnCardSelectedClient(byte cardId, int playerIndex, bool unselect)
+    {
+        if (!CanInteractWithGame()) return;
+        if (p2pNet == null) return;
+
+        var payload = new
+        {
+            cardId = cardId,
+            playerIndex = (byte)playerIndex,
+            unselect = unselect
+        };
+
+        bool ok = p2pNet.SendRpcToHost("card_selected", payload);
+        GD.Print($"[MainGame] SendRpcToHost(card_selected) ok={ok}");
+    }
+
+    public void SendSelectionsToClients()
+    {
+        if (!CanInteractWithGame()) return;
+        if (p2pNet == null) return;
+
+        var payload = new
+        {
+            cardsSelections = cardManager.GetAllSelections()
+        };
+
+        int RPCsSent = p2pNet.SendRpcToAllClients("selected_cards", payload);
+        //GD.Print($"[MainGame] SendRpcToAllClients(selected_cards) RPCsSent={RPCsSent}");
+    }
+
     public void CardConfirm(AgentCard card)
     {
+        if (!CanInteractWithGame()) return;
+
+        if (!isHost)
+        {
+            OnCardConfirmPressedClient(card.GetIndex());
+            return;
+        }
+
+        Team teamToRemovePoint = Team.None;
         switch (card.Type)
         {
             case CardManager.CardType.Blue:
                 RemovePointBlue();
+                teamToRemovePoint = Team.Blue;
                 if (currentTurn == Team.Red)
                     TurnChange();
                 break;
 
             case CardManager.CardType.Red:
                 RemovePointRed();
+                teamToRemovePoint = Team.Red;
                 if (currentTurn == Team.Blue)
                     TurnChange();
                 break;
@@ -577,36 +1206,53 @@ public partial class MainGame : Control
                     EndGame(Team.Blue);
                 break;
         }
+
+        //Narazie tylko host rozsyła info o usunięciu punktu do klientów
+        if(teamToRemovePoint != Team.None && isHost)
+        {
+            string str = eosManager.localProductUserIdString;
+            ProductUserId fromPeer = ProductUserId.FromString(str);
+            var ack = new
+            {
+                team = teamToRemovePoint
+            };
+
+            int sentInit = p2pNet.SendRpcToAllClients("remove_point_ack", ack);
+            GD.Print($"[MainGame][P2P-TEST] HOST sent remove_point_ack to all clients number of successful sendings={sentInit}");
+
+        }
     }
 
     public void EndGame(Team winner)
     {
+        if(!isHost) return;
+
+        sendSelectionsTimer.Stop();
+
         gameRightPanel.CancelHintGeneration();
         GD.Print($"Koniec gry! Wygrywa: {winner}");
         UpdateMaxStreak();
 
-        int maxBlue = (startingTeam == Team.Blue) ? 9 : 8;
-        int maxRed = (startingTeam == Team.Red) ? 9 : 8;
-
-        int foundBlue = maxBlue - pointsBlue;
-        int foundRed = maxRed - pointsRed;
-
-        TeamGameStats blueStats = new TeamGameStats
+        if (endGameScreen != null)
         {
-            Found = foundBlue,
-            Neutral = blueNeutralFound,
-            Opponent = blueOpponentFound,
-            Streak = blueMaxStreak
-        };
+            endGameScreen.TriggerGameOver(winner);
+        }
+    }
 
-        TeamGameStats redStats = new TeamGameStats
+    public int PuidToIndex(string puid)
+    {
+        foreach (var player in playersByIndex)
         {
-            Found = foundRed,
-            Neutral = redNeutralFound,
-            Opponent = redOpponentFound,
-            Streak = redMaxStreak
-        };
+            if (player.Value.puid == puid)
+                return player.Key;
+        }
+        GD.PrintErr($"Cant find a player with puid={puid}");
+        return -1;
+    }
 
-        endGameScreen.ShowGameOver(blueStats, redStats);
+    public int GetLocalPlayerIndex()
+    {
+        string localPuid = eosManager?.localProductUserIdString;
+        return PuidToIndex(localPuid);
     }
 }

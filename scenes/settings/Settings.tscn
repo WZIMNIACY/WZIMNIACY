@@ -1,13 +1,13 @@
 [gd_scene load_steps=7 format=3 uid="uid://bfxpcutxox0tt"]
 
-[ext_resource type="Script" uid="uid://opxogrio063d" path="res://scenes/settings/Settings.cs" id="1_gaid6"]
+[ext_resource type="Script" uid="uid://dqocg7ni7ph2" path="res://scenes/settings/Settings.cs" id="1_gaid6"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="2_fa6u7"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="3_6agbc"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="3_oerk1"]
 [ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://assets/buttons/button_border2.tres" id="3_q5ip6"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="4_gl5ki"]
 
-[node name="Settings" type="Control"]
+[node name="Settings" type="Control" node_paths=PackedStringArray("backButton", "saveButton", "masterVolumeSlider", "musicVolumeSlider", "sfxVolumeSlider", "mutedCheckBox", "screenModeOptionButton", "resolutionOptionButton", "scaleUISlider")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,6 +15,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_gaid6")
+backButton = NodePath("Control/BackButton")
+saveButton = NodePath("SettingsPanel/SettingsCenter/VSettings/SaveButton")
+masterVolumeSlider = NodePath("SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk/MasterSlider")
+musicVolumeSlider = NodePath("SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk/MusicSlider")
+sfxVolumeSlider = NodePath("SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk/SFXSlider")
+mutedCheckBox = NodePath("SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk/MuteCheckBox")
+screenModeOptionButton = NodePath("SettingsPanel/SettingsCenter/VSettings/TabContainer/Video/ScreenOption")
+resolutionOptionButton = NodePath("SettingsPanel/SettingsCenter/VSettings/TabContainer/Video/ResolutionOption")
+scaleUISlider = NodePath("SettingsPanel/SettingsCenter/VSettings/TabContainer/Video/SliderUI")
 
 [node name="SettingsPanel" type="ColorRect" parent="."]
 layout_mode = 1
@@ -94,8 +103,10 @@ vertical_alignment = 1
 [node name="SFXSlider" type="HSlider" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
 layout_mode = 2
 mouse_default_cursor_shape = 10
-max_value = 1.0
-step = 0.01
+min_value = 0.5
+max_value = 2.0
+step = 0.1
+value = 1.0
 
 [node name="MuteCheckBox" type="CheckButton" parent="SettingsPanel/SettingsCenter/VSettings/TabContainer/Dźwięk"]
 layout_mode = 2
