@@ -55,12 +55,6 @@ public partial class LobbySearchMenu : Node
             GD.Print("✅ Search input Enter handler connected");
         }
 
-        // Utwórz timer dla animacji
-        animationTimer = new Timer();
-        animationTimer.WaitTime = 0.5; // Co 0.5 sekundy dodaj kropkę
-        animationTimer.Timeout += OnAnimationTimerTimeout;
-        AddChild(animationTimer);
-
         // Utwórz timer dla timeoutu
         joinTimeoutTimer = new Timer();
         joinTimeoutTimer.WaitTime = JoinTimeout;
