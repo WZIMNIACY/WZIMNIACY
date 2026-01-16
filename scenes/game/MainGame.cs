@@ -425,6 +425,8 @@ public partial class MainGame : Control
             try
             {
                 payload = packet.payload.Deserialize<CardConfirmPressedPayload>();
+                GD.Print($"[MainGame] card_confirm_pressed parsed OK: cardId={payload.cardId} by={payload.by}");
+
             }
             catch (Exception e)
             {
@@ -1001,6 +1003,8 @@ public partial class MainGame : Control
     // Wspólna ścieżka: host potwierdza kartę i rozsyła efekty do klientów
     public void HostConfirmCardAndBroadcast(int cardId, string confirmedBy)
     {
+        GD.Print($"[MainGame] HostConfirmCardAndBroadcast ENTER cardId={cardId} by={confirmedBy}");
+
         if (!isHost) return;
         if (!isGameStarted)
         {
@@ -1074,6 +1078,8 @@ public partial class MainGame : Control
 
     public void OnCardConfirmPressedClient(int cardId)
     {
+        GD.Print($"[MainGame] OnCardConfirmPressedClient fired cardId={cardId}");
+
         if (!CanInteractWithGame()) return;
         if (p2pNet == null) return;
 

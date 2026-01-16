@@ -214,6 +214,8 @@ public partial class CardManager : GridContainer
 
 	private void OnCardConfirmed(AgentCard card)
 	{
+		GD.Print($"[CardManager] OnCardConfirmed fired for cardIndex={card?.GetIndex()} name={card?.Name} isHost={mainGame?.isHost}");
+
 		if (card == null) return;
 
 		// cardId = indeks slotu w GridContainer (deterministyczny na wszystkich maszynach)
