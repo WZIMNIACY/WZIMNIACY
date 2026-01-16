@@ -86,7 +86,17 @@ public partial class RightPanel : Node
             GD.Print($"[RightPanel] Received Hint: {data.Word} for {data.TurnTeam}");
 
             UpdateHintDisplay(data.Word, data.Number, data.TurnTeam);
-            
+            // Minimalny hint do reakcji: ustawiamy Word + Number, a Cards dajemy null/empty.
+            // Team w Hint nie istnieje – team siedzi w Cards, ale do samego tekstu reakcji
+            // często wystarczy sam Word/Number (zależnie od implementacji Reaction.create).
+            lastGeneratedHint = new hints.Hint(
+                data.Word,
+                new List<game.Card>(),   // albo null, jeśli w Reaction.create obsługujecie null
+                data.Number
+            );
+
+
+
             return true; 
         }
         catch (Exception e)

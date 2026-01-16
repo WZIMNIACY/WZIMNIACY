@@ -688,9 +688,8 @@ public partial class MainGame : Control
         {
             gameRightPanel.DisableSkipButton();
         }
-
-
-        if (eosManager.isLobbyOwner)
+        
+            if (isHost)
         {
             if (eosManager.currentAIType == EOSManager.AIType.LocalLLM)
             {
@@ -698,6 +697,7 @@ public partial class MainGame : Control
             }
             else
             {
+
                 var apiKey = eosManager.ApiKey;
                 if (string.IsNullOrEmpty(apiKey))
                 {
@@ -1070,10 +1070,16 @@ public partial class MainGame : Control
 
         // 4) Budujemy i wysyłamy reakcję
         string reactionText = TryBuildReactionText(cardNode);
+
         if (!string.IsNullOrWhiteSpace(reactionText))
         {
             BroadcastReaction(reactionText, 2500);
         }
+        else
+        {
+            GD.PrintErr("[MainGame] Reaction skipped (reactionText empty/null).");
+        }
+
     }
 
     public void OnCardConfirmPressedClient(int cardId)
