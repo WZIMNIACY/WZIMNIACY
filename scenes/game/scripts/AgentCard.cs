@@ -130,16 +130,14 @@ public partial class AgentCard : PanelContainer
 
         cardImage.Modulate = Colors.White;
 
-        int cardIndex = (int)(id ?? 0); 
-
         switch (type)
         {
             case CardManager.CardType.Blue:
-                SetTextureFromArray(blueCardTextures, cardIndex);
+                SetTextureFromArray(blueCardTextures);
                 break;
 
             case CardManager.CardType.Red:
-                SetTextureFromArray(redCardTextures, cardIndex);
+                SetTextureFromArray(redCardTextures);
                 break;
 
             case CardManager.CardType.Assassin:
@@ -149,21 +147,37 @@ public partial class AgentCard : PanelContainer
 
             case CardManager.CardType.Common:
             default:
-                SetTextureFromArray(neutralCardTextures, cardIndex);
+                SetTextureFromArray(neutralCardTextures);
                 break;
         }
 	}
 
-    private void SetTextureFromArray(Texture2D[] textures, int seedIndex)
+    private void SetTextureFromArray(Texture2D[] textures)
     {
-        if (textures != null && textures.Length > 0)
+        if (textures == null || textures.Length == 0) return;
+
+        int teamIndex = 0;
+        
+        Node parent = GetParent();
+        
+        if (parent != null)
         {
-            int index = seedIndex % textures.Length;
-            
-            if (textures[index] != null)
+            foreach (var child in parent.GetChildren())
             {
-                cardImage.Texture = textures[index];
+                if (child == this) break;
+
+                if (child is AgentCard otherCard && otherCard.Type == this.Type)
+                {
+                    teamIndex++;
+                }
             }
+        }
+
+        int finalIndex = teamIndex % textures.Length;
+
+        if (textures[finalIndex] != null)
+        {
+            cardImage.Texture = textures[finalIndex];
         }
     }
 
