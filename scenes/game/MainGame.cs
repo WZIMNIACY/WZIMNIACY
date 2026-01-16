@@ -4,6 +4,10 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using hints;
+using game;
+using Reaction;
+using System.Threading.Tasks;
 
 public partial class MainGame : Control
 {
@@ -23,7 +27,7 @@ public partial class MainGame : Control
     [Export] Control helpScene;
     [Export] CardManager cardManager;
     [Export] LoadingScreen loadingScreen;
-
+    [Export] public ReactionOverlay reactionOverlay;
 
     private bool isGameStarted = false;
     private readonly Dictionary<int, P2PNetworkManager.GamePlayer> playersByIndex = new();
@@ -140,6 +144,12 @@ public partial class MainGame : Control
     {
         public Team currentTurn { get; set; }
         public int turnCounter { get; set; }
+    }
+
+    private sealed class ReactionPayload
+    {
+        public string text { get; set; }
+        public int durationMs { get; set; }
     }
 
     private bool p2pJsonTestSent = false;
@@ -286,6 +296,38 @@ public partial class MainGame : Control
 
             return true; // zjedliśmy pakiet
         }
+
+        // === REACTION (NEW RPC) ===
+        // Każdy (host i client) wyświetla reakcję z hosta
+        if (packet.type == "reaction")
+        {
+            ReactionPayload payload;
+            try
+            {
+                payload = packet.payload.Deserialize<ReactionPayload>();
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[MainGame] RPC reaction payload parse error: {e.Message}");
+                return true;
+            }
+
+            if (payload == null || string.IsNullOrWhiteSpace(payload.text))
+            {
+                GD.PrintErr("[MainGame] RPC reaction payload invalid (null/empty text)");
+                return true;
+            }
+
+            float seconds = 2.5f;
+            if (payload.durationMs > 0)
+            {
+                seconds = payload.durationMs / 1000.0f;
+            }
+
+            ShowReactionBubble(payload.text, seconds);
+            return true;
+        }
+        // ==========================
 
         // Odebranie infomacji przez clienta o zaznaczonych kartach
         if (packet.type == "selected_cards" && !isHost)
@@ -788,6 +830,17 @@ public partial class MainGame : Control
         return isGameStarted;
     }
 
+    private void ShowReactionBubble(string text, float seconds = 2.5f)
+    {
+        if (reactionOverlay == null)
+        {
+            GD.PrintErr("[MainGame] ReactionOverlay is null (Export not assigned in Inspector)");
+            return;
+        }
+
+        reactionOverlay.ShowReaction(text, seconds);
+    }   
+
     private void StartCaptainPhase()
     {
         if(gameInputPanel != null)
@@ -860,6 +913,89 @@ public partial class MainGame : Control
         GD.Print($"[MainGame] SendRpcToAllClients(turn_changed) sent={sent} currentTurn={currentTurn} turnCounter={turnCounter}");
     }
 
+    private void BroadcastReaction(string text, int durationMs = 2500)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        // Host i tak powinien zobaczyć to samo od razu
+        ShowReactionBubble(text, durationMs / 1000.0f);
+
+        if (p2pNet == null) return;
+        if (!isHost) return;
+
+        var payload = new ReactionPayload
+        {
+            text = text,
+            durationMs = durationMs
+        };
+
+        int sent = p2pNet.SendRpcToAllClients("reaction", payload);
+        GD.Print($"[MainGame] SendRpcToAllClients(reaction) sent={sent}");
+    }
+    
+    private game.Team MapToGameTeam(MainGame.Team team)
+    {
+        if (team == MainGame.Team.Blue) return game.Team.Blue;
+        if (team == MainGame.Team.Red) return game.Team.Red;
+        return game.Team.Blue;
+    }
+
+
+    private string TryBuildReactionText(AgentCard cardNode)
+    {
+        if (llm == null)
+        {
+            GD.PrintErr("[MainGame] Reaction: llm is null");
+            return null;
+        }
+
+        if (gameRightPanel == null)
+        {
+            GD.PrintErr("[MainGame] Reaction: gameRightPanel is null");
+            return null;
+        }
+
+        Hint hint = gameRightPanel.LastGeneratedHint;
+        if (hint == null)
+        {
+            GD.PrintErr("[MainGame] Reaction: LastGeneratedHint is null");
+            return null;
+        }
+
+        if (cardNode == null)
+        {
+            GD.PrintErr("[MainGame] Reaction: cardNode is null");
+            return null;
+        }
+
+        // cardNode.cardInfo wygląda u Ciebie na game.Card (bo jest używane .Word)
+        Card pickedCard = cardNode.cardInfo;
+        if (pickedCard == null)
+        {
+            GD.PrintErr("[MainGame] Reaction: cardNode.cardInfo is null");
+            return null;
+        }
+
+        bool kapitnBomba = false; // jeśli macie flagę, podepniemy później
+        game.Team actualTour = MapToGameTeam(currentTurn);
+
+        // UWAGA: w tym pliku "Reaction" jest namespace, a "Reaction" jest też nazwa klasy static.
+        // Dlatego pełna ścieżka:
+        try
+        {
+            string reactionText = global::Reaction.Reaction.create(llm, hint, pickedCard, kapitnBomba, actualTour);
+            return reactionText;
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[MainGame] Reaction: create() exception: {e.Message}");
+            return null;
+        }
+    }
+
     // Wspólna ścieżka: host potwierdza kartę i rozsyła efekty do klientów
     public void HostConfirmCardAndBroadcast(int cardId, string confirmedBy)
     {
@@ -879,7 +1015,7 @@ public partial class MainGame : Control
         confirmedCardIds.Add(cardId);
 
         if (cardManager == null)
-        {
+           {
             GD.PrintErr("[MainGame] cardManager is null on host");
             return;
         }
@@ -924,6 +1060,13 @@ public partial class MainGame : Control
         if (currentTurn != beforeTurn || turnCounter != beforeTurnCounter)
         {
             BroadcastTurnChanged();
+        }
+
+        // 4) Budujemy i wysyłamy reakcję
+        string reactionText = TryBuildReactionText(cardNode);
+        if (!string.IsNullOrWhiteSpace(reactionText))
+        {
+            BroadcastReaction(reactionText, 2500);
         }
     }
 
@@ -1256,3 +1399,4 @@ public partial class MainGame : Control
         return PuidToIndex(localPuid);
     }
 }
+
