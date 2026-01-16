@@ -1036,6 +1036,33 @@ private void ReleaseProfileIcon(Team team, int iconNumber)
 		string colorPrefix = (team == Team.Blue || team == Team.Universal) ? "blue" : "red";
 		return $"res://assets/profilePictures/Prof_{colorPrefix}_{iconNumber}.png";
 	}
+	public string GetProfileIconPathForUser(string userId)
+	{
+		foreach (var member in currentLobbyMembers)
+		{
+			if (member.ContainsKey("userId") && member["userId"].ToString() == userId)
+			{
+				if (member.ContainsKey("profileIcon") && member.ContainsKey("team"))
+				{
+					int iconNumber = member["profileIcon"].As<int>();
+					string teamStr = member["team"].ToString();
+					if (!string.IsNullOrEmpty(teamStr) && Enum.TryParse<Team>(teamStr, out Team team))
+					{
+						// Universal używa niebieskich ikon
+						if (team == Team.Blue || team == Team.Universal)
+						{
+							return GetProfileIconPath(Team.Blue, iconNumber);
+						}
+						else if (team == Team.Red)
+						{
+							return GetProfileIconPath(Team.Red, iconNumber);
+						}
+					}
+				}
+			}
+		}
+		return "";
+	}
 
 	/// <summary>
 	/// Odbudowuje listę używanych ikon na podstawie obecnych członków lobby

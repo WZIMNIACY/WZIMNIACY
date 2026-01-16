@@ -62,6 +62,7 @@ public partial class P2PNetworkManager : Node
         public string puid { get; set; }        // ProductUserId jako string
         public string name { get; set; }        // opcjonalnie (może być null)
         public MainGame.Team team { get; set; }        // enum Team
+        public string profileIconPath { get; set; }
     }
 
     public sealed class GameStartPayload
