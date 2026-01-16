@@ -258,7 +258,7 @@ public partial class AgentCard : PanelContainer
 
     private void SetupLocalPlayerIcon(TextureRect icon)
     {
-        icon.TooltipText = "ZatwierdŸ kartê";
+        icon.TooltipText = "Zatwierd\u017A kart\u0119";
 
         icon.MouseEntered += () =>
         {
