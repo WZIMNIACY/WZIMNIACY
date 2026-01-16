@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://bvi7du8wsmbn"]
+[gd_scene load_steps=6 format=3 uid="uid://bvi7du8wsmbn"]
 
-[ext_resource type="Script" uid="uid://dcg5cfto5qnvs" path="res://scripts/ui/PlayerListContainer.cs" id="1_otejv"]
+[ext_resource type="Script" uid="uid://dpedhgyjgt45o" path="res://scripts/ui/PlayerListContainer.cs" id="1_otejv"]
+[ext_resource type="PackedScene" uid="uid://dfk05vil0kmxx" path="res://scenes/components/playerRow.tscn" id="2_caaud"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4bmrv"]
 resource_local_to_scene = true
@@ -37,22 +38,17 @@ theme_override_styles/panel = SubResource("StyleBoxTexture_4bmrv")
 layout_mode = 2
 theme = SubResource("Theme_8hbux")
 
-[node name="RichTextLabel" type="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer"]
+[node name="playerRow1" parent="VBoxContainer/PanelContainer/VBoxContainer" instance=ExtResource("2_caaud")]
 layout_mode = 2
-fit_content = true
 
-[node name="RichTextLabel2" type="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer"]
+[node name="playerRow2" parent="VBoxContainer/PanelContainer/VBoxContainer" instance=ExtResource("2_caaud")]
 layout_mode = 2
-fit_content = true
 
-[node name="RichTextLabel3" type="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer"]
+[node name="playerRow3" parent="VBoxContainer/PanelContainer/VBoxContainer" instance=ExtResource("2_caaud")]
 layout_mode = 2
-fit_content = true
 
-[node name="RichTextLabel4" type="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer"]
+[node name="playerRow4" parent="VBoxContainer/PanelContainer/VBoxContainer" instance=ExtResource("2_caaud")]
 layout_mode = 2
-fit_content = true
 
-[node name="RichTextLabel5" type="RichTextLabel" parent="VBoxContainer/PanelContainer/VBoxContainer"]
+[node name="playerRow5" parent="VBoxContainer/PanelContainer/VBoxContainer" instance=ExtResource("2_caaud")]
 layout_mode = 2
-fit_content = true

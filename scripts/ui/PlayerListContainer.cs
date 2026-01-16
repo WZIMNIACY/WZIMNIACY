@@ -3,6 +3,7 @@ public partial class PlayerListContainer : PanelContainer
 {
 	[Export] VBoxContainer playerListVBox;
 	private MainGame mainGame;
+	private EOSManager eosManager;
 
 	[Export] public MainGame.Team team;
 	// Called when the node enters the scene tree for the first time.
@@ -14,6 +15,8 @@ public partial class PlayerListContainer : PanelContainer
 		
 		mainGame.GameReady += SetPlayerListVBox;
 		
+		eosManager = GetNode<EOSManager>("/root/EOSManager");
+		GD.Print("EOSManager found: " + (eosManager != null));
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -29,8 +32,21 @@ public partial class PlayerListContainer : PanelContainer
 			if((member.Value.team == team))
 			{	
 				var child = playerListVBox.GetChildren();
-				if (index < 5 && child[index] is RichTextLabel label)
+				if (index < 5 && child[index] is HBoxContainer playerRow)
 				{
+					var icon = playerRow.GetChild<TextureRect>(0);
+					foreach(var eosMember in eosManager.CurrentLobbyMembers)
+					{
+						if(eosMember["displayName"].ToString() == member.Value.name)
+						{
+							int profileIcon = (int)eosMember["profileIcon"];
+							string colorPrefix = eosMember["team"].ToString() == "Red" ? "red" : "blue";
+							string iconPath = $"res://assets/profilePictures/Prof_{colorPrefix}_{profileIcon}.png";
+							icon.Texture = GD.Load<Texture2D>(iconPath);
+							break;
+						}
+					}
+					var label = playerRow.GetChild<Label>(1);
 					label.Text = member.Value.name;
 					index++;
 				}

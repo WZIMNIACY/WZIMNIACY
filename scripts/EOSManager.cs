@@ -204,6 +204,10 @@ public partial class EOSManager : Node
 
 	// Aktualna lista członków lobby (cache)
 	private Godot.Collections.Array<Godot.Collections.Dictionary> currentLobbyMembers = new Godot.Collections.Array<Godot.Collections.Dictionary>();
+	public Godot.Collections.Array<Godot.Collections.Dictionary> CurrentLobbyMembers
+	{
+		get { return currentLobbyMembers; }
+	}
 
 	// Prefiks atrybutu lobby służącego do wymuszania drużyn przez hosta
 	private const string ForceTeamAttributePrefix = "ForceTeam_";
