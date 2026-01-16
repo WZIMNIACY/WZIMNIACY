@@ -241,8 +241,9 @@ public partial class AgentCard : PanelContainer
             var icon = new TextureRect
             {
                 Texture = texture,
-                CustomMinimumSize = new Vector2(12, 12),
+                CustomMinimumSize = new Vector2(16, 16),
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 TooltipText = playerName,
                 MouseFilter = MouseFilterEnum.Pass
             };
@@ -262,7 +263,6 @@ public partial class AgentCard : PanelContainer
 
         icon.MouseEntered += () =>
         {
-            GD.Print("Hovered!");
             icon.Modulate = new Color(0.8f, 0.8f, 0.8f, 1f);
         };
 
