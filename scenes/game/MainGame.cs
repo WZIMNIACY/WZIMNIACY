@@ -690,7 +690,7 @@ public partial class MainGame : Control
             gameRightPanel.DisableSkipButton();
         }
         
-            if (isHost)
+        if (isHost)
         {
             if (eosManager.currentAIType == EOSManager.AIType.LocalLLM)
             {
@@ -859,6 +859,9 @@ public partial class MainGame : Control
             bool isBlue = currentTurn == Team.Blue;
             gameRightPanel.UpdateHintDisplay(word, number, isBlue);
             gameRightPanel.BroadcastHint(word, number, currentTurn);
+
+            // FIX: ustawiamy LastGeneratedHint, bo TryBuildReactionText tego wymaga.
+            gameRightPanel.SetLastGeneratedHint(word, number);
         }
     }
 
@@ -1107,7 +1110,7 @@ public partial class MainGame : Control
         gameRightPanel.CommitToHistory();
         StartCaptainPhase();
 
-        if (eosManager.isLobbyOwner)
+        if (isHost)
         {
             await gameRightPanel.GenerateAndUpdateHint(llm, cardManager.Deck, currentTurn);
         }

@@ -27,6 +27,18 @@ public partial class RightPanel : Node
     private Hint lastGeneratedHint;
     public Hint LastGeneratedHint => lastGeneratedHint;
 
+    public void SetLastGeneratedHint(string word, int number)
+    {
+        // Minimalny hint do reakcji: Word + Number wystarczy do budowy tekstu.
+        // Cards dajemy pustą listę, żeby nie ryzykować nulli w Reaction.create().
+        lastGeneratedHint = new hints.Hint(
+            word,
+            new List<game.Card>(),
+            number
+        );
+    }
+
+
     private Godot.Timer hintGenerationAnimationTimer;
 
     private CancellationTokenSource hintGeneratorCancellation;

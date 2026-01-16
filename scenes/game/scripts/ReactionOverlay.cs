@@ -10,13 +10,22 @@ public partial class ReactionOverlay : CanvasLayer
 
 	public override void _Ready()
 	{
-		reactionBubble = GetNode<Control>("ReactionBubble");
-		reactionLabel = GetNode<Label>("ReactionBubble/ReactionLabel");
+		reactionBubble = GetNodeOrNull<Control>("ReactionBubble");
+		reactionLabel = GetNodeOrNull<Label>("ReactionBubble/ReactionLabel");
+
+		if (reactionBubble == null || reactionLabel == null)
+		{
+			GD.PrintErr("[ReactionOverlay] CRITICAL: Missing nodes. Expected 'ReactionBubble' and 'ReactionBubble/ReactionLabel'. Overlay disabled.");
+			return;
+		}
 
 		reactionBubble.Visible = false;
-		ShowReaction("Test reakcji", 2.0f);
 
+		// Usuń auto-test, bo w multiplayerze miesza w debugowaniu.
+		// Jeśli chcesz, zostaw tylko na Debug build:
+		// if (OS.IsDebugBuild()) ShowReaction("Test reakcji", 2.0f);
 	}
+
 
 	public void ShowReaction(string text, float seconds = 2.5f)
 	{
