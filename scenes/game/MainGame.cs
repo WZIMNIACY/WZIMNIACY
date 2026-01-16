@@ -1141,12 +1141,6 @@ public partial class MainGame : Control
     public void OnCardSelectedHost(byte cardId, int playerIndex, bool unselect)
     {
         cardManager.ModifySelection(cardId, playerIndex, unselect);
-
-        foreach (var player in playerIconPathsByIndex)
-        {
-            GD.Print($"[ICON TEST] player id={player.Key} icon patb={player.Value}");
-            GD.Print($"[ICON TEST] ==================");
-        }
     }
 
     public void OnCardSelectedClient(byte cardId, int playerIndex, bool unselect)

@@ -11,6 +11,7 @@ public partial class AgentCard : PanelContainer
 	[Export] private Label textLabel;
 	[Export] private TextureRect cardImage;
     [Export] private Label debugSelectionsDisplay;
+    [Export] private HBoxContainer iconsContainer;
 
     [Export] private Button confirmButton;
 
@@ -58,6 +59,8 @@ public partial class AgentCard : PanelContainer
 		SetProcessInput(true);
 
         selectedBy = new List<int>();
+
+        iconsContainer.MouseFilter = MouseFilterEnum.Ignore;
     }
 
     public void SetId(byte newId)
@@ -161,6 +164,10 @@ public partial class AgentCard : PanelContainer
     public void SetSelections(ushort selections) // n-th bit represents whether selected by player of n-th index
     {
         //GD.Print($"[MainGame][Card] Setting selections of card={id} by selections_ushort={Convert.ToString(selections, 2)}");
+
+        if (GetSelectionsAsUshort() == selections)
+            return;
+
         selectedBy.Clear();
         for (int i = 0; i < 10; i++)
         {
@@ -169,6 +176,14 @@ public partial class AgentCard : PanelContainer
                 selectedBy.Add(i);
             }
         }
+
+        int localPlayerIndex = mainGame.GetLocalPlayerIndex();
+        if (selectedBy.Contains(localPlayerIndex))
+        {
+            selectedBy.Remove(localPlayerIndex);
+            selectedBy.Insert(0, localPlayerIndex);
+        }
+
         UpdateSelectionDisplay();
     }
 
@@ -187,7 +202,10 @@ public partial class AgentCard : PanelContainer
         GD.Print($"[MainGame][Card] Adding a selection to card={id} by player={playerIndex}");
         if (!selectedBy.Contains(playerIndex))
         {
-            selectedBy.Add(playerIndex);
+            if (mainGame.GetLocalPlayerIndex() == playerIndex)
+                selectedBy.Insert(0, playerIndex);
+            else
+                selectedBy.Add(playerIndex);
             UpdateSelectionDisplay();
         }
     }
@@ -204,16 +222,32 @@ public partial class AgentCard : PanelContainer
 
     public void UpdateSelectionDisplay()
     {
-        // temp
-        // TODO: display user avatars
-        string indexes = string.Join(", ", selectedBy);
-        debugSelectionsDisplay.Text = indexes;
+        //string indexes = string.Join(", ", selectedBy);
+        //debugSelectionsDisplay.Text = indexes;
 
         int localPLayerIndex = mainGame.GetLocalPlayerIndex();
-        if (IsSelectedBy(localPLayerIndex))
-            confirmButton.Visible = true;
-        else
-            confirmButton.Visible = false;
+
+        foreach (Node child in iconsContainer.GetChildren())
+            child.QueueFree();
+
+        foreach (int playerIndex in selectedBy)
+        {
+            string iconPath = mainGame.GetPlayerIconPath(playerIndex);
+
+            Texture2D texture = GD.Load<Texture2D>(iconPath);
+
+            string playerName = mainGame.PlayersByIndex[playerIndex].name;
+
+            var icon = new TextureRect
+            {
+                Texture = texture,
+                CustomMinimumSize = new Vector2(15, 15),
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                TooltipText = playerName,
+                MouseFilter = MouseFilterEnum.Pass
+            };
+            iconsContainer.AddChild(icon);
+        }
     }
 
     public bool IsSelectedBy(int playerIndex)
