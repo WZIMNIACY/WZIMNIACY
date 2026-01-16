@@ -241,13 +241,45 @@ public partial class AgentCard : PanelContainer
             var icon = new TextureRect
             {
                 Texture = texture,
-                CustomMinimumSize = new Vector2(15, 15),
+                CustomMinimumSize = new Vector2(12, 12),
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
                 TooltipText = playerName,
                 MouseFilter = MouseFilterEnum.Pass
             };
+
+            if (mainGame.GetLocalPlayerIndex() == playerIndex)
+            {
+                SetupLocalPlayerIcon(icon);
+            }
+
             iconsContainer.AddChild(icon);
         }
+    }
+
+    private void SetupLocalPlayerIcon(TextureRect icon)
+    {
+        icon.TooltipText = "ZatwierdŸ kartê";
+
+        icon.MouseEntered += () =>
+        {
+            GD.Print("Hovered!");
+            icon.Modulate = new Color(0.8f, 0.8f, 0.8f, 1f);
+        };
+
+        icon.MouseExited += () =>
+        {
+            icon.Modulate = new Color(1f, 1f, 1f, 1f);
+        };
+
+        icon.GuiInput += (InputEvent e) =>
+        {
+            if (e is InputEventMouseButton mb &&
+                mb.Pressed &&
+                mb.ButtonIndex == MouseButton.Left)
+            {
+                OnConfirmButtonPressed();
+            }
+        };
     }
 
     public bool IsSelectedBy(int playerIndex)
