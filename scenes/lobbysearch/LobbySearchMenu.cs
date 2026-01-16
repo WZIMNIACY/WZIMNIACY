@@ -207,9 +207,6 @@ public partial class LobbySearchMenu : Node
             backButton.FocusMode = Control.FocusModeEnum.None;
             backButton.MouseDefaultCursorShape = Control.CursorShape.Forbidden;
         }
-
-        // Uruchom timer animacji
-        animationTimer.Start();
     }
 
     /// <summary>
@@ -221,7 +218,6 @@ public partial class LobbySearchMenu : Node
 
         isJoining = false;
         isPending = false;
-        animationTimer.Stop();
         joinTimeoutTimer.Stop();
         leaveTimeoutTimer.Stop();
 
