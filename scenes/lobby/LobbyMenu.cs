@@ -40,6 +40,7 @@ public partial class LobbyMenu : Control
     private EscapeBackHandler escapeBackHandler;
     // Custom tooltip
     private CustomTooltip customTooltip;
+    private PopupSystem popupSystem;
     private PasteDetector apiKeyPasteDetector;
     private string lobbyReadyTooltip = "";
     private string apiKeyErrorMessage = "";
@@ -243,6 +244,9 @@ public partial class LobbyMenu : Control
 
         // Załaduj custom tooltip ze sceny
         LoadCustomTooltip();
+
+        // Załaduj custom popup ze sceny
+        LoadPopupSystem();
     }
 
     /// <summary>
@@ -255,6 +259,19 @@ public partial class LobbyMenu : Control
         {
             customTooltip = tooltipScene.Instantiate<CustomTooltip>();
             AddChild(customTooltip);
+        }
+    }
+
+    /// <summary>
+    /// Ładuje custom popup system ze sceny
+    /// </summary>
+    private void LoadPopupSystem()
+    {
+        var popupScene = GD.Load<PackedScene>("res://scenes/popup/PopupSystem.tscn");
+        if (popupScene != null)
+        {
+            popupSystem = popupScene.Instantiate<PopupSystem>();
+            AddChild(popupSystem);
         }
     }
 
@@ -1385,65 +1402,50 @@ public partial class LobbyMenu : Control
     /// </summary>
     private void ShowHardwareWarningDialog(EOSManager.AIType selectedAIType, string currentHardwareInfo)
     {
-        var dialog = new AcceptDialog();
-        dialog.Title = "Ostrzeżenie - Niewystarczający sprzęt";
-
         string message = "Twój komputer nie spełnia zalecanych wymagań dla lokalnego LLM.\n\n";
-        message += " Twój sprzęt:\n";
+        message += "★ Twój sprzęt:\n";
         message += currentHardwareInfo + "\n\n";
-        message += "Zalecane wymagania:\n";
+        message += "★ Zalecane wymagania:\n";
         message += $"• CPU: {HardwareResources.GetMinCPUCores} rdzeni\n";
         message += $"• RAM: {HardwareResources.GetMinMemoryMB / 1024} GB ({HardwareResources.GetMinMemoryMB} MB) \n";
         message += $"  lub\n";
         message += $"• VRAM: {HardwareResources.GetMinVRAMMB / 1024} GB ({HardwareResources.GetMinVRAMMB} MB)\n\n";
-        message += " Uruchomienie lokalnego LLM może spowodować:\n";
+        message += "★ Uruchomienie lokalnego LLM może spowodować:\n";
         message += "• Spowolnienie systemu\n";
         message += "• Niską jakość odpowiedzi AI\n";
         message += "• Błędy lub zawieszenia gry\n\n";
         message += "Zalecane jest użycie trybu API dla lepszej wydajności.\n\n";
         message += "Czy mimo to chcesz kontynuować z lokalnym LLM?";
 
-        dialog.DialogText = message;
-        dialog.AddButton("Nie, powróć", true, "cancel");
-        dialog.OkButtonText = "Kontynuuj mimo to";
-
-        // Czcionka
-        var font = GD.Load<FontFile>("res://assets/fonts/SpaceMono-Bold.ttf");
-        if (font != null)
+        if (popupSystem != null)
         {
-            var theme = new Theme();
-            theme.DefaultFont = font;
-            theme.DefaultFontSize = 14;
-            dialog.Theme = theme;
+            popupSystem.ShowConfirmation(
+                "★ OSTRZEŻENIE - NIEWYSTARCZAJĄCY SPRZĘT ★",
+                message,
+                "KONTYNUUJ MIMO TO",
+                "NIE, POWRÓĆ",
+                () =>
+                {
+                    GD.Print($"✅ User confirmed local LLM despite hardware warning");
+
+                    // Zablokuj buttonList by uniknąć wielokrotnych zapytań
+                    BlockButtonToHandleTooManyRequests(aiTypeList);
+
+                    //Zmien typ AI
+                    eosManager.SetAIType(selectedAIType);
+                    LobbyStatus.aiTypeSet = true;
+                    UpdateHostReadyStatus();
+                },
+                () =>
+                {
+                    GD.Print($"❌ User cancelled local LLM selection");
+                }
+            );
         }
-
-        dialog.Confirmed += () =>
+        else
         {
-            GD.Print($"✅ User confirmed local LLM despite hardware warning");
-
-            // Zablokuj buttonList by uniknąć wielokrotnych zapytań
-            BlockButtonToHandleTooManyRequests(aiTypeList);
-
-            //Zmien typ AI
-            eosManager.SetAIType(selectedAIType);
-            LobbyStatus.aiTypeSet = true;
-            UpdateHostReadyStatus();
-
-            dialog.QueueFree();
-        };
-
-        dialog.CustomAction += (actionName) =>
-        {
-            if (actionName.ToString() == "cancel")
-            {
-                GD.Print($"❌ User cancelled local LLM selection");
-                dialog.QueueFree();
-            }
-        };
-
-        // Dodaj do drzewa i wyświetl
-        GetTree().Root.AddChild(dialog);
-        dialog.PopupCentered();
+            GD.PrintErr("❌ PopupSystem is null, cannot show hardware warning dialog");
+        }
     }
 
     private void OnCopyIdButtonPressed()

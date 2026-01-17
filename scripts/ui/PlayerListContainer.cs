@@ -13,7 +13,6 @@ public partial class PlayerListContainer : PanelContainer
 		GD.Print("MainGame found: " + (mainGame != null));
 		
 		mainGame.GameReady += SetPlayerListVBox;
-		
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -29,8 +28,11 @@ public partial class PlayerListContainer : PanelContainer
 			if((member.Value.team == team))
 			{	
 				var child = playerListVBox.GetChildren();
-				if (index < 5 && child[index] is RichTextLabel label)
+				if (index < 5 && child[index] is HBoxContainer playerRow)
 				{
+					var icon = playerRow.GetChild<TextureRect>(0);
+					icon.Texture = GD.Load<Texture2D>(member.Value.profileIconPath);
+					var label = playerRow.GetChild<Label>(1);
 					label.Text = member.Value.name;
 					index++;
 				}

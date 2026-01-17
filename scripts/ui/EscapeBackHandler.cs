@@ -65,6 +65,15 @@ public partial class EscapeBackHandler : Node
                 }
             }
         }
+    }
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        base._UnhandledInput(@event);
+
+        var viewport = GetViewport();
+        if (viewport == null)
+            return;
 
         // Sprawdź czy naciśnięto ESC
         if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
