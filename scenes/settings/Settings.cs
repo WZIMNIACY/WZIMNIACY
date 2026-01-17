@@ -30,6 +30,27 @@ public partial class Settings : Control
 		SetupVideoOptions();
 		SyncUIWithManager();
 		ConnectSignals();
+
+		// Nasłuchiwanie na zmiany skali z Managera
+		if (SettingsManager.Instance != null)
+		{
+			SettingsManager.Instance.OnUiScaleChanged += UpdateSliderVisuals;
+		}
+	}
+
+	public override void _ExitTree()
+	{
+		// Sprzątanie po zdarzeniu
+		if (SettingsManager.Instance != null)
+		{
+			SettingsManager.Instance.OnUiScaleChanged -= UpdateSliderVisuals;
+		}
+	}
+
+	private void UpdateSliderVisuals(float newScale)
+	{
+		// SetValueNoSignal zapobiega pętli nieskończonej
+		scaleUISlider?.SetValueNoSignal(newScale);
 	}
 
 	private void SetupVideoOptions()
@@ -124,7 +145,6 @@ public partial class Settings : Control
 	private void OnBackButtonPressed()
 	{
 		SettingsManager.Instance.SaveConfig();
-		// Zmień tę ścieżkę na właściwą dla Twojego projektu!
 		string menuPath = "res://scenes/menu/main.tscn";
 		if (ResourceLoader.Exists(menuPath))
 		{
@@ -136,8 +156,6 @@ public partial class Settings : Control
 		}
 	}
 
-	// Blokuje zmianę rozdzielczości, gdy jesteśmy w trybie Fullscreen lub Borderless
-	// (ponieważ te tryby wymuszają natywną rozdzielczość)
 	private void CheckResolutionLock()
 	{
 		if (resolutionOptionButton == null) return;
