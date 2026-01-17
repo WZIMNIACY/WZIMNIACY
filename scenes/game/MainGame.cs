@@ -1126,6 +1126,13 @@ public partial class MainGame : Control
         byte cardId = card.Id!.Value;
         string puid = eosManager?.localProductUserIdString;
         int playerIndex = PuidToIndex(puid);
+        var player = PlayersByIndex[playerIndex];
+
+        if (player.team != currentTurn)
+        {
+            return;
+        }
+
         bool unselect = card.IsSelectedBy(playerIndex);
 
         GD.Print($"[MainGame][Conversion] Converting puid={puid} hsot={isHost} to index={playerIndex}");
