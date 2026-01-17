@@ -279,10 +279,10 @@ public partial class AgentCard : PanelContainer
                 MouseFilter = MouseFilterEnum.Pass
             };
 
-            //if (mainGame.GetLocalPlayerIndex() == playerIndex)
-            //{
-            //    SetupLocalPlayerIcon(icon);
-            //}
+            if (mainGame.GetLocalPlayerIndex() == playerIndex)
+            {
+                SetupLocalPlayerIcon(icon);
+            }
 
             iconsContainer.AddChild(icon);
         }
@@ -294,25 +294,25 @@ public partial class AgentCard : PanelContainer
     {
         icon.TooltipText = "Zatwierd\u017A kart\u0119";
 
-        icon.MouseEntered += () =>
-        {
-            icon.Modulate = new Color(0.8f, 0.8f, 0.8f, 1f);
-        };
+        //icon.MouseEntered += () =>
+        //{
+        //    icon.Modulate = new Color(0.8f, 0.8f, 0.8f, 1f);
+        //};
 
-        icon.MouseExited += () =>
-        {
-            icon.Modulate = new Color(1f, 1f, 1f, 1f);
-        };
+        //icon.MouseExited += () =>
+        //{
+        //    icon.Modulate = new Color(1f, 1f, 1f, 1f);
+        //};
 
-        icon.GuiInput += (InputEvent e) =>
-        {
-            if (e is InputEventMouseButton mb &&
-                mb.Pressed &&
-                mb.ButtonIndex == MouseButton.Left)
-            {
-                OnConfirmButtonPressed();
-            }
-        };
+        //icon.GuiInput += (InputEvent e) =>
+        //{
+        //    if (e is InputEventMouseButton mb &&
+        //        mb.Pressed &&
+        //        mb.ButtonIndex == MouseButton.Left)
+        //    {
+        //        OnConfirmButtonPressed();
+        //    }
+        //};
     }
 
     public bool IsSelectedBy(int playerIndex)
