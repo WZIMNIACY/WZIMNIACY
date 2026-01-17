@@ -27,6 +27,45 @@ namespace game
         {
         }
 
+        public Deck(List<Card> cards, Team startingTeam)
+        {
+            Cards = cards;
+            StartingTeam = startingTeam;
+        }
+
+        public static Dictionary<string, List<double>> CreateDictionary()
+        {
+            var assembly = typeof(Deck).Assembly;
+            const string resourceName = "game.WordVectorBase.txt";
+            
+            using (var stream = assembly.GetManifestResourceStream(resourceName))
+            {
+            if (stream == null)
+            {
+                throw new InvalidOperationException($"Embedded resource '{resourceName}' not found.");
+            }
+
+            using (var reader = new StreamReader(stream))
+            {
+                string jsonContent = reader.ReadToEnd();
+                Dictionary<string, List<double>> dictionary;
+
+                try
+                {
+                    dictionary = JsonSerializer.Deserialize<Dictionary<string, List<double>>>(jsonContent) 
+                        ?? throw new InvalidOperationException("Deserialized dictionary is null.");
+                }
+                catch (JsonException ex)
+                {
+                    throw new InvalidOperationException("Failed to deserialize JSON content into a dictionary.", ex);
+                }
+
+                return dictionary;
+            }
+            }
+        }
+        
+
         public static Deck CreateFromDictionary(Dictionary<string, List<double>> dictionary, Team startingTeam, Random? rng = null)
         {
             if (dictionary is null)
