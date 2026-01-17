@@ -1033,10 +1033,36 @@ private void ReleaseProfileIcon(Team team, int iconNumber)
 		return $"res://assets/profilePictures/Prof_{colorPrefix}_{iconNumber}.png";
 	}
 
-	/// <summary>
-	/// Odbudowuje listę używanych ikon na podstawie obecnych członków lobby
-	/// </summary>
-	private void RebuildUsedIcons()
+    public string GetProfileIconPath(string userId)
+    {
+        Team team = GetTeamForUser(userId);
+        int iconNumber = GetProfileIconNumber(userId);
+
+        return GetProfileIconPath(team, iconNumber);
+    }
+
+    private int GetProfileIconNumber(string userId)
+    {
+        var players = GetCurrentLobbyMembers();
+        foreach (var player in players)
+        {
+            if (player == null)
+                continue;
+            if (!player.ContainsKey("userId"))
+                continue;
+
+            if (userId == player["userId"].ToString())
+            {
+                return (int)player["profileIcon"];
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>
+    /// Odbudowuje listę używanych ikon na podstawie obecnych członków lobby
+    /// </summary>
+    private void RebuildUsedIcons()
 	{
 		usedBlueIcons.Clear();
 		usedRedIcons.Clear();

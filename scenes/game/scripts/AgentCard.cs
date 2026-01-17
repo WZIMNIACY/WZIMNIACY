@@ -232,7 +232,7 @@ public partial class AgentCard : PanelContainer
 
         foreach (int playerIndex in selectedBy)
         {
-            string iconPath = mainGame.GetPlayerIconPath(playerIndex);
+            string iconPath = mainGame.PlayersByIndex[playerIndex].prifileIconPath;
 
             Texture2D texture = GD.Load<Texture2D>(iconPath);
 

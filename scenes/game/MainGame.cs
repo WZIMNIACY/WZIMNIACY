@@ -29,9 +29,6 @@ public partial class MainGame : Control
     private readonly Dictionary<int, P2PNetworkManager.GamePlayer> playersByIndex = new();
     public Dictionary<int, P2PNetworkManager.GamePlayer> PlayersByIndex => playersByIndex;
 
-    private readonly Dictionary<int, string> playerIconPathsByIndex = new();
-    public Dictionary<int, string> PlayerIconPathsByIndex => playerIconPathsByIndex;
-
     private Godot.Timer sendSelectionsTimer;
 
     private EOSManager eosManager;
@@ -561,16 +558,13 @@ public partial class MainGame : Control
             return;
         }
 
-
         playersByIndex.Clear();
-        playerIconPathsByIndex.Clear();
         foreach (var p in payload.players)
         {
             if (p == null) continue;
             if (string.IsNullOrEmpty(p.puid)) continue;
 
             playersByIndex[p.index] = p; // trzymamy cały obiekt (puid + name + team)
-            playerIconPathsByIndex[p.index] = GetPlayerIconPath(p.index);
         }
 
 
@@ -681,6 +675,7 @@ public partial class MainGame : Control
         var players = new List<P2PNetworkManager.GamePlayer>();
 
         // Host jako index 0
+        int index = 0;
         players.Add(new P2PNetworkManager.GamePlayer
         {
             index = 0,
@@ -688,7 +683,8 @@ public partial class MainGame : Control
             name = GetDisplayNameFromLobby(eosManager.localProductUserIdString),
             team = eosManager.GetTeamForUser(eosManager.localProductUserIdString) == EOSManager.Team.Blue
                 ? Team.Blue
-                : Team.Red
+                : Team.Red,
+            prifileIconPath = eosManager.GetProfileIconPath(eosManager.localProductUserIdString)
         });
 
         // Klienci z lobby
@@ -709,7 +705,7 @@ public partial class MainGame : Control
         // Stabilna kolejność (żeby indexy były deterministyczne nawet jak lobby zwróci inaczej)
         clientPuids.Sort(StringComparer.Ordinal);
 
-        int index = 1;
+        index++;
         foreach (string puid in clientPuids)
         {
             players.Add(new P2PNetworkManager.GamePlayer
@@ -719,7 +715,8 @@ public partial class MainGame : Control
                 name = GetDisplayNameFromLobby(puid),
                 team = eosManager.GetTeamForUser(puid) == EOSManager.Team.Blue
                     ? Team.Blue
-                    : Team.Red
+                    : Team.Red,
+                prifileIconPath = eosManager.GetProfileIconPath(puid)
             });
 
             index++;
@@ -1259,38 +1256,5 @@ public partial class MainGame : Control
     {
         string localPuid = eosManager?.localProductUserIdString;
         return PuidToIndex(localPuid);
-    }
-
-    public int GetPlayerIconIndex(int playerIndex)
-    {
-        var players = eosManager.GetCurrentLobbyMembers();
-        foreach (var player in players)
-        {
-            if (player == null)
-                continue;
-            if (!player.ContainsKey("userId"))
-                continue;
-
-            string puid = player["userId"].ToString();
-
-            if (puid == playersByIndex[playerIndex].puid)
-            {
-                return (int)player["profileIcon"];
-            }
-        }
-        return -1;
-    }
-
-    public string GetPlayerIconPath(int iconIndex, EOSManager.Team team)
-    {
-        return eosManager.GetProfileIconPath(team, iconIndex);
-    }
-
-    public string GetPlayerIconPath(int playerIndex)
-    {
-        int iconIndex = GetPlayerIconIndex(playerIndex);
-        EOSManager.Team team = playersByIndex[playerIndex].team.ToEOSManagerTeam();
-
-        return GetPlayerIconPath(iconIndex, team);
     }
 }

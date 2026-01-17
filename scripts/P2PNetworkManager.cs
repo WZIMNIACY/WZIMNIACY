@@ -1,4 +1,4 @@
-// P2PNetworkManager.cs
+﻿// P2PNetworkManager.cs
 using Godot;
 using System;
 using System.Collections.Generic;
@@ -62,6 +62,7 @@ public partial class P2PNetworkManager : Node
         public string puid { get; set; }        // ProductUserId jako string
         public string name { get; set; }        // opcjonalnie (może być null)
         public MainGame.Team team { get; set; }        // enum Team
+        public string prifileIconPath { get; set; }
     }
 
     public sealed class GameStartPayload
@@ -389,7 +390,9 @@ public partial class P2PNetworkManager : Node
             index = 0,
             puid = localPuid != null ? localPuid.ToString() : "",
             name = null,
-            team = MainGame.Team.None
+            team = MainGame.Team.None,
+            prifileIconPath = null
+
         });
 
         int index = 1;
@@ -400,7 +403,8 @@ public partial class P2PNetworkManager : Node
                 index = index,
                 puid = puidStr,
                 name = null,
-                team = MainGame.Team.None
+                team = MainGame.Team.None,
+                prifileIconPath = null
             });
             index++;
         }
