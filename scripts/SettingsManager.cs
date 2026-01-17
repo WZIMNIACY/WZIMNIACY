@@ -8,9 +8,9 @@ public partial class SettingsManager : Node
 	private const string SAVE_PATH = "user://settings.cfg";
 	private const float MIN_DB = -80.0f;
 	
-	// Stała szerokość, pod którą projektowałeś UI (Full HD)
-	private const float DESIGN_WIDTH = 1920.0f; 
-	// Maksymalna skala UI jaką dopuszczamy
+	// BAZA: Wysokość 1080p (Full HD) jako punkt odniesienia
+	private const float DESIGN_HEIGHT = 1080.0f; 
+	private const float SCALE_MODIFIER = 1.2f; 
 	private const float MAX_UI_SCALE = 3.0f; 
 
 	public enum WindowMode
@@ -82,14 +82,16 @@ public partial class SettingsManager : Node
 		}
 	}
 
-	// --- NOWA METODA POMOCNICZA ---
-	// Oblicza idealną skalę na podstawie aktualnego monitora.
-	private float GetAutoCalculatedScale()
+	// --- NOWA LOGIKA SKALOWANIA "BOOSTED" ---
+	private float GetAutoCalculatedScale(Vector2I? targetRes = null)
 	{
-		Vector2I screenRes = DisplayServer.ScreenGetSize();
-		float autoScale = (float)screenRes.X / DESIGN_WIDTH;
-		// Tu też używamy MAX_UI_SCALE (3.0f)
-		return Mathf.Clamp(autoScale, 0.5f, MAX_UI_SCALE);
+		Vector2I size = targetRes ?? DisplayServer.ScreenGetSize();
+		
+		// 1. Bierzemy wysokość (bezpieczniejsze dla UltraWide)
+		float height = size.Y;
+		float mathScale = height / DESIGN_HEIGHT;
+		float finalScale = mathScale * SCALE_MODIFIER;
+		return Mathf.Clamp(finalScale, 0.7f, MAX_UI_SCALE);
 	}
 	
 	public void LoadConfig()
@@ -118,12 +120,10 @@ public partial class SettingsManager : Node
 		int resY = (int)config.GetValue("Video", "ResolutionHeight", 1080);
 		Video.Resolution = new Vector2I(resX, resY);
 
-		// --- POPRAWKA ---
-		// Jeśli w pliku brakuje klucza "UiScale", używamy wyliczonej wartości, a nie 1.0f.
-		float fallbackScale = GetAutoCalculatedScale();
+		// Fallback: Jeśli brak skali w pliku, wyliczamy nową (Boosted)
+		float fallbackScale = GetAutoCalculatedScale(Video.Resolution);
 		float rawScale = (float)config.GetValue("Video", "UiScale", fallbackScale);
 		
-		// WAŻNE: Tutaj był stary Clamp 2.0f, który psuł wczytywanie większych skal!
 		Video.UiScale = Mathf.Clamp(rawScale, 0.5f, MAX_UI_SCALE);
 
 		Video.VSync = (bool)config.GetValue("Video", "VSync", true);
@@ -142,8 +142,8 @@ public partial class SettingsManager : Node
 		Video.Resolution = screenRes;
 		Video.DisplayMode = WindowMode.Fullscreen;
 		
-		// Używamy wspólnej metody
-		Video.UiScale = GetAutoCalculatedScale();
+		// Auto-scale na start
+		Video.UiScale = GetAutoCalculatedScale(screenRes);
 		
 		GD.Print($"[Auto-Setup] Wykryto: {screenRes}. Ustawiono skalę UI na: {Video.UiScale}");
 	}
@@ -195,6 +195,11 @@ public partial class SettingsManager : Node
 	public void SetResolution(Vector2I res)
 	{
 		Video.Resolution = res;
+		
+		// Auto-update skali przy zmianie rozdzielczości
+		float newScale = GetAutoCalculatedScale(res);
+		SetUiScale(newScale);
+
 		ApplyWindowMode();
 	}
 	
@@ -246,8 +251,10 @@ public partial class SettingsManager : Node
 				Vector2I nativeRes = DisplayServer.ScreenGetSize();
 				DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
 				DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.Borderless, true);
-				DisplayServer.WindowSetSize(nativeRes);
-				DisplayServer.WindowSetPosition(Vector2I.Zero);
+				
+				// Ustawienie rozmiaru dla Borderless
+				GetWindow().Size = nativeRes;
+				GetWindow().Position = Vector2I.Zero;
 				break;
 
 			case WindowMode.Fullscreen:
@@ -258,8 +265,10 @@ public partial class SettingsManager : Node
 	
 	private async void SetWindowSizeAndCenter()
 	{
-		DisplayServer.WindowSetSize(Video.Resolution);
-		await ToSignal(GetTree().CreateTimer(0.2f), SceneTreeTimer.SignalName.Timeout);
+		GetWindow().Size = Video.Resolution;
+		
+		// Timer dla synchronizacji OS
+		await ToSignal(GetTree().CreateTimer(0.15f), SceneTreeTimer.SignalName.Timeout);
 
 		Vector2I screenRes = DisplayServer.ScreenGetSize();
 		Vector2I pos = (screenRes / 2) - (Video.Resolution / 2);
@@ -267,7 +276,8 @@ public partial class SettingsManager : Node
 		if (pos.X < 0) pos.X = 0;
 		if (pos.Y < 0) pos.Y = 0;
 		
-		DisplayServer.WindowSetPosition(pos);
+		GetWindow().Position = pos;
+		
 		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 	}
 }
