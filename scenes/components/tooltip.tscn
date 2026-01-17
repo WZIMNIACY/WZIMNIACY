@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://dhn22wplwpems"]
 
-[ext_resource type="Script" uid="uid://cbyjrqwk6xdri" path="res://scripts/ui/CustomTooltip.cs" id="1_script"]
+[ext_resource type="Script" uid="uid://cv7vmxpmkfrv2" path="res://scripts/ui/CustomTooltip.cs" id="1_script"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="2_font"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tooltip"]

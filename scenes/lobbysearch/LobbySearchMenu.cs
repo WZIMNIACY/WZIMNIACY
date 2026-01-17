@@ -11,6 +11,7 @@ public partial class LobbySearchMenu : Node
     [Export] private Button joinButton;
 
     private PasteDetector pasteDetector;
+    private PopupSystem popupSystem;
 
     // Animacja przycisku
     private Timer animationTimer;
@@ -91,6 +92,14 @@ public partial class LobbySearchMenu : Node
             // Ustaw Target programatycznie zamiast z .tscn
             pasteDetector.Target = searchInput;
             pasteDetector.RegisterPasteCallback(OnLobbyIdPasted);
+        }
+
+        // Załaduj popup system
+        var popupScene = GD.Load<PackedScene>("res://scenes/popup/PopupSystem.tscn");
+        if (popupScene != null)
+        {
+            popupSystem = popupScene.Instantiate<PopupSystem>();
+            AddChild(popupSystem);
         }
     }
 
@@ -254,8 +263,14 @@ public partial class LobbySearchMenu : Node
         // Przywróć przycisk
         StopJoiningAnimation();
 
-        // Możesz tu dodać komunikat dla użytkownika
-        GD.Print("⚠️ Nie udało się dołączyć do lobby. Spróbuj ponownie.");
+        // Pokaż komunikat użytkownikowi
+        if (popupSystem != null)
+        {
+            popupSystem.ShowMessage(
+                "★ BŁĄD POŁĄCZENIA ★",
+                "Nie udało się dołączyć do lobby.\n\nLobby może nie istnieć lub przekroczono limit czasu połączenia.\n\nSpróbuj ponownie."
+            );
+        }
     }
 
     /// <summary>
@@ -271,8 +286,14 @@ public partial class LobbySearchMenu : Node
         // Przywróć przycisk
         StopJoiningAnimation();
 
-        // Możesz tu dodać komunikat dla użytkownika
-        GD.Print("⚠️ Nie udało się opuścić poprzedniego lobby. Spróbuj ponownie.");
+        // Pokaż komunikat użytkownikowi
+        if (popupSystem != null)
+        {
+            popupSystem.ShowMessage(
+                "★ BŁĄD POŁĄCZENIA ★",
+                "Nie udało się opuścić poprzedniego lobby.\n\nSpróbuj ponownie lub uruchom ponownie grę."
+            );
+        }
     }
 
     /// <summary>
@@ -287,8 +308,35 @@ public partial class LobbySearchMenu : Node
         // Przywróć przycisk
         StopJoiningAnimation();
 
-        // Możesz tu wyświetlić komunikat użytkownikowi
-        GD.Print($"⚠️ {errorMessage}");
+        // Pokaż komunikat użytkownikowi z odpowiednim powodem
+        if (popupSystem != null)
+        {
+            string userMessage = "Nie udało się dołączyć do lobby.";
+            string reason = "";
+
+            // Parsuj błąd i dostosuj komunikat
+            if (errorMessage.Contains("full") || errorMessage.Contains("Full"))
+            {
+                reason = "\n\nPowód: Lobby jest pełne.\nZa dużo graczy w lobby.";
+            }
+            else if (errorMessage.Contains("not found") || errorMessage.Contains("NotFound"))
+            {
+                reason = "\n\nPowód: Lobby nie zostało znalezione.\nSprawdź czy kod jest poprawny.";
+            }
+            else if (errorMessage.Contains("connection") || errorMessage.Contains("Connection"))
+            {
+                reason = "\n\nPowód: Błąd połączenia z serwerem.\nSprawdź połączenie internetowe.";
+            }
+            else
+            {
+                reason = $"\n\nPowód: {errorMessage}";
+            }
+
+            popupSystem.ShowMessage(
+                "★ NIE UDAŁO SIĘ DOŁĄCZYĆ ★",
+                userMessage + reason
+            );
+        }
     }
 
     /// <summary>

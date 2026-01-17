@@ -12,30 +12,20 @@ public partial class LobbyLeaveConfirmation : Node
     public string ReturnScenePath { get; set; } = "res://scenes/menu/main.tscn";
 
     private EOSManager eosManager;
-    private AcceptDialog confirmDialog;
+    private PopupSystem popupSystem;
 
     public override void _Ready()
     {
         base._Ready();
         eosManager = GetNode<EOSManager>("/root/EOSManager");
-        CreateConfirmDialog();
-    }
 
-    /// <summary>
-    /// Tworzy dialog potwierdzenia
-    /// </summary>
-    private void CreateConfirmDialog()
-    {
-        confirmDialog = new AcceptDialog();
-        confirmDialog.Title = "Opuść Lobby";
-        confirmDialog.OkButtonText = "Tak, opuść";
-
-        confirmDialog.AddCancelButton("Anuluj");
-
-        confirmDialog.Confirmed += OnConfirmLeave;
-        confirmDialog.Canceled += OnCancelLeave;
-
-        AddChild(confirmDialog);
+        // Załaduj popup system
+        var popupScene = GD.Load<PackedScene>("res://scenes/popup/PopupSystem.tscn");
+        if (popupScene != null)
+        {
+            popupSystem = popupScene.Instantiate<PopupSystem>();
+            AddChild(popupSystem);
+        }
     }
 
     /// <summary>
@@ -43,21 +33,29 @@ public partial class LobbyLeaveConfirmation : Node
     /// </summary>
     public void ShowConfirmation()
     {
-        if (confirmDialog == null)
+        if (popupSystem == null)
             return;
 
         bool isHost = eosManager != null && eosManager.isLobbyOwner;
 
+        string message;
         if (isHost)
         {
-            confirmDialog.DialogText = "Jesteś hostem lobby.\nOpuszczenie spowoduje przekazanie roli hosta innemu graczowi, jeśli to możliwe.\n\nCzy na pewno chcesz opuścić?";
+            message = "Jesteś hostem lobby.\n\nOpuszczenie spowoduje przekazanie roli hosta innemu graczowi, jeśli to możliwe.\n\nCzy na pewno chcesz opuścić?";
         }
         else
         {
-            confirmDialog.DialogText = "Czy na pewno chcesz opuścić lobby?";
+            message = "Czy na pewno chcesz opuścić lobby?";
         }
 
-        confirmDialog.PopupCentered();
+        popupSystem.ShowConfirmation(
+            "★ OPUŚĆ LOBBY ★",
+            message,
+            "TAK, OPUŚĆ",
+            "ANULUJ",
+            OnConfirmLeave,
+            OnCancelLeave
+        );
     }
 
     /// <summary>
@@ -88,11 +86,9 @@ public partial class LobbyLeaveConfirmation : Node
     {
         base._ExitTree();
 
-        if (confirmDialog != null)
+        if (popupSystem != null)
         {
-            confirmDialog.Confirmed -= OnConfirmLeave;
-            confirmDialog.Canceled -= OnCancelLeave;
-            confirmDialog.QueueFree();
+            popupSystem.QueueFree();
         }
     }
 }
