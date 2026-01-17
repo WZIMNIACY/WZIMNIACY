@@ -11,6 +11,7 @@
     <ProjectReference Include="..\game\game.csproj" />
     <ProjectReference Include="..\HintGenerating\HintGenerating.csproj" />
     <ProjectReference Include="..\LLM\LLM.csproj" />
+    <EmbeddedResource Include="ReactionPrompt.txt" />
     
   </ItemGroup>
     

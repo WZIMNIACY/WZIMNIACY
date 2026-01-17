@@ -12,20 +12,26 @@ namespace AI
         private readonly string _endpoint;
         private readonly string _model;
         private readonly HttpClient _httpClient;
+        private static readonly HttpClient _sharedHttpClient = new HttpClient();
 
-        public LocalLLM(string endpoint = "http://localhost:1234/v1/chat/completions", string model = "gpt-oss-20b", string? apiKey = null)
+        
+        public LocalLLM(string? endpoint = null, string? model = null, string? apiKey = null)
         {
-            if (string.IsNullOrWhiteSpace(endpoint))
-                throw new ArgumentNullException(nameof(endpoint));
-            if (string.IsNullOrWhiteSpace(model))
-                throw new ArgumentNullException(nameof(model));
+            
+            _endpoint = string.IsNullOrWhiteSpace(endpoint) 
+                ? "http://localhost:1234/v1/chat/completions" 
+                : endpoint;
+            
+            _model = string.IsNullOrWhiteSpace(model) 
+                ? "gpt-oss-20b" 
+                : model;
 
-            _endpoint = endpoint;
-            _model = model;
-            _httpClient = new HttpClient();
+            
+            _httpClient = _sharedHttpClient;
 
             if (!string.IsNullOrWhiteSpace(apiKey))
             {
+                _httpClient.DefaultRequestHeaders.Remove("Authorization");
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
             }
         }
@@ -34,7 +40,7 @@ namespace AI
         {
             if (systemPrompt == null) throw new ArgumentNullException(nameof(systemPrompt));
             if (userPrompt == null) throw new ArgumentNullException(nameof(userPrompt));
-            if (maxTokens <= 0) throw new ArgumentOutOfRangeException(nameof(maxTokens), "maxTokens must be > 0");
+            
 
             var payload = new
             {

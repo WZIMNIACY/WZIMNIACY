@@ -21,5 +21,6 @@
     <ProjectReference Include="./libs/AiLibs/game/game.csproj" />
     <ProjectReference Include="./libs/AiLibs/HintGenerating/HintGenerating.csproj" />
     <ProjectReference Include="./libs/AiLibs/Reaction/Reaction.csproj" />
+    <ProjectReference Include="./libs/AiLibs/LLMPlayer/LLMPlayer.csproj" />
   </ItemGroup>
 </Project>
