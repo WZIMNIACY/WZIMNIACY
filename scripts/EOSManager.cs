@@ -204,6 +204,10 @@ public partial class EOSManager : Node
 
 	// Aktualna lista członków lobby (cache)
 	private Godot.Collections.Array<Godot.Collections.Dictionary> currentLobbyMembers = new Godot.Collections.Array<Godot.Collections.Dictionary>();
+	public Godot.Collections.Array<Godot.Collections.Dictionary> CurrentLobbyMembers
+	{
+		get { return currentLobbyMembers; }
+	}
 
 	// Prefiks atrybutu lobby służącego do wymuszania drużyn przez hosta
 	private const string ForceTeamAttributePrefix = "ForceTeam_";
@@ -1055,6 +1059,33 @@ public partial class EOSManager : Node
 		// Universal team używa niebieskich ikon (AI vs Human mode)
 		string colorPrefix = (team == Team.Blue || team == Team.Universal) ? "blue" : "red";
 		return $"res://assets/profilePictures/Prof_{colorPrefix}_{iconNumber}.png";
+	}
+	public string GetProfileIconPathForUser(string userId)
+	{
+		foreach (var member in currentLobbyMembers)
+		{
+			if (member.ContainsKey("userId") && member["userId"].ToString() == userId)
+			{
+				if (member.ContainsKey("profileIcon") && member.ContainsKey("team"))
+				{
+					int iconNumber = member["profileIcon"].As<int>();
+					string teamStr = member["team"].ToString();
+					if (!string.IsNullOrEmpty(teamStr) && Enum.TryParse<Team>(teamStr, out Team team))
+					{
+						// Universal używa niebieskich ikon
+						if (team == Team.Blue || team == Team.Universal)
+						{
+							return GetProfileIconPath(Team.Blue, iconNumber);
+						}
+						else if (team == Team.Red)
+						{
+							return GetProfileIconPath(Team.Red, iconNumber);
+						}
+					}
+				}
+			}
+		}
+		return "";
 	}
 
 	/// <summary>
