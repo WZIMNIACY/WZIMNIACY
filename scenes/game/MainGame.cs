@@ -98,7 +98,7 @@ public partial class MainGame : Control
     private sealed class CardsSelectionsPayload
     {
         public Dictionary<byte, ushort> cardsSelections { get; set; }
-}
+    }
 
     private sealed class TestAckPayload
     {
@@ -350,7 +350,7 @@ public partial class MainGame : Control
             return true;
         }
 
-        if(packet.type == "remove_point_ack" && !isHost)
+        if (packet.type == "remove_point_ack" && !isHost)
         {
             RemovePointAckPayload ack;
             try
@@ -364,8 +364,8 @@ public partial class MainGame : Control
             }
 
             GD.Print($"[MainGame][P2P-TEST] CLIENT received remove_point_ack from host: removing point from: {ack.team} fromPeer={fromPeer}");
-            if(ack.team == Team.Blue) RemovePointBlue();
-            if(ack.team == Team.Red) RemovePointRed();
+            if (ack.team == Team.Blue) RemovePointBlue();
+            if (ack.team == Team.Red) RemovePointRed();
             return true;
         }
 
@@ -558,7 +558,6 @@ public partial class MainGame : Control
             return;
         }
 
-
         playersByIndex.Clear();
         foreach (var p in payload.players)
         {
@@ -676,6 +675,7 @@ public partial class MainGame : Control
         var players = new List<P2PNetworkManager.GamePlayer>();
 
         // Host jako index 0
+        int index = 0;
         players.Add(new P2PNetworkManager.GamePlayer
         {
             index = 0,
@@ -705,7 +705,7 @@ public partial class MainGame : Control
         // Stabilna kolejność (żeby indexy były deterministyczne nawet jak lobby zwróci inaczej)
         clientPuids.Sort(StringComparer.Ordinal);
 
-        int index = 1;
+        index++;
         foreach (string puid in clientPuids)
         {
             players.Add(new P2PNetworkManager.GamePlayer
@@ -792,7 +792,7 @@ public partial class MainGame : Control
 
     private void StartCaptainPhase()
     {
-        if(gameInputPanel != null)
+        if (gameInputPanel != null)
         {
             gameInputPanel.SetupTurn(currentTurn == Team.Blue);
         }
@@ -1210,7 +1210,7 @@ public partial class MainGame : Control
         }
 
         //Narazie tylko host rozsyła info o usunięciu punktu do klientów
-        if(teamToRemovePoint != Team.None && isHost)
+        if (teamToRemovePoint != Team.None && isHost)
         {
             string str = eosManager.localProductUserIdString;
             ProductUserId fromPeer = ProductUserId.FromString(str);
@@ -1227,7 +1227,7 @@ public partial class MainGame : Control
 
     public void EndGame(Team winner)
     {
-        if(!isHost) return;
+        if (!isHost) return;
 
         sendSelectionsTimer.Stop();
 

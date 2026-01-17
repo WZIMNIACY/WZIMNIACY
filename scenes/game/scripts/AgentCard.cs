@@ -11,6 +11,7 @@ public partial class AgentCard : PanelContainer
 	[Export] private Label textLabel;
 	[Export] private TextureRect cardImage;
     [Export] private Label debugSelectionsDisplay;
+    [Export] private HBoxContainer iconsContainer;
     [Export] private Button confirmButton;
 
     [ExportGroup("Card Textures")]
@@ -64,6 +65,8 @@ public partial class AgentCard : PanelContainer
 		SetProcessInput(true);
 
         selectedBy = new List<int>();
+
+        iconsContainer.MouseFilter = MouseFilterEnum.Ignore;
     }
 
     public void SetId(byte newId)
@@ -81,13 +84,13 @@ public partial class AgentCard : PanelContainer
 	{
 		ZIndex = 1;
 		Animate(true);
-	}
+    }
 
 	private void OnHoverExit()
 	{
 		ZIndex = 0;
 		Animate(false);
-	}
+    }
 
 	private void Animate(bool isHovering)
 	{
@@ -192,6 +195,10 @@ public partial class AgentCard : PanelContainer
     public void SetSelections(ushort selections) // n-th bit represents whether selected by player of n-th index
     {
         //GD.Print($"[MainGame][Card] Setting selections of card={id} by selections_ushort={Convert.ToString(selections, 2)}");
+
+        if (GetSelectionsAsUshort() == selections)
+            return;
+
         selectedBy.Clear();
         for (int i = 0; i < 10; i++)
         {
@@ -200,6 +207,14 @@ public partial class AgentCard : PanelContainer
                 selectedBy.Add(i);
             }
         }
+
+        int localPlayerIndex = mainGame.GetLocalPlayerIndex();
+        if (selectedBy.Contains(localPlayerIndex))
+        {
+            selectedBy.Remove(localPlayerIndex);
+            selectedBy.Insert(0, localPlayerIndex);
+        }
+
         UpdateSelectionDisplay();
     }
 
@@ -218,7 +233,10 @@ public partial class AgentCard : PanelContainer
         GD.Print($"[MainGame][Card] Adding a selection to card={id} by player={playerIndex}");
         if (!selectedBy.Contains(playerIndex))
         {
-            selectedBy.Add(playerIndex);
+            if (mainGame.GetLocalPlayerIndex() == playerIndex)
+                selectedBy.Insert(0, playerIndex);
+            else
+                selectedBy.Add(playerIndex);
             UpdateSelectionDisplay();
         }
     }
@@ -235,16 +253,66 @@ public partial class AgentCard : PanelContainer
 
     public void UpdateSelectionDisplay()
     {
-        // temp
-        // TODO: display user avatars
-        string indexes = string.Join(", ", selectedBy);
-        debugSelectionsDisplay.Text = indexes;
+        //string indexes = string.Join(", ", selectedBy);
+        //debugSelectionsDisplay.Text = indexes;
 
         int localPLayerIndex = mainGame.GetLocalPlayerIndex();
-        if (IsSelectedBy(localPLayerIndex))
-            confirmButton.Visible = true;
-        else
-            confirmButton.Visible = false;
+
+        foreach (Node child in iconsContainer.GetChildren())
+            child.QueueFree();
+
+        foreach (int playerIndex in selectedBy)
+        {
+            string iconPath = mainGame.PlayersByIndex[playerIndex].profileIconPath;
+
+            Texture2D texture = GD.Load<Texture2D>(iconPath);
+
+            string playerName = mainGame.PlayersByIndex[playerIndex].name;
+
+            var icon = new TextureRect
+            {
+                Texture = texture,
+                CustomMinimumSize = new Vector2(16, 16),
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                TooltipText = playerName,
+                MouseFilter = MouseFilterEnum.Pass
+            };
+
+            if (mainGame.GetLocalPlayerIndex() == playerIndex)
+            {
+                SetupLocalPlayerIcon(icon);
+            }
+
+            iconsContainer.AddChild(icon);
+        }
+
+        confirmButton.Visible = selectedBy.Contains(mainGame.GetLocalPlayerIndex());
+    }
+
+    private void SetupLocalPlayerIcon(TextureRect icon)
+    {
+        icon.TooltipText = "Zatwierd\u017A kart\u0119";
+
+        //icon.MouseEntered += () =>
+        //{
+        //    icon.Modulate = new Color(0.8f, 0.8f, 0.8f, 1f);
+        //};
+
+        //icon.MouseExited += () =>
+        //{
+        //    icon.Modulate = new Color(1f, 1f, 1f, 1f);
+        //};
+
+        //icon.GuiInput += (InputEvent e) =>
+        //{
+        //    if (e is InputEventMouseButton mb &&
+        //        mb.Pressed &&
+        //        mb.ButtonIndex == MouseButton.Left)
+        //    {
+        //        OnConfirmButtonPressed();
+        //    }
+        //};
     }
 
     public bool IsSelectedBy(int playerIndex)
