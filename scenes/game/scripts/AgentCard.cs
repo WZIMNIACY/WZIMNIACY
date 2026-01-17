@@ -11,8 +11,13 @@ public partial class AgentCard : PanelContainer
 	[Export] private Label textLabel;
 	[Export] private TextureRect cardImage;
     [Export] private Label debugSelectionsDisplay;
-
     [Export] private Button confirmButton;
+
+    [ExportGroup("Card Textures")]
+    [Export] private Texture2D[] blueCardTextures;
+    [Export] private Texture2D[] redCardTextures;
+    [Export] private Texture2D[] neutralCardTextures;
+    [Export] private Texture2D assassinCardTexture;
 
 	[Signal] public delegate void CardSelectedEventHandler(AgentCard card);
     [Signal] public delegate void CardConfirmedEventHandler(AgentCard card);
@@ -42,6 +47,8 @@ public partial class AgentCard : PanelContainer
         get { return selectedBy.Count; }
     }
 
+    private int teamIndex = 0;
+
     public override void _Ready()
 	{
 		base._Ready();
@@ -52,7 +59,6 @@ public partial class AgentCard : PanelContainer
 
 		Resized += SetPivotCenter;
 
-		cardManager.CardManagerReady += SetCard;
 		AddToGroup("cards");
 		MouseFilter = MouseFilterEnum.Pass;
 		SetProcessInput(true);
@@ -107,7 +113,12 @@ public partial class AgentCard : PanelContainer
 		}
 	}
 
-	private void SetCard()
+    public void SetTeamIndex(int index)
+    {
+        teamIndex = index;
+    }
+
+	public void SetCard()
 	{
         cardInfo = cardManager.TakeCard();
 		SetCardName(cardInfo.Word);
@@ -121,23 +132,43 @@ public partial class AgentCard : PanelContainer
 
 	public void SetColor()
 	{
-		if(type == CardManager.CardType.Blue)
-		{
-			cardImage.Modulate = new Color("4597ffff");
-		}
-		else if(type == CardManager.CardType.Red)
-		{
-			cardImage.Modulate = new Color("ff627bff");
-		}
-		else if(type == CardManager.CardType.Assassin)
-		{
-			cardImage.Modulate = new Color("767676aa");
-		}
-		else
-		{
-			cardImage.Modulate = new Color("ffffbd");
-		}
+		if (cardImage == null) return;
+
+        cardImage.Modulate = Colors.White;
+
+        switch (type)
+        {
+            case CardManager.CardType.Blue:
+                SetTextureFromArray(blueCardTextures);
+                break;
+
+            case CardManager.CardType.Red:
+                SetTextureFromArray(redCardTextures);
+                break;
+
+            case CardManager.CardType.Assassin:
+                if (assassinCardTexture != null) 
+                    cardImage.Texture = assassinCardTexture;
+                break;
+
+            case CardManager.CardType.Common:
+            default:
+                SetTextureFromArray(neutralCardTextures);
+                break;
+        }
 	}
+
+    private void SetTextureFromArray(Texture2D[] textures)
+    {
+        if (textures == null || textures.Length == 0) return;
+
+        int finalIndex = teamIndex % textures.Length;
+
+        if (textures[finalIndex] != null)
+        {
+            cardImage.Texture = textures[finalIndex];
+        }
+    }
 
 	public override void _GuiInput(InputEvent @event)
 	{
