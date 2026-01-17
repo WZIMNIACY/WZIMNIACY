@@ -3,341 +3,319 @@ using System;
 
 public partial class MainMenu : Node
 {
-	// --- ŚCIEŻKI ---
-	private const string LobbyMenuString = "res://scenes/lobby/Lobby.tscn";
-	private const string LobbySearchMenuString = "res://scenes/lobbysearch/LobbySearch.tscn";
-	private const string SettingsSceneString = "res://scenes/settings/Settings.tscn";
-	private const string HelpSceneString = "res://scenes/help/Help.tscn";
+    private const string LobbyMenuString = "res://scenes/lobby/Lobby.tscn";
+    private const string LobbySearchMenuString = "res://scenes/lobbysearch/LobbySearch.tscn";
+    private const string SettingsSceneString = "res://scenes/settings/Settings.tscn";
+    private const string HelpSceneString = "res://scenes/help/Help.tscn";
+    private EOSManager eosManager;
 
-	// --- ELEMENTY UI (Exportowane do Inspektora - Ustaw je w edytorze!) ---
-	[ExportGroup("Menu Buttons")]
-	[Export] private Button createButton;
-	[Export] private Button joinButton;
-	[Export] private Button settingsButton;
-	[Export] private Button helpButton;
-	[Export] private Button quitButton;
+    private Button createButton;
+    private Button settingsButton;
+    private Button helpButton;
+    private bool isCreatingLobby = false;
+    private ColorRect loadingOverlay;
+    private Tween loadingTween;
+    private const float CreateTimeout = 5.0f; // 5 sekund timeout
 
-	// --- MANAGERY ---
-	private EOSManager eosManager;
+    // Sekretne menu admina
+    private string secretCode = "";
+    private const string SecretTrigger = "kakor";
+    private AcceptDialog adminPopup = null;
 
-	// --- ZMIENNE STANU ---
-	private Timer animationTimer;
-	private int dotCount = 0;
-	private bool isCreatingLobby = false;
-	private const float CreateTimeout = 5.0f;
+    public override void _Ready()
+    {
+        base._Ready();
 
-	// --- SEKRETNE MENU ADMINA ---
-	private string secretCode = "";
-	private const string SecretTrigger = "kakor";
-	private AcceptDialog adminPopup = null;
+        createButton = GetNode<Button>("Panel/MenuCenter/VMenu/CreateGame/CreateGameButton");
+        Button joinButton = GetNode<Button>("Panel/MenuCenter/VMenu/JoinGame/JoinGameButton");
+        Button quitButton = GetNode<Button>("Panel/MenuCenter/VMenu/Quit/QuitButton");
+        settingsButton = GetNode<Button>("Panel/MenuCenter/VMenu/Settings/SettingsButton");
+        helpButton = GetNode<Button>("Panel/MenuCenter/VMenu/Help/HelpButton");
+        loadingOverlay = GetNode<ColorRect>("Panel/MenuCenter/VMenu/CreateGame/CreateGameButton/LoadingOverlay");
 
-	public override void _Ready()
-	{
-		base._Ready();
+        eosManager = GetNode<EOSManager>("/root/EOSManager");
 
-		// 1. RYGORYSTYCZNE SPRAWDZANIE: Czy przyciski są przypisane?
-		// Jeśli nie -> Krzyczymy błędem i przerywamy, żadnego naprawiania w tle.
-		if (!AreNodesAssigned())
-		{
-			GD.PrintErr("❌❌❌ MainMenu CRITICAL ERROR ❌❌❌");
-			GD.PrintErr("Nie przypisano przycisków w Inspektorze! Uzupełnij pola [Export].");
-			GD.PrintErr("Gra nie będzie działać poprawnie bez tych referencji.");
-			return; // Przerywamy działanie, nie podłączamy nic dalej
-		}
+        createButton.Pressed += OnCreateGamePressed;
+        joinButton.Pressed += OnJoinGamePressed;
+        quitButton.Pressed += OnQuitPressed;
+        settingsButton.Pressed += OnSettingsPressed;
+        helpButton.Pressed += OnHelpPressed;
 
-		// 2. Pobierz Managera (Autoload)
-		eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
+        // Podłącz sygnał LobbyCreated
+        if (eosManager != null)
+        {
+            eosManager.LobbyCreated += OnLobbyCreated;
+        }
+    }
 
-		// 3. Podłącz sygnały przycisków (teraz mamy pewność, że nie są null)
-		createButton.Pressed   += OnCreateGamePressed;
-		joinButton.Pressed     += OnJoinGamePressed;
-		quitButton.Pressed     += OnQuitPressed;
-		settingsButton.Pressed += OnSettingsPressed;
-		helpButton.Pressed     += OnHelpPressed;
+    public override void _Input(InputEvent @event)
+    {
+        base._Input(@event);
 
-		// 4. Podłącz sygnał LobbyCreated
-		if (eosManager != null)
-		{
-			eosManager.LobbyCreated += OnLobbyCreated;
-		}
-		else
-		{
-			GD.PrintErr("⚠ MainMenu: Nie znaleziono EOSManager w /root/EOSManager");
-		}
-	}
+        // Sprawdź czy to zdarzenie klawiatury
+        if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
+        {
+            // Pobierz znak Unicode
+            char key = (char)keyEvent.Unicode;
 
-	// Obsługa wejścia dla sekretnego menu
-	public override void _Input(InputEvent @event)
-	{
-		base._Input(@event);
+            // Jeśli to litera, dodaj do sekretnego kodu
+            if (char.IsLetter(key))
+            {
+                secretCode += char.ToLower(key);
 
-		// Sprawdź czy to zdarzenie klawiatury
-		if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
-		{
-			// Pobierz znak Unicode
-			char key = (char)keyEvent.Unicode;
+                // Ogranicz długość do 10 znaków
+                if (secretCode.Length > 10)
+                {
+                    secretCode = secretCode.Substring(secretCode.Length - 10);
+                }
 
-			// Jeśli to litera, dodaj do sekretnego kodu
-			if (char.IsLetter(key))
-			{
-				secretCode += char.ToLower(key);
+                // Sprawdź czy wpisano sekretny kod
+                if (secretCode.EndsWith(SecretTrigger))
+                {
+                    GD.Print("🔓 Secret admin menu triggered!");
+                    ShowAdminMenu();
+                    secretCode = ""; // Resetuj kod
+                }
+            }
+        }
+    }
 
-				// Ogranicz długość do 10 znaków
-				if (secretCode.Length > 10)
-				{
-					secretCode = secretCode.Substring(secretCode.Length - 10);
-				}
+    private void OnCreateGamePressed()
+    {
+        if (isCreatingLobby) return; // Zapobiegnij wielokrotnemu klikaniu
 
-				// Sprawdź czy wpisano sekretny kod
-				if (secretCode.EndsWith(SecretTrigger))
-				{
-					GD.Print("🔓 Secret admin menu triggered!");
-					ShowAdminMenu();
-					secretCode = ""; // Resetuj kod
-				}
-			}
-		}
-	}
+        GD.Print("Creating lobby in background...");
 
-	// Metoda walidująca przypisania
-	private bool AreNodesAssigned()
-	{
-		// Sprawdzamy czy którykolwiek jest nullem
-		bool missing = createButton == null || 
-					   joinButton == null || 
-					   quitButton == null || 
-					   settingsButton == null || 
-					   helpButton == null;
+        //Opuść obecne lobby jeśli jesteś w jakimś
+        if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
+        {
+            GD.Print("🚪 Leaving lobby before creating a new one...");
+            eosManager.LeaveLobby();
+        }
 
-		return !missing;
-	}
+        // Rozpocznij animację przycisku
+        StartCreatingAnimation();
 
-	private void OnCreateGamePressed()
-	{
-		if (isCreatingLobby) return;
+        // Utwórz lobby w tle
+        if (eosManager != null)
+        {
+            string lobbyId = GenerateLobbyIDCode();
+            eosManager.CreateLobby(lobbyId, 10, true);
+        }
+    }
 
-		GD.Print("Creating lobby in background...");
+    private void OnLobbyCreated(string lobbyId)
+    {
+        GD.Print($"✅ Lobby created: {lobbyId}, changing scene...");
 
-		if (eosManager != null && !string.IsNullOrEmpty(eosManager.currentLobbyId))
-		{
-			GD.Print("🚪 Leaving lobby before creating a new one...");
-			eosManager.LeaveLobby();
-		}
+        // Zatrzymaj animację
+        StopCreatingAnimation();
 
-		StartCreatingAnimation();
+        // Poczekaj chwilę na ustawienie atrybutów (0.5s)
+        GetTree().CreateTimer(0.5).Timeout += () =>
+        {
+            // Przejdź do sceny lobby
+            GetTree().ChangeSceneToFile(LobbyMenuString);
+        };
+    }
 
-		if (eosManager != null)
-		{
-			string lobbyId = GenerateLobbyIDCode();
-			eosManager.CreateLobby(lobbyId, 10, true);
-		}
-	}
+    private void StartCreatingAnimation()
+    {
+        isCreatingLobby = true;
+        createButton.Disabled = true;
 
-	private void OnLobbyCreated(string lobbyId)
-	{
-		GD.Print($"✅ Lobby created: {lobbyId}, changing scene...");
+        // Zapisz oryginalną wysokość przycisku
+        float originalHeight = createButton.Size.Y;
+        createButton.CustomMinimumSize = new Vector2(0, originalHeight);
 
-		StopCreatingAnimation();
+        // Pokaż overlay i animuj szerokość od lewej do prawej
+        if (loadingOverlay != null)
+        {
+            loadingOverlay.Visible = true;
+            loadingOverlay.Size = new Vector2(0, createButton.Size.Y);
+            
+            // Utwórz animację Tween (2 sekundy na jedno wypełnienie)
+            loadingTween = CreateTween();
+            loadingTween.SetLoops(); // Zapętlenie animacji
+            loadingTween.TweenProperty(loadingOverlay, "size", new Vector2(createButton.Size.X, createButton.Size.Y), 2.0f)
+                .SetTrans(Tween.TransitionType.Cubic)
+                .SetEase(Tween.EaseType.InOut);
+        }
 
-		GetTree().CreateTimer(0.5).Timeout += () =>
-		{
-			GetTree().ChangeSceneToFile(LobbyMenuString);
-		};
-	}
+        // Utwórz timer dla timeoutu
+        Timer timeoutTimer = new Timer();
+        timeoutTimer.WaitTime = CreateTimeout;
+        timeoutTimer.OneShot = true;
+        timeoutTimer.Timeout += () =>
+        {
+            GD.PrintErr("❌ Lobby creation timed out!");
+            StopCreatingAnimation();
+        };
+        AddChild(timeoutTimer);
+        timeoutTimer.Start();
 
-	private void StartCreatingAnimation()
-	{
-		isCreatingLobby = true;
-		createButton.Disabled = true;
-		dotCount = 0;
+        createButton.Text = "Ładowanie";
+    }
 
-		float originalHeight = createButton.Size.Y;
-		createButton.CustomMinimumSize = new Vector2(0, originalHeight);
+    private void StopCreatingAnimation()
+    {
+        isCreatingLobby = false;
+        createButton.Disabled = false;
+        createButton.Text = "Stwórz grę";
 
-		animationTimer = new Timer();
-		animationTimer.WaitTime = 0.5;
-		animationTimer.Timeout += OnAnimationTimerTimeout;
-		AddChild(animationTimer);
-		animationTimer.Start();
+        // Przywróć automatyczny rozmiar
+        createButton.CustomMinimumSize = new Vector2(0, 0);
 
-		Timer timeoutTimer = new Timer();
-		timeoutTimer.WaitTime = CreateTimeout;
-		timeoutTimer.OneShot = true;
-		timeoutTimer.Timeout += () =>
-		{
-			GD.PrintErr("❌ Lobby creation timed out!");
-			StopCreatingAnimation();
-		};
-		AddChild(timeoutTimer);
-		timeoutTimer.Start();
+        // Ukryj overlay i zatrzymaj animację
+        if (loadingOverlay != null)
+        {
+            loadingOverlay.Visible = false;
+            loadingOverlay.Size = new Vector2(0, loadingOverlay.Size.Y);
+        }
 
-		createButton.Text = "Tworzenie";
-	}
+        if (loadingTween != null)
+        {
+            loadingTween.Kill();
+            loadingTween = null;
+        }
+    }
 
-	private void StopCreatingAnimation()
-	{
-		isCreatingLobby = false;
-		createButton.Disabled = false;
-		createButton.Text = "Utwórz grę"; // Upewnij się, że ten tekst pasuje do Twojego UI
-		createButton.CustomMinimumSize = new Vector2(0, 0);
+    private string GenerateLobbyIDCode()
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        var random = new Random();
+        char[] code = new char[6];
 
-		if (animationTimer != null)
-		{
-			animationTimer.Stop();
-			animationTimer.QueueFree();
-			animationTimer = null;
-		}
-	}
+        for (int i = 0; i < 6; i++)
+        {
+            code[i] = chars[random.Next(chars.Length)];
+        }
 
-	private void OnAnimationTimerTimeout()
-	{
-		dotCount = (dotCount + 1) % 4;
-		string dots = new string('.', dotCount);
-		createButton.Text = "Tworzenie" + dots;
-	}
+        return new string(code);
+    }
 
-	private string GenerateLobbyIDCode()
-	{
-		const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-		var random = new Random();
-		char[] code = new char[6];
+    private void OnJoinGamePressed()
+    {
+        GD.Print("Loading Lobby Search scene...");
+        GetTree().ChangeSceneToFile(LobbySearchMenuString);
+    }
 
-		for (int i = 0; i < 6; i++)
-		{
-			code[i] = chars[random.Next(chars.Length)];
-		}
+    private void OnQuitPressed()
+    {
+        GD.Print("Quitting game...");
+        GetTree().Quit();
+    }
 
-		return new string(code);
-	}
+    private void OnSettingsPressed()
+    {
+        GD.Print("Loading Settings scene...");
+        GetTree().ChangeSceneToFile(SettingsSceneString);
+    }
 
-	private void OnJoinGamePressed()
-	{
-		GD.Print("Loading Lobby Search scene...");
-		GetTree().ChangeSceneToFile(LobbySearchMenuString);
-	}
+    private void OnHelpPressed()
+    {
+        GD.Print("Loading Help scene...");
+        GetTree().ChangeSceneToFile(HelpSceneString);
+    }
 
-	private void OnQuitPressed()
-	{
-		GD.Print("Quitting game...");
-		GetTree().Quit();
-	}
+    private void ShowAdminMenu()
+    {
+        // Zamknij poprzedni popup jeśli istnieje
+        if (adminPopup != null)
+        {
+            adminPopup.QueueFree();
+            adminPopup = null;
+        }
 
-	private void OnSettingsPressed()
-	{
-		GD.Print("Loading Settings scene...");
-		GetTree().ChangeSceneToFile(SettingsSceneString);
-	}
+        // Pobierz obecne Device ID
+        string currentDeviceId = eosManager != null ? eosManager.GetCurrentDeviceId() : "N/A";
 
-	private void OnHelpPressed()
-	{
-		GD.Print("Loading Help scene...");
-		GetTree().ChangeSceneToFile(HelpSceneString);
-	}
+        // Utwórz popup
+        adminPopup = new AcceptDialog();
+        adminPopup.Title = "🔧 Menu Admina";
+        adminPopup.OkButtonText = "Zamknij";
+        adminPopup.DialogText = "";
 
-	// --- LOGIKA ADMIN MENU ---
+        // Utwórz kontener dla zawartości
+        VBoxContainer content = new VBoxContainer();
+        content.AddThemeConstantOverride("separation", 10);
 
-	private void ShowAdminMenu()
-	{
-		// Zamknij poprzedni popup jeśli istnieje
-		if (adminPopup != null)
-		{
-			adminPopup.QueueFree();
-			adminPopup = null;
-		}
+        // Label z tytułem
+        Label titleLabel = new Label();
+        titleLabel.Text = "Sekretne Menu Admina";
+        titleLabel.AddThemeColorOverride("font_color", new Color(0, 1, 0.8f));
+        titleLabel.HorizontalAlignment = HorizontalAlignment.Center;
+        content.AddChild(titleLabel);
 
-		// Pobierz obecne Device ID
-		string currentDeviceId = eosManager != null ? eosManager.GetCurrentDeviceId() : "N/A";
+        // Separator
+        HSeparator separator1 = new HSeparator();
+        content.AddChild(separator1);
 
-		// Utwórz popup
-		adminPopup = new AcceptDialog();
-		adminPopup.Title = "🔧 Menu Admina";
-		adminPopup.OkButtonText = "Zamknij";
-		adminPopup.DialogText = "";
+        // Label z Device ID
+        Label deviceIdLabel = new Label();
+        deviceIdLabel.Text = "Obecne Device ID:";
+        content.AddChild(deviceIdLabel);
 
-		// Utwórz kontener dla zawartości
-		VBoxContainer content = new VBoxContainer();
-		content.AddThemeConstantOverride("separation", 10);
+        // TextEdit z Device ID (tylko do odczytu)
+        TextEdit deviceIdText = new TextEdit();
+        deviceIdText.Text = currentDeviceId;
+        deviceIdText.Editable = false;
+        deviceIdText.CustomMinimumSize = new Vector2(400, 60);
+        deviceIdText.WrapMode = TextEdit.LineWrappingMode.Boundary;
+        content.AddChild(deviceIdText);
 
-		// Label z tytułem
-		Label titleLabel = new Label();
-		titleLabel.Text = "Sekretne Menu Admina";
-		titleLabel.AddThemeColorOverride("font_color", new Color(0, 1, 0.8f));
-		titleLabel.HorizontalAlignment = HorizontalAlignment.Center;
-		content.AddChild(titleLabel);
+        // Separator
+        HSeparator separator2 = new HSeparator();
+        content.AddChild(separator2);
 
-		// Separator
-		HSeparator separator1 = new HSeparator();
-		content.AddChild(separator1);
+        // Przycisk do resetowania Device ID
+        Button resetButton = new Button();
+        resetButton.Text = "🔄 Resetuj Device ID";
+        resetButton.CustomMinimumSize = new Vector2(0, 40);
+        resetButton.Pressed += () =>
+        {
+            GD.Print("🔄 Resetting Device ID from admin menu...");
+            if (eosManager != null)
+            {
+                eosManager.ResetDeviceId();
 
-		// Label z Device ID
-		Label deviceIdLabel = new Label();
-		deviceIdLabel.Text = "Obecne Device ID:";
-		content.AddChild(deviceIdLabel);
+                // Zaktualizuj wyświetlane ID po krótkiej chwili
+                GetTree().CreateTimer(0.5).Timeout += () =>
+                {
+                    string newDeviceId = eosManager.GetCurrentDeviceId();
+                    deviceIdText.Text = newDeviceId;
+                    GD.Print($"✅ New Device ID: {newDeviceId}");
+                };
+            }
+        };
+        content.AddChild(resetButton);
 
-		// TextEdit z Device ID (tylko do odczytu)
-		TextEdit deviceIdText = new TextEdit();
-		deviceIdText.Text = currentDeviceId;
-		deviceIdText.Editable = false;
-		deviceIdText.CustomMinimumSize = new Vector2(400, 60);
-		deviceIdText.WrapMode = TextEdit.LineWrappingMode.Boundary;
-		content.AddChild(deviceIdText);
+        // Ostrzeżenie
+        Label warningLabel = new Label();
+        warningLabel.Text = "⚠️ Resetowanie Device ID wymaga ponownego logowania!";
+        warningLabel.AddThemeColorOverride("font_color", new Color(1, 0.5f, 0));
+        warningLabel.HorizontalAlignment = HorizontalAlignment.Center;
+        warningLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        content.AddChild(warningLabel);
 
-		// Separator
-		HSeparator separator2 = new HSeparator();
-		content.AddChild(separator2);
+        // Dodaj zawartość do popupu
+        adminPopup.AddChild(content);
 
-		// Przycisk do resetowania Device ID
-		Button resetButton = new Button();
-		resetButton.Text = "🔄 Resetuj Device ID";
-		resetButton.CustomMinimumSize = new Vector2(0, 40);
-		resetButton.Pressed += () =>
-		{
-			GD.Print("🔄 Resetting Device ID from admin menu...");
-			if (eosManager != null)
-			{
-				eosManager.ResetDeviceId();
+        // Wyświetl popup
+        GetTree().Root.AddChild(adminPopup);
+        adminPopup.PopupCentered();
 
-				// Zaktualizuj wyświetlane ID po krótkiej chwili
-				GetTree().CreateTimer(0.5).Timeout += () =>
-				{
-					string newDeviceId = eosManager.GetCurrentDeviceId();
-					deviceIdText.Text = newDeviceId;
-					GD.Print($"✅ New Device ID: {newDeviceId}");
-				};
-			}
-		};
-		content.AddChild(resetButton);
+        GD.Print($"📋 Admin menu opened. Current Device ID: {currentDeviceId}");
+    }
 
-		// Ostrzeżenie
-		Label warningLabel = new Label();
-		warningLabel.Text = "⚠️ Resetowanie Device ID wymaga ponownego logowania!";
-		warningLabel.AddThemeColorOverride("font_color", new Color(1, 0.5f, 0));
-		warningLabel.HorizontalAlignment = HorizontalAlignment.Center;
-		warningLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-		content.AddChild(warningLabel);
+    public override void _ExitTree()
+    {
+        base._ExitTree();
 
-		// Dodaj zawartość do popupu
-		adminPopup.AddChild(content);
-
-		// Wyświetl popup
-		GetTree().Root.AddChild(adminPopup);
-		adminPopup.PopupCentered();
-
-		GD.Print($"📋 Admin menu opened. Current Device ID: {currentDeviceId}");
-	}
-
-	public override void _ExitTree()
-	{
-		base._ExitTree();
-
-		if (eosManager != null)
-		{
-			eosManager.LobbyCreated -= OnLobbyCreated;
-		}
-
-		if (animationTimer != null)
-		{
-			animationTimer.QueueFree();
-		}
-	}
+        // Odłącz sygnał przy wyjściu
+        if (eosManager != null)
+        {
+            eosManager.LobbyCreated -= OnLobbyCreated;
+        }
+    }
 }

@@ -14,8 +14,8 @@ public partial class LobbySearchMenu : Node
     private PopupSystem popupSystem;
 
     // Animacja przycisku
-    private Timer animationTimer;
-    private int dotCount = 0;
+    private ColorRect loadingOverlay;
+    private Tween loadingTween;
     private bool isJoining = false;
 
     // Timeout dla dołączania
@@ -56,6 +56,7 @@ public partial class LobbySearchMenu : Node
         if (joinButton != null)
         {
             joinButton.Pressed += OnJoinButtonPressed;
+            loadingOverlay = joinButton.GetNode<ColorRect>("LoadingOverlay");
             GD.Print("✅ Join button connected successfully");
         }
 
@@ -65,12 +66,6 @@ public partial class LobbySearchMenu : Node
             searchInput.TextSubmitted += OnSearchInputSubmitted;
             GD.Print("✅ Search input Enter handler connected");
         }
-
-        // Utwórz timer dla animacji
-        animationTimer = new Timer();
-        animationTimer.WaitTime = 0.5; // Co 0.5 sekundy dodaj kropkę
-        animationTimer.Timeout += OnAnimationTimerTimeout;
-        AddChild(animationTimer);
 
         // Utwórz timer dla timeoutu
         joinTimeoutTimer = new Timer();
@@ -190,17 +185,30 @@ public partial class LobbySearchMenu : Node
     }
 
     /// <summary>
-    /// Rozpoczyna animację "Dołączanie..." z kolejnymi kropkami
+    /// Rozpoczyna animację ładowania z gradientem
     /// </summary>
     private void StartJoiningAnimation()
     {
         if (joinButton == null) return;
 
         isJoining = true;
-        dotCount = 0;
         joinButton.Disabled = true;
-        joinButton.Text = "Dołączanie";
+        joinButton.Text = "Ładowanie";
 
+        float originalHeight = joinButton.Size.Y;
+        joinButton.CustomMinimumSize = new Vector2(0, originalHeight);
+
+        if (loadingOverlay != null)
+        {
+            loadingOverlay.Visible = true;
+            loadingOverlay.Size = new Vector2(0, joinButton.Size.Y);
+            
+            // Animacja wypełniania trwa 7 sekund (cały timeout)
+            loadingTween = CreateTween();
+            loadingTween.TweenProperty(loadingOverlay, "size", new Vector2(joinButton.Size.X, joinButton.Size.Y), JoinTimeout)
+                .SetTrans(Tween.TransitionType.Linear)
+                .SetEase(Tween.EaseType.InOut);
+        }
         // Zablokuj również przycisk Menu
         if (backButton != null)
         {
@@ -208,9 +216,6 @@ public partial class LobbySearchMenu : Node
             backButton.FocusMode = Control.FocusModeEnum.None;
             backButton.MouseDefaultCursorShape = Control.CursorShape.Forbidden;
         }
-
-        // Uruchom timer animacji
-        animationTimer.Start();
     }
 
     /// <summary>
@@ -222,12 +227,12 @@ public partial class LobbySearchMenu : Node
 
         isJoining = false;
         isPending = false;
-        animationTimer.Stop();
         joinTimeoutTimer.Stop();
         leaveTimeoutTimer.Stop();
 
         joinButton.Disabled = false;
         joinButton.Text = "Dołącz";
+        joinButton.CustomMinimumSize = new Vector2(0, 0);
 
         // Odblokuj przycisk Menu
         if (backButton != null)
@@ -245,10 +250,17 @@ public partial class LobbySearchMenu : Node
     {
         if (!isJoining || joinButton == null) return;
 
-        dotCount = (dotCount + 1) % 4; // 0, 1, 2, 3, 0, ...
+        if (loadingOverlay != null)
+        {
+            loadingOverlay.Visible = false;
+            loadingOverlay.Size = new Vector2(0, loadingOverlay.Size.Y);
+        }
 
-        string dots = new string('.', dotCount);
-        joinButton.Text = "Dołączanie" + dots;
+        if (loadingTween != null)
+        {
+            loadingTween.Kill();
+            loadingTween = null;
+        }
     }
 
     /// <summary>
@@ -382,13 +394,7 @@ public partial class LobbySearchMenu : Node
     {
         base._ExitTree();
 
-        // Zatrzymaj i usuń timery
-        if (animationTimer != null)
-        {
-            animationTimer.Stop();
-            animationTimer.QueueFree();
-        }
-
+        // Zatrzymaj i usuń timer
         if (joinTimeoutTimer != null)
         {
             joinTimeoutTimer.Stop();
