@@ -1048,8 +1048,12 @@ public partial class MainGame : Control
         Team beforeTurn = currentTurn;
         int beforeTurnCounter = turnCounter;
 
+        GD.Print($"[ReactionTrace][HOST] Before ApplyCardConfirmedHost cardId={cardId} turn={currentTurn} counter={turnCounter}");
+
         // 1) Host wykonuje logikę gry lokalnie (źródło prawdy)
         cardManager.ApplyCardConfirmedHost(cardNode);
+
+        GD.Print($"[ReactionTrace][HOST] After ApplyCardConfirmedHost cardId={cardId} turn={currentTurn} counter={turnCounter}");
 
         // 2) Host wysyła informację do WSZYSTKICH klientów (klienci dopiero teraz robią UI/deck)
         if (p2pNet != null)
@@ -1070,6 +1074,8 @@ public partial class MainGame : Control
         {
             BroadcastTurnChanged();
         }
+        
+        GD.Print($"[ReactionTrace][HOST] About to build reaction: llmNull={(llm == null)} hintNull={(gameRightPanel?.LastGeneratedHint == null)} overlayNull={(reactionOverlay == null)}");
 
         // 4) Budujemy i wysyłamy reakcję
         string reactionText = TryBuildReactionText(cardNode);
