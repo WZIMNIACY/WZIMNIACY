@@ -1,4 +1,4 @@
-// P2PNetworkManager.cs
+﻿// P2PNetworkManager.cs
 using Godot;
 using System;
 using System.Collections.Generic;
@@ -390,7 +390,9 @@ public partial class P2PNetworkManager : Node
             index = 0,
             puid = localPuid != null ? localPuid.ToString() : "",
             name = null,
-            team = MainGame.Team.None
+            team = MainGame.Team.None,
+            profileIconPath = null
+
         });
 
         int index = 1;
@@ -401,7 +403,8 @@ public partial class P2PNetworkManager : Node
                 index = index,
                 puid = puidStr,
                 name = null,
-                team = MainGame.Team.None
+                team = MainGame.Team.None,
+                profileIconPath = null
             });
             index++;
         }

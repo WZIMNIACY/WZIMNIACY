@@ -1088,10 +1088,10 @@ public partial class EOSManager : Node
 		return "";
 	}
 
-	/// <summary>
-	/// Odbudowuje listę używanych ikon na podstawie obecnych członków lobby
-	/// </summary>
-	private void RebuildUsedIcons()
+    /// <summary>
+    /// Odbudowuje listę używanych ikon na podstawie obecnych członków lobby
+    /// </summary>
+    private void RebuildUsedIcons()
 	{
 		usedBlueIcons.Clear();
 		usedRedIcons.Clear();
