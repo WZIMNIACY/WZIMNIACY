@@ -684,7 +684,7 @@ public partial class MainGame : Control
             team = eosManager.GetTeamForUser(eosManager.localProductUserIdString) == EOSManager.Team.Blue
                 ? Team.Blue
                 : Team.Red,
-            prifileIconPath = eosManager.GetProfileIconPath(eosManager.localProductUserIdString)
+            profileIconPath = eosManager.GetProfileIconPathForUser(eosManager.localProductUserIdString)
         });
 
         // Klienci z lobby
@@ -716,7 +716,7 @@ public partial class MainGame : Control
                 team = eosManager.GetTeamForUser(puid) == EOSManager.Team.Blue
                     ? Team.Blue
                     : Team.Red,
-                prifileIconPath = eosManager.GetProfileIconPath(puid)
+                profileIconPath = eosManager.GetProfileIconPathForUser(puid)
             });
 
             index++;

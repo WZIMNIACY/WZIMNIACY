@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c8ei6oqum8tx7"
-path="res://.godot/imported/karta.png-5fe0386efdcfa868db5d617a016c421f.ctex"
+uid="uid://7iypy34dbe12"
+path="res://.godot/imported/agent_Blue (7).png-fa320046afac57ce4bfeae82f0b018fa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/karta.png"
-dest_files=["res://.godot/imported/karta.png-5fe0386efdcfa868db5d617a016c421f.ctex"]
+source_file="res://assets/textures/card/agent_Blue (7).png"
+dest_files=["res://.godot/imported/agent_Blue (7).png-fa320046afac57ce4bfeae82f0b018fa.ctex"]
 
 [params]
 

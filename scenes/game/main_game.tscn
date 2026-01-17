@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3 uid="uid://bqfm3bpx8hfit"]
+[gd_scene load_steps=35 format=3 uid="uid://bqfm3bpx8hfit"]
 
 [ext_resource type="Script" uid="uid://cxp073y36dgti" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://assets/themes/main_game.tres" id="1_s3esy"]
@@ -20,6 +20,9 @@
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="16_v72ow"]
 [ext_resource type="Script" uid="uid://cfufconx8s1kg" path="res://scripts/P2PNetworkManager.cs" id="19_stils"]
 [ext_resource type="PackedScene" uid="uid://da78r3ltx830e" path="res://scenes/loadingscreen/loadingscreen.tscn" id="20_mssxc"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dp4e7"]
+bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q7yvd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -100,6 +103,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1_o6v7o")
 endGameScreen = NodePath("EndGameScreen")
 menuPanel = NodePath("MenuPanel")
@@ -116,10 +121,33 @@ cardManager = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContain
 loadingScreen = NodePath("LoadingScreen")
 metadata/_edit_horizontal_guides_ = [-92.0]
 
-[node name="Panel" type="Panel" parent="."]
+[node name="BoxContainer" type="BoxContainer" parent="."]
 layout_mode = 0
-offset_right = 1152.0
-offset_bottom = 648.0
+offset_left = -5000.0
+offset_top = -5000.0
+offset_right = 5000.0
+offset_bottom = 5000.0
+alignment = 1
+vertical = true
+
+[node name="Panel" type="Panel" parent="BoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_dp4e7")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -576.0
+offset_top = -324.0
+offset_right = 576.0
+offset_bottom = 324.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_q7yvd")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Panel"]

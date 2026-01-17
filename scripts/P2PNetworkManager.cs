@@ -62,7 +62,7 @@ public partial class P2PNetworkManager : Node
         public string puid { get; set; }        // ProductUserId jako string
         public string name { get; set; }        // opcjonalnie (może być null)
         public MainGame.Team team { get; set; }        // enum Team
-        public string prifileIconPath { get; set; }
+        public string profileIconPath { get; set; }
     }
 
     public sealed class GameStartPayload
@@ -391,7 +391,7 @@ public partial class P2PNetworkManager : Node
             puid = localPuid != null ? localPuid.ToString() : "",
             name = null,
             team = MainGame.Team.None,
-            prifileIconPath = null
+            profileIconPath = null
 
         });
 
@@ -404,7 +404,7 @@ public partial class P2PNetworkManager : Node
                 puid = puidStr,
                 name = null,
                 team = MainGame.Team.None,
-                prifileIconPath = null
+                profileIconPath = null
             });
             index++;
         }

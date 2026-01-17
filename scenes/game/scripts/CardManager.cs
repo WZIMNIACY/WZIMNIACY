@@ -19,6 +19,7 @@ public partial class CardManager : GridContainer
 	public game.Deck Deck { get; private set; }
 	private Dictionary<string, List<double>> namesVectorDb;
 	private int takenCards = 0;
+
 	private int commonCards = 0;
 	private int blueCards = 0;
 	private int redCards = 0;
@@ -44,12 +45,41 @@ public partial class CardManager : GridContainer
         LoadDeck();
 
         byte id = 0;
+
+		int currentBlueCount = 0;
+        int currentRedCount = 0;
+        int currentNeutralCount = 0;
+
 		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
 		{
 			card.Connect("CardSelected", new Callable(this, nameof(OnCardSelected)));
 			card.Connect("CardConfirmed", new Callable(this, nameof(OnCardConfirmed)));
             card.SetId(id);
             id++;
+
+			card.SetCard();
+
+            switch (card.Type)
+            {
+                case CardType.Blue:
+                    card.SetTeamIndex(currentBlueCount);
+                    currentBlueCount++;
+                    break;
+
+                case CardType.Red:
+                    card.SetTeamIndex(currentRedCount);
+                    currentRedCount++;
+                    break;
+
+                case CardType.Common:
+                    card.SetTeamIndex(currentNeutralCount);
+                    currentNeutralCount++;
+                    break;
+
+                case CardType.Assassin:
+                    card.SetTeamIndex(0);
+                    break;
+            }
         }
 	}
 
