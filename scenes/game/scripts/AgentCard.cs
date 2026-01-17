@@ -47,6 +47,8 @@ public partial class AgentCard : PanelContainer
         get { return selectedBy.Count; }
     }
 
+    private int teamIndex = 0;
+
     public override void _Ready()
 	{
 		base._Ready();
@@ -57,7 +59,6 @@ public partial class AgentCard : PanelContainer
 
 		Resized += SetPivotCenter;
 
-		cardManager.CardManagerReady += SetCard;
 		AddToGroup("cards");
 		MouseFilter = MouseFilterEnum.Pass;
 		SetProcessInput(true);
@@ -112,7 +113,12 @@ public partial class AgentCard : PanelContainer
 		}
 	}
 
-	private void SetCard()
+    public void SetTeamIndex(int index)
+    {
+        teamIndex = index;
+    }
+
+	public void SetCard()
 	{
         cardInfo = cardManager.TakeCard();
 		SetCardName(cardInfo.Word);
@@ -155,23 +161,6 @@ public partial class AgentCard : PanelContainer
     private void SetTextureFromArray(Texture2D[] textures)
     {
         if (textures == null || textures.Length == 0) return;
-
-        int teamIndex = 0;
-        
-        Node parent = GetParent();
-        
-        if (parent != null)
-        {
-            foreach (var child in parent.GetChildren())
-            {
-                if (child == this) break;
-
-                if (child is AgentCard otherCard && otherCard.Type == this.Type)
-                {
-                    teamIndex++;
-                }
-            }
-        }
 
         int finalIndex = teamIndex % textures.Length;
 
