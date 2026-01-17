@@ -903,24 +903,15 @@ public partial class EOSManager : Node
 		}
 
 		// Pobierz listę już zajętych nicków
-		var usedNicknames = new System.Collections.Generic.HashSet<string>();
-		foreach (var member in currentLobbyMembers)
-		{
-			if (member.ContainsKey("displayName"))
-			{
-				usedNicknames.Add(member["displayName"].ToString());
-			}
-		}
+		var usedNicknames = currentLobbyMembers
+			.Where(m => m.ContainsKey("displayName"))
+			.Select(m => m["displayName"].ToString())
+			.ToHashSet();
 
-		// Stwórz listę dostępnych nicków
-		var availableNicknames = new System.Collections.Generic.List<string>();
-		foreach (var animal in animalNames)
-		{
-			if (!usedNicknames.Contains(animal))
-			{
-				availableNicknames.Add(animal);
-			}
-		}
+		// Znajdź dostępne nicki
+		var availableNicknames = animalNames
+			.Where(name => !usedNicknames.Contains(name))
+			.ToList();
 
 		if (availableNicknames.Count > 0)
 		{
