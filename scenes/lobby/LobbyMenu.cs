@@ -144,18 +144,22 @@ public partial class LobbyMenu : Control
         if (blueTeamList != null)
         {
             blueTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, blueTeamList);
+            blueTeamList.FixedIconSize = new Vector2I(21, 21);
         }
         if (redTeamList != null)
         {
             redTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, redTeamList);
+            redTeamList.FixedIconSize = new Vector2I(21, 21);
         }
         if (neutralTeamList != null)
         {
             neutralTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, neutralTeamList);
+            neutralTeamList.FixedIconSize = new Vector2I(21, 21);
         }
         if (universalTeamList != null)
         {
             universalTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, universalTeamList);
+            universalTeamList.FixedIconSize = new Vector2I(21, 21);
         }
 
         if (blueTeamJoinButton != null)
@@ -404,7 +408,7 @@ public partial class LobbyMenu : Control
                     { "team", team.ToString() },
                     { "profileIcon", profileIcon }
                 });
-                
+
                 // Ustaw ikonę jeśli istnieje
                 if (profileIcon > 0 && eosManager != null)
                 {
@@ -414,7 +418,7 @@ public partial class LobbyMenu : Control
                         blueTeamList.SetItemIcon(index, ResourceLoader.Load<Texture2D>(iconPath));
                     }
                 }
-                
+
                 GD.Print($"  ➕ Blue: {displayName} (Icon: {profileIcon})");
             }
             else if (team == EOSManager.Team.Red)
@@ -427,7 +431,7 @@ public partial class LobbyMenu : Control
                     { "team", team.ToString() },
                     { "profileIcon", profileIcon }
                 });
-                
+
                 // Ustaw ikonę jeśli istnieje
                 if (profileIcon > 0 && eosManager != null)
                 {
@@ -437,7 +441,7 @@ public partial class LobbyMenu : Control
                         redTeamList.SetItemIcon(index, ResourceLoader.Load<Texture2D>(iconPath));
                     }
                 }
-                
+
                 GD.Print($"  ➕ Red: {displayName} (Icon: {profileIcon})");
             }
             else if (team == EOSManager.Team.Universal)
@@ -450,7 +454,7 @@ public partial class LobbyMenu : Control
                     { "team", team.ToString() },
                     { "profileIcon", profileIcon }
                 });
-                
+
                 // Ustaw niebieską ikonę dla Universal team
                 if (profileIcon > 0 && eosManager != null)
                 {
@@ -460,7 +464,7 @@ public partial class LobbyMenu : Control
                         universalTeamList.SetItemIcon(index, ResourceLoader.Load<Texture2D>(iconPath));
                     }
                 }
-                
+
                 GD.Print($"  ➕ Universal: {displayName} (Icon: {profileIcon})");
             }
             else // team == EOSManager.Team.None (NeutralTeam)
