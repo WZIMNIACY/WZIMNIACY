@@ -183,6 +183,7 @@ theme_type_variation = &"SubPanel"
 [node name="MenuButton" type="Button" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer"]
 modulate = Color(1, 1, 1, 0)
 layout_mode = 2
+mouse_default_cursor_shape = 2
 alignment = 0
 
 [node name="Label" type="Label" parent="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer"]
@@ -466,6 +467,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_d2op2")
 [node name="Button" type="Button" parent="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer"]
 custom_minimum_size = Vector2(0, 55.6)
 layout_mode = 2
+mouse_default_cursor_shape = 2
 theme_override_styles/normal = SubResource("StyleBoxFlat_0rdsr")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_2l77h")
 theme_override_styles/hover = SubResource("StyleBoxFlat_mssxc")
@@ -479,6 +481,7 @@ mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxTexture_ygxny")
 
 [node name="InputPanel" type="PanelContainer" parent="Panel" node_paths=PackedStringArray("wordInput", "numberInput", "sendButton")]
+visible = false
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
