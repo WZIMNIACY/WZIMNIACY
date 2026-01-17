@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://s7i54u0fg4ly"]
+[gd_scene load_steps=7 format=3 uid="uid://s7i54u0fg4ly"]
 
 [ext_resource type="Texture2D" uid="uid://c8ei6oqum8tx7" path="res://assets/textures/karta.png" id="1_hiodb"]
 [ext_resource type="Script" uid="uid://hwnq2i8b5xl4" path="res://scenes/game/scripts/AgentCard.cs" id="1_m8y6f"]
@@ -16,6 +16,20 @@ border_width_bottom = 5
 border_color = Color(0, 1, 0.8, 1)
 border_blend = true
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7al6y"]
+bg_color = Color(0, 0.7225577, 0.28072357, 1)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yxvjk"]
+bg_color = Color(7.8814105e-07, 0.315687, 0.04577127, 1)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
+
 [node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage", "debugSelectionsDisplay", "iconsContainer", "confirmButton")]
 offset_right = 110.0
 offset_bottom = 110.0
@@ -25,8 +39,8 @@ contentContainer = NodePath(".")
 textLabel = NodePath("MarginContainer/Label")
 cardImage = NodePath("AgentCard")
 debugSelectionsDisplay = NodePath("DebugSelectionsDisplay")
-iconsContainer = NodePath("MarginContainer2/IconsContainer")
-confirmButton = NodePath("")
+iconsContainer = NodePath("VBoxContainer/MarginContainer/IconsContainer")
+confirmButton = NodePath("VBoxContainer/Control/ConfirmButton")
 
 [node name="AgentCard" type="TextureRect" parent="."]
 custom_minimum_size = Vector2(0, 110)
@@ -57,15 +71,31 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_m8y6f")
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0, 1, 1)
 
-[node name="MarginContainer2" type="MarginContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 5
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="IconsContainer" type="HBoxContainer" parent="MarginContainer2"]
+[node name="IconsContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer"]
 layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
+
+[node name="Control" type="Control" parent="VBoxContainer"]
+layout_mode = 2
 mouse_filter = 2
+
+[node name="ConfirmButton" type="Button" parent="VBoxContainer/Control"]
+visible = false
+layout_mode = 0
+offset_left = 5.0
+offset_top = 10.0
+offset_right = 23.0
+offset_bottom = 28.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_7al6y")
+theme_override_styles/hover = SubResource("StyleBoxFlat_yxvjk")
+
+[connection signal="pressed" from="VBoxContainer/Control/ConfirmButton" to="." method="OnConfirmButtonPressed"]

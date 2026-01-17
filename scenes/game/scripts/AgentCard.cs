@@ -78,13 +78,13 @@ public partial class AgentCard : PanelContainer
 	{
 		ZIndex = 1;
 		Animate(true);
-	}
+    }
 
 	private void OnHoverExit()
 	{
 		ZIndex = 0;
 		Animate(false);
-	}
+    }
 
 	private void Animate(bool isHovering)
 	{
@@ -248,13 +248,15 @@ public partial class AgentCard : PanelContainer
                 MouseFilter = MouseFilterEnum.Pass
             };
 
-            if (mainGame.GetLocalPlayerIndex() == playerIndex)
-            {
-                SetupLocalPlayerIcon(icon);
-            }
+            //if (mainGame.GetLocalPlayerIndex() == playerIndex)
+            //{
+            //    SetupLocalPlayerIcon(icon);
+            //}
 
             iconsContainer.AddChild(icon);
         }
+
+        confirmButton.Visible = selectedBy.Contains(mainGame.GetLocalPlayerIndex());
     }
 
     private void SetupLocalPlayerIcon(TextureRect icon)
