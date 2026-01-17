@@ -94,12 +94,16 @@ public partial class EndGameScreen : Control
         int maxBlue = (mainGame.StartingTeam == MainGame.Team.Blue) ? 9 : 8;
         int maxRed = (mainGame.StartingTeam == MainGame.Team.Red) ? 9 : 8;
 
-        int foundBlue = maxBlue - mainGame.PointsBlue;
-        int foundRed = maxRed - mainGame.PointsRed;
+        int totalBlueRevealed = maxBlue - mainGame.PointsBlue;
+        int totalRedRevealed = maxRed - mainGame.PointsRed;
+
+        int blueFoundOwn = totalBlueRevealed - mainGame.RedOpponentFound;
+        
+        int redFoundOwn = totalRedRevealed - mainGame.BlueOpponentFound;
 
         TeamGameStats blueStats = new TeamGameStats
         {
-            Found = foundBlue,
+            Found = blueFoundOwn,
             Neutral = mainGame.BlueNeutralFound,
             Opponent = mainGame.BlueOpponentFound,
             Streak = mainGame.BlueMaxStreak
@@ -107,7 +111,7 @@ public partial class EndGameScreen : Control
 
         TeamGameStats redStats = new TeamGameStats
         {
-            Found = foundRed,
+            Found = redFoundOwn,
             Neutral = mainGame.RedNeutralFound,
             Opponent = mainGame.RedOpponentFound,
             Streak = mainGame.RedMaxStreak
