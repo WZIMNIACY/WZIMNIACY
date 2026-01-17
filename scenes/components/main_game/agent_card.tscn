@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3 uid="uid://s7i54u0fg4ly"]
+[gd_scene load_steps=36 format=3 uid="uid://s7i54u0fg4ly"]
 
 [ext_resource type="Script" uid="uid://hwnq2i8b5xl4" path="res://scenes/game/scripts/AgentCard.cs" id="1_m8y6f"]
 [ext_resource type="Texture2D" uid="uid://baao70koi3hi7" path="res://assets/textures/card/agent_Blue (1).png" id="2_j4stv"]
@@ -30,6 +30,7 @@
 [ext_resource type="Texture2D" uid="uid://ckaakfx5nhvxw" path="res://assets/textures/card/agent_Yellow (7).png" id="26_bt42a"]
 [ext_resource type="Texture2D" uid="uid://7l1lp2rbgmo6" path="res://assets/textures/card/agent_Yellow (8).png" id="27_2l58x"]
 [ext_resource type="Texture2D" uid="uid://dvyn0srg5ldbp" path="res://assets/textures/card/agent_Yellow (9).png" id="28_ryheo"]
+[ext_resource type="Script" uid="uid://bi1n2d2fo43dy" path="res://scenes/components/main_game/ConfirmButton.cs" id="31_m1nus"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hiodb"]
 font_size = 11
@@ -128,7 +129,10 @@ offset_left = 5.0
 offset_top = 10.0
 offset_right = 23.0
 offset_bottom = 28.0
+mouse_filter = 1
+mouse_default_cursor_shape = 2
 theme_override_styles/normal = SubResource("StyleBoxFlat_7al6y")
 theme_override_styles/hover = SubResource("StyleBoxFlat_yxvjk")
+script = ExtResource("31_m1nus")
 
 [connection signal="pressed" from="VBoxContainer/Control/ConfirmButton" to="." method="OnConfirmButtonPressed"]
