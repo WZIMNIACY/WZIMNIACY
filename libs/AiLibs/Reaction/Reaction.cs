@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using game;
+using System.Reflection;
 using hints;
 using System.Runtime.CompilerServices;
 using AI;
@@ -11,57 +12,62 @@ namespace Reaction
     public static class Reaction
     {
 
-        public static string create(ILLM llm, Hint hint, Card pickedCard, bool KapitnBomba, Team actualTour)
+        public static async Task<string> create(ILLM llm, Hint hint, Card pickedCard, bool KapitnBomba, Team actualTour)
         {
-
-            string hintPromptPath;
             string reaction = string.Empty;
 
             string _pickedCard = pickedCard.toJson();
             string _givenHint = hint.toJson();
             bool _properGuess = actualTour == pickedCard.Team;
 
-            string baseDir = Directory.GetCurrentDirectory();
-            var parentDirInfo = Directory.GetParent(baseDir);
+            var assembly = Assembly.GetExecutingAssembly();
+            string systemPromptReactionRes = KapitnBomba
+                ? "Reaction.ReactionPromptKapitanBomba.txt"
+                : "Reaction.ReactionPrompt.txt";
 
-            if (parentDirInfo == null)
-                throw new Exception("Cannot locate parent directory for apiKey.txt.");
+            string systemPromptReaction;
+            using (Stream? stream = assembly.GetManifestResourceStream(systemPromptReactionRes))
+            {
+                if (stream == null)
+                {
+                    throw new FileNotFoundException("Couldn't find embeded resource");
+                }
 
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    systemPromptReaction = reader.ReadToEnd();
+                }
+            }
 
-
-            if (!KapitnBomba)
-                hintPromptPath = Path.Combine(parentDirInfo.FullName, @"Reaction/ReactionPrompt.txt");
-            else
-                hintPromptPath = Path.Combine(parentDirInfo.FullName, @"Reaction/ReactionPromptKapitanBomba.txt");
-
-            string prompt = File.ReadAllText(hintPromptPath).Trim();
-
-            string systemPromptReaction = File.ReadAllText(hintPromptPath);
             string userPromptReaction = $"" +
                 $"_pickedCard = {_pickedCard}\n" +
                 $"_givenHint = {_givenHint}\n" +
                 $"_properGuess = {_properGuess}";
 
-            while (true)
+            int try_idx = 0;
+            while (try_idx < 5)
             {
-                reaction = llm.SendRequestAsync(systemPromptReaction, userPromptReaction).Result;
+                try_idx += 1;
+                reaction = await llm.SendRequestAsync(systemPromptReaction, userPromptReaction);
 
-                bool validReaction = string.IsNullOrWhiteSpace(reaction);
+                bool invalidReaction = string.IsNullOrWhiteSpace(reaction);
 
-                if (validReaction)
+                if (invalidReaction)
                 {
-
                     Console.WriteLine("Generated reaction is invalid, regenerating...");
                     continue;
                 }
                 else
                 {
 
-                    int start = reaction.IndexOf('{') + 1;
-                    int end = reaction.LastIndexOf('}') - 1;
+                    int start = reaction.IndexOf('{');
+                    int end = reaction.LastIndexOf('}');
 
                     if (start == -1 || end == -1 || end < start)
-                        throw new ReactionException("Input does not contain a valid JSON object.");
+                    {
+                        Console.WriteLine("Generated reaction is invalid, regenerating...");
+                        continue;
+                    }
 
                     string trimmed = reaction.Substring(start, end - start + 1).Trim();
 
@@ -69,10 +75,7 @@ namespace Reaction
 
                 }
             }
-
-
-
-
+            throw new ReactionException("Out of tries");
         }
 
         [System.Serializable]
