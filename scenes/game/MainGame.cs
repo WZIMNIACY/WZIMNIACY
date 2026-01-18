@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Text.Json;
 using hints;
 using game;
-using Reaction;
 using System.Threading.Tasks;
 
 public partial class MainGame : Control
