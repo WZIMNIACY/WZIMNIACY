@@ -7,7 +7,7 @@ public partial class CaptainInput : Control
 	[Export] public LineEdit wordInput;
 	[Export] public SpinBox numberInput;
 	[Export] public Button sendButton;
-    [Export] public bool visible;
+    [Export] public bool visible = false;
 
 	private Color blueTeamColor = new Color("5AD2C8FF");
 	private Color redTeamColor = new Color("E65050FF");
@@ -15,6 +15,7 @@ public partial class CaptainInput : Control
     public override void _Ready()
     {
 		base._Ready();
+        Visible = visible;
 
         if(sendButton != null)
 			sendButton.Pressed += OnSendPressed;
