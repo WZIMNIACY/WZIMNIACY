@@ -876,8 +876,15 @@ public partial class MainGame : Control
             // ignore -> fallback niżej
         }
 
-        // Fallback: jeśli to nie JSON, pokaż jak leci
+        // Fallback: jeśli to nie JSON, pokaż jak leci,
+        // ale usuń zewnętrzne klamry (bo Reaction.create() je dokleja)
         text = raw.Trim();
+
+        if (text.Length >= 2 && text[0] == '{' && text[^1] == '}')
+        {
+            text = text.Substring(1, text.Length - 2).Trim();
+        }
+
         return !string.IsNullOrWhiteSpace(text);
     }
 
