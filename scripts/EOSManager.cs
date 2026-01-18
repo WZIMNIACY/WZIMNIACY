@@ -58,7 +58,6 @@ public partial class EOSManager : Node
 	// Stałe konfiguracyjne
 	private const int MinNicknameLength = 2;
 	private const int MaxNicknameLength = 20;
-	private const int MaxNicknameGenerationAttempts = 10;
 	private const int UserIdDisplayLength = 8;
 	private const int RandomSuffixMax = 10000;
 	private const int NicknameRandomMax = 99;
@@ -908,25 +907,21 @@ public partial class EOSManager : Node
 		}
 
 		// Pobierz listę już zajętych nicków
-		var usedNicknames = new System.Collections.Generic.HashSet<string>();
-		foreach (var member in currentLobbyMembers)
-		{
-			if (member.ContainsKey("displayName"))
-			{
-				usedNicknames.Add(member["displayName"].ToString());
-			}
-		}
+		var usedNicknames = currentLobbyMembers
+			.Where(m => m.ContainsKey("displayName"))
+			.Select(m => m["displayName"].ToString())
+			.ToHashSet();
 
-		// Próbuj wylosować unikalny nick (max 10 prób)
-		for (int attempt = 0; attempt < MaxNicknameGenerationAttempts; attempt++)
-		{
-			string randomAnimal = animalNames[(int)(GD.Randi() % animalNames.Count)];
+		// Znajdź dostępne nicki
+		var availableNicknames = animalNames
+			.Where(name => !usedNicknames.Contains(name))
+			.ToList();
 
-			if (!usedNicknames.Contains(randomAnimal))
-			{
-				GD.Print($"🎲 Wylosowano zwierzaka: {randomAnimal} (próba {attempt + 1}) >w<");
-				return randomAnimal;
-			}
+		if (availableNicknames.Count > 0)
+		{
+			string randomAnimal = availableNicknames[(int)(GD.Randi() % availableNicknames.Count)];
+			GD.Print($"Wylosowano zwierzaka: {randomAnimal} (dostępnych: {availableNicknames.Count}/{animalNames.Count})");
+			return randomAnimal;
 		}
 
 		// Jeśli wszystkie próby się nie powiodły, dodaj losowy sufiks
