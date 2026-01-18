@@ -1,6 +1,6 @@
 using Godot;
 
-public partial class ReactionOverlay : CanvasLayer
+public partial class ReactionOverlay : Control
 {
 	private Control reactionBubble;
 	private Label reactionLabel;
