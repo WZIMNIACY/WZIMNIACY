@@ -65,10 +65,11 @@ public partial class LobbyMenu : Control
         public static bool isTeamNotEmpty { get; set; } = false;
         public static bool isNeutralTeamEmpty { get; set; } = true;
         public static bool isAPIKeySet { get; set; } = false;
+        public static bool allPlayersInLobbyView { get; set; } = true;
 
         public static bool IsReadyToStart()
         {
-            return aiTypeSet && gameModeSet && isAPIKeySet && isTeamNotEmpty && !isAnyTeamFull && isNeutralTeamEmpty;
+            return aiTypeSet && gameModeSet && isAPIKeySet && isTeamNotEmpty && !isAnyTeamFull && isNeutralTeamEmpty && allPlayersInLobbyView;
         }
 
     }
@@ -77,8 +78,22 @@ public partial class LobbyMenu : Control
     {
         base._Ready();
 
+        alreadySwitchedToGame = false;
+
         // Pobierz EOSManager z autoload
         eosManager = GetNode<EOSManager>("/root/EOSManager");
+
+        // Oznacz gracza jako obecnego w widoku lobby
+        if (eosManager != null)
+        {
+            eosManager.SetPlayerInLobbyView(true);
+
+            if (eosManager.isLobbyOwner)
+            {
+                eosManager.ResetGameSession();
+                eosManager.UnlockLobby();
+            }
+        }
 
         // Inicjalizuj LobbyLeaveConfirmation
         leaveConfirmation = GetNode<LobbyLeaveConfirmation>("LobbyLeaveConfirmation");
@@ -297,6 +312,12 @@ public partial class LobbyMenu : Control
 
         GD.Print($"🎮 Switching to game. Session={sessionId}, Host={hostUserId}, Seed={seed}");
 
+        // Oznacz gracza jako nieobecnego w widoku lobby (przechodzi do gry)
+        if (eosManager != null)
+        {
+            eosManager.SetPlayerInLobbyView(false);
+        }
+
         // Zmiana sceny uruchamiana synchronicznie dla hosta i klientów na podstawie atrybutów lobby
         GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");
     }
@@ -380,6 +401,14 @@ public partial class LobbyMenu : Control
 
             string userId = member.ContainsKey("userId") ? member["userId"].ToString() : "";
 
+            // Sprawdź czy gracz jest w widoku lobby
+            bool inLobbyView = true; // Domyślnie true
+            if (member.ContainsKey("inLobbyView"))
+            {
+                string inLobbyViewStr = member["inLobbyView"].ToString().ToLower();
+                inLobbyView = inLobbyViewStr == "true";
+            }
+
             if (isLocalPlayer)
             {
                 detectedLocalTeam = team;
@@ -395,6 +424,12 @@ public partial class LobbyMenu : Control
             if (isLocalPlayer)
             {
                 displayName += " (TY)";
+            }
+
+            // Dodaj oznaczenie dla gracza który nie wrócił do lobby
+            if (!inLobbyView && !isLocalPlayer)
+            {
+                displayName += " (w grze)";
             }
 
             // Przypisz do odpowiedniej drużyny według atrybutu
@@ -881,6 +916,16 @@ public partial class LobbyMenu : Control
             GD.Print("❌ Neutral team has players.");
         }
 
+        // Sprawdź czy wszyscy gracze są w widoku lobby (nie w grze)
+        if (eosManager != null)
+        {
+            LobbyStatus.allPlayersInLobbyView = eosManager.AreAllPlayersInLobbyView();
+            if (!LobbyStatus.allPlayersInLobbyView)
+            {
+                GD.Print("❌ Not all players are in lobby view yet.");
+            }
+        }
+
         if (eosManager != null && eosManager.isLobbyOwner)
         {
             UpdateHostReadyStatus();
@@ -1005,6 +1050,9 @@ public partial class LobbyMenu : Control
                         unmetConditions.Add("Klucz API nie jest poprawny");
                     }
                 }
+
+                if (!LobbyStatus.allPlayersInLobbyView)
+                    unmetConditions.Add("Nie wszyscy gracze wrócili do lobby");
 
                 if (unmetConditions.Count > 0)
                 {
