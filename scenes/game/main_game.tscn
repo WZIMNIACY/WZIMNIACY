@@ -667,10 +667,15 @@ script = ExtResource("21_dp4e7")
 
 [node name="ReactionBubble" type="PanelContainer" parent="ReactionOverlay"]
 custom_minimum_size = Vector2(300, 40)
-offset_left = 200.0
-offset_top = 16.0
-offset_right = 240.0
-offset_bottom = 56.0
+anchors_preset = -1
+anchor_left = 0.208
+anchor_top = 0.022
+anchor_right = 0.208
+anchor_bottom = 0.03
+offset_left = -29.248016
+offset_top = 9.5199995
+offset_right = 10.751984
+offset_bottom = 49.52
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_wyrr4")
 
@@ -684,11 +689,19 @@ theme_override_colors/font_color = Color(0.91764706, 0.96862745, 0.9647059, 1)
 theme_override_fonts/font = ExtResource("10_wjob3")
 autowrap_mode = 2
 
+[node name="TailBorder" type="Polygon2D" parent="ReactionOverlay/ReactionBubble"]
+position = Vector2(-37.142982, -0.22856082)
+scale = Vector2(0.3809523, 0.37142855)
+color = Color(0.24705882, 0.8392157, 0.7764706, 1)
+offset = Vector2(400, 65)
+polygon = PackedVector2Array(-260.49963, -59.000027, -226.37463, -91.307724, -194.87463, -59.000027)
+uv = PackedVector2Array(-260.49963, -59.00003, -225.49963, -88.00003, -197.49963, -60.00003)
+
 [node name="Tail" type="Polygon2D" parent="ReactionOverlay/ReactionBubble"]
-position = Vector2(165, 25)
-scale = Vector2(0.48039228, 0.36585355)
+position = Vector2(139.5105, 26.611967)
+scale = Vector2(0.397678, 0.394811)
 color = Color(0.05490196, 0.16470589, 0.16470589, 1)
-polygon = PackedVector2Array(-278.9387, -90.20003, -308.16318, -55.66668, -247.71423, -57.400017)
+polygon = PackedVector2Array(-278.9387, -90.20003, -308.0645, -59.805748, -250.22882, -59.805748)
 uv = PackedVector2Array(-314.5, -92, -338.5, -68, -297.5, -69)
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
