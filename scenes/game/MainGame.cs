@@ -155,6 +155,9 @@ public partial class MainGame : Control
     private bool p2pJsonTestSent = false;
     // =====================
 
+    private Task reactionTask;
+    private bool isShuttingDown = false;
+
     private readonly HashSet<int> confirmedCardIds = new();
 
     // Called when the node enters the scene tree for the first time.
@@ -258,6 +261,8 @@ public partial class MainGame : Control
     // === P2P (DODANE) ===
     public override void _ExitTree()
     {
+        isShuttingDown = true;
+
         if (p2pNet != null)
         {
             p2pNet.PacketHandlers -= HandlePackets;
@@ -834,6 +839,48 @@ public partial class MainGame : Control
         return isGameStarted;
     }
 
+    private static bool TryExtractReactionText(string raw, out string text)
+    {
+        text = null;
+        if (string.IsNullOrWhiteSpace(raw)) return false;
+
+        // Reaction.create() zwraca string przycięty do { ... } (JSON)
+        // ale czasem LLM może zwrócić sam tekst bez JSON -> wtedy fallback.
+        try
+        {
+            using var doc = JsonDocument.Parse(raw);
+            var root = doc.RootElement;
+
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                // Najczęstsze pola jakie modele zwracają
+                if (root.TryGetProperty("text", out var t) && t.ValueKind == JsonValueKind.String)
+                {
+                    text = t.GetString();
+                    return !string.IsNullOrWhiteSpace(text);
+                }
+                if (root.TryGetProperty("reaction", out var r) && r.ValueKind == JsonValueKind.String)
+                {
+                    text = r.GetString();
+                    return !string.IsNullOrWhiteSpace(text);
+                }
+                if (root.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String)
+                {
+                    text = m.GetString();
+                    return !string.IsNullOrWhiteSpace(text);
+                }
+            }
+        }
+        catch
+        {
+            // ignore -> fallback niżej
+        }
+
+        // Fallback: jeśli to nie JSON, pokaż jak leci
+        text = raw.Trim();
+        return !string.IsNullOrWhiteSpace(text);
+    }
+
     private void ShowReactionBubble(string text, float seconds = 2.5f)
     {
         if (reactionOverlay == null)
@@ -951,7 +998,7 @@ public partial class MainGame : Control
     }
 
 
-    private string TryBuildReactionText(AgentCard cardNode)
+    private async Task<string> TryBuildReactionTextAsync(Hint hint, Card pickedCard, Team turnAtPick)
     {
         if (llm == null)
         {
@@ -959,47 +1006,63 @@ public partial class MainGame : Control
             return null;
         }
 
-        if (gameRightPanel == null)
-        {
-            GD.PrintErr("[MainGame] Reaction: gameRightPanel is null");
-            return null;
-        }
-
-        Hint hint = gameRightPanel.LastGeneratedHint;
         if (hint == null)
         {
-            GD.PrintErr("[MainGame] Reaction: LastGeneratedHint is null");
+            GD.PrintErr("[MainGame] Reaction: hint is null");
             return null;
         }
 
-        if (cardNode == null)
-        {
-            GD.PrintErr("[MainGame] Reaction: cardNode is null");
-            return null;
-        }
-
-        // cardNode.cardInfo wygląda u Ciebie na game.Card (bo jest używane .Word)
-        Card pickedCard = cardNode.cardInfo;
         if (pickedCard == null)
         {
-            GD.PrintErr("[MainGame] Reaction: cardNode.cardInfo is null");
+            GD.PrintErr("[MainGame] Reaction: pickedCard is null");
             return null;
         }
 
-        bool kapitnBomba = false; // jeśli macie flagę, podepniemy później
-        game.Team actualTour = MapToGameTeam(currentTurn);
+        bool kapitnBomba = false; // jak macie flagę to podepniemy później
+        game.Team actualTour = MapToGameTeam(turnAtPick);
 
-        // UWAGA: w tym pliku "Reaction" jest namespace, a "Reaction" jest też nazwa klasy static.
-        // Dlatego pełna ścieżka:
         try
         {
-            string reactionText = global::Reaction.Reaction.create(llm, hint, pickedCard, kapitnBomba, actualTour);
-            return reactionText;
+            string reactionRaw = await global::Reaction.Reaction.create(llm, hint, pickedCard, kapitnBomba, actualTour);
+            return reactionRaw;
         }
         catch (Exception e)
         {
-            GD.PrintErr($"[MainGame] Reaction: create() exception: {e.Message}");
+            GD.PrintErr($"[MainGame] Reaction: create() exception: {e}");
             return null;
+        }
+    }
+
+    private async Task GenerateAndBroadcastReactionAsync(Hint hintSnapshot, Card pickedCardSnapshot, Team turnSnapshot)
+    {
+        try
+        {
+            // (1) jeśli już zamykamy scenę, nie zaczynaj
+            if (isShuttingDown || !IsInsideTree()) return;
+
+            string reactionRaw = await TryBuildReactionTextAsync(hintSnapshot, pickedCardSnapshot, turnSnapshot);
+
+            // (2) najważniejsze: po await scena mogła zniknąć
+            if (isShuttingDown || !IsInsideTree()) return;
+
+            if (string.IsNullOrWhiteSpace(reactionRaw))
+            {
+                GD.PrintErr("[MainGame] Reaction skipped (reactionRaw empty/null).");
+                return;
+            }
+
+            if (!TryExtractReactionText(reactionRaw, out string cleanText))
+            {
+                GD.PrintErr("[MainGame] Reaction skipped (could not extract text).");
+                return;
+            }
+
+            // UI + RPC
+            BroadcastReaction(cleanText, 2500);
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[MainGame] GenerateAndBroadcastReactionAsync exception: {e}");
         }
     }
 
@@ -1050,6 +1113,12 @@ public partial class MainGame : Control
 
         GD.Print($"[ReactionTrace][HOST] Before ApplyCardConfirmedHost cardId={cardId} turn={currentTurn} counter={turnCounter}");
 
+        // ===== SNAPSHOT dla reakcji (MUSI być przed ApplyCardConfirmedHost) =====
+        Hint hintSnapshot = gameRightPanel?.LastGeneratedHint;
+        Card pickedCardSnapshot = cardNode?.cardInfo;
+        Team turnSnapshot = currentTurn;
+        // ==============================================================
+
         // 1) Host wykonuje logikę gry lokalnie (źródło prawdy)
         cardManager.ApplyCardConfirmedHost(cardNode);
 
@@ -1074,20 +1143,25 @@ public partial class MainGame : Control
         {
             BroadcastTurnChanged();
         }
-        
-        GD.Print($"[ReactionTrace][HOST] About to build reaction: llmNull={(llm == null)} hintNull={(gameRightPanel?.LastGeneratedHint == null)} overlayNull={(reactionOverlay == null)}");
 
-        // 4) Budujemy i wysyłamy reakcję
-        string reactionText = TryBuildReactionText(cardNode);
+        // 4) Generujemy i broadcastujemy reakcję ASYNC (nie blokujemy gry)
+        if (hintSnapshot == null)
+        {
+            GD.PrintErr("[MainGame] Reaction skipped (hintSnapshot is null). Did you call SetLastGeneratedHint()?");
+            return;
+        }
 
-        if (!string.IsNullOrWhiteSpace(reactionText))
+        if (pickedCardSnapshot == null)
         {
-            BroadcastReaction(reactionText, 2500);
+            GD.PrintErr("[MainGame] Reaction skipped (pickedCardSnapshot is null).");
+            return;
         }
-        else
-        {
-            GD.PrintErr("[MainGame] Reaction skipped (reactionText empty/null).");
-        }
+
+        reactionTask = GenerateAndBroadcastReactionAsync(hintSnapshot, pickedCardSnapshot, turnSnapshot);
+        reactionTask.ContinueWith(
+            t => GD.PrintErr($"[MainGame] Reaction task faulted: {t.Exception}"),
+            TaskContinuationOptions.OnlyOnFaulted
+        );
 
     }
 
