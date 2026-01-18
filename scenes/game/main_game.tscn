@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3 uid="uid://bqfm3bpx8hfit"]
+[gd_scene load_steps=36 format=3 uid="uid://bqfm3bpx8hfit"]
 
 [ext_resource type="Script" uid="uid://cxp073y36dgti" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://assets/themes/main_game.tres" id="1_s3esy"]
@@ -646,10 +646,12 @@ script = ExtResource("19_stils")
 layout_mode = 1
 
 [node name="ReactionOverlay" type="CanvasLayer" parent="."]
+layer = 10
 script = ExtResource("21_dp4e7")
 
 [node name="ReactionBubble" type="PanelContainer" parent="ReactionOverlay"]
 visible = false
+custom_minimum_size = Vector2(300, 40)
 offset_left = 200.0
 offset_top = 16.0
 offset_right = 240.0
@@ -657,6 +659,7 @@ offset_bottom = 56.0
 mouse_filter = 2
 
 [node name="ReactionLabel" type="Label" parent="ReactionOverlay/ReactionBubble"]
+custom_minimum_size = Vector2(300, 40)
 layout_mode = 2
 autowrap_mode = 2
 
