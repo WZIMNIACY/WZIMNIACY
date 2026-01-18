@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3 uid="uid://bqfm3bpx8hfit"]
+[gd_scene load_steps=37 format=3 uid="uid://bqfm3bpx8hfit"]
 
 [ext_resource type="Script" uid="uid://cxp073y36dgti" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://assets/themes/main_game.tres" id="1_s3esy"]
@@ -96,6 +96,22 @@ corner_radius_bottom_left = 16
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wyrr4"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.05490196, 0.16470589, 0.16470589, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.24705882, 0.8392157, 0.7764706, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
 
 [node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager", "loadingScreen", "reactionOverlay")]
 layout_mode = 3
@@ -650,18 +666,30 @@ layer = 10
 script = ExtResource("21_dp4e7")
 
 [node name="ReactionBubble" type="PanelContainer" parent="ReactionOverlay"]
-visible = false
 custom_minimum_size = Vector2(300, 40)
 offset_left = 200.0
 offset_top = 16.0
 offset_right = 240.0
 offset_bottom = 56.0
 mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_wyrr4")
 
-[node name="ReactionLabel" type="Label" parent="ReactionOverlay/ReactionBubble"]
+[node name="MarginContainer" type="MarginContainer" parent="ReactionOverlay/ReactionBubble"]
+layout_mode = 2
+
+[node name="ReactionLabel" type="Label" parent="ReactionOverlay/ReactionBubble/MarginContainer"]
 custom_minimum_size = Vector2(300, 40)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.91764706, 0.96862745, 0.9647059, 1)
+theme_override_fonts/font = ExtResource("10_wjob3")
 autowrap_mode = 2
+
+[node name="Tail" type="Polygon2D" parent="ReactionOverlay/ReactionBubble"]
+position = Vector2(165, 25)
+scale = Vector2(0.48039228, 0.36585355)
+color = Color(0.05490196, 0.16470589, 0.16470589, 1)
+polygon = PackedVector2Array(-278.9387, -90.20003, -308.16318, -55.66668, -247.71423, -57.400017)
+uv = PackedVector2Array(-314.5, -92, -338.5, -68, -297.5, -69)
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
 [connection signal="pressed" from="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer/Button" to="." method="OnSkipTurnPressed"]

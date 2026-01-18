@@ -11,7 +11,7 @@ public partial class ReactionOverlay : CanvasLayer
 	public override void _Ready()
 	{
 		reactionBubble = GetNodeOrNull<Control>("ReactionBubble");
-		reactionLabel = GetNodeOrNull<Label>("ReactionBubble/ReactionLabel");
+		reactionLabel = GetNodeOrNull<Label>("ReactionBubble/MarginContainer/ReactionLabel");
 
 		if (reactionBubble == null || reactionLabel == null)
 		{
