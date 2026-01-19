@@ -26,6 +26,7 @@ public partial class MainGame : Control
 
 
     private bool isGameStarted = false;
+    public bool isGameFinished {get; private set;} = false;
     private readonly Dictionary<int, P2PNetworkManager.GamePlayer> playersByIndex = new();
     public Dictionary<int, P2PNetworkManager.GamePlayer> PlayersByIndex => playersByIndex;
 
@@ -1243,6 +1244,8 @@ public partial class MainGame : Control
         if (!isHost) return;
 
         sendSelectionsTimer.Stop();
+
+        isGameFinished = true;
 
         gameRightPanel.CancelHintGeneration();
         GD.Print($"Koniec gry! Wygrywa: {winner}");

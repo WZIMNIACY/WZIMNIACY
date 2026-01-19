@@ -198,7 +198,7 @@ public partial class RightPanel : Node
         do
         {
             GD.Print($"[AIvsHuman] Asking AI to pick a card... ({numberOfCards - numberOfCardsLeft + 1}/{numberOfCards})");
-            game.Card pickedCard = await mainGame.llmPlayer.PickCardFromDeck(cardManager.Deck, new Hint(word, cardManager.Deck.Cards, numberOfCardsLeft));
+            game.Card pickedCard = await mainGame.llmPlayer.PickCardFromDeck(cardManager.Deck, null);
 
             GD.Print($"[AIvsHuman] AI picked card: {pickedCard.Word} {pickedCard.Team}");
             CardManager.CardType? pickedCardType = cardManager.OnCardConfirmedByAI(pickedCard);
@@ -219,7 +219,7 @@ public partial class RightPanel : Node
                 GD.Print("[AIvsHuman] AI pick is invalid. Asking again...");
             }
 
-        } while (numberOfCardsLeft > 0);
+        } while (numberOfCardsLeft > 0 && !mainGame.isGameFinished);
 
         GD.Print("[AIvsHuman] AI is out of picks. Ending turn.");
         mainGame.OnSkipTurnPressed();
