@@ -20,18 +20,18 @@ public partial class EndGameScreen : Control
         public int Streak { get; set; }
     }
 
-    [ExportGroup("General")] 
+    [ExportGroup("General")]
     [Export] public Label winnerTitle;
     [Export] public Label subTitle;
 
     [ExportGroup("Blue Team")]
-    [Export] public Label blueVal1; 
+    [Export] public Label blueVal1;
     [Export] public ProgressBar blueBar1;
-    [Export] public Label blueVal2; 
+    [Export] public Label blueVal2;
     [Export] public ProgressBar blueBar2;
-    [Export] public Label blueVal3; 
+    [Export] public Label blueVal3;
     [Export] public ProgressBar blueBar3;
-    [Export] public Label blueVal4; 
+    [Export] public Label blueVal4;
 
     [ExportGroup("Red Team")]
     [Export] public Label redVal1;
@@ -40,8 +40,8 @@ public partial class EndGameScreen : Control
     [Export] public ProgressBar redBar2;
     [Export] public Label redVal3;
     [Export] public ProgressBar redBar3;
-    
-    [Export] public Label redVal4; 
+
+    [Export] public Label redVal4;
 
     [ExportGroup("Summary")]
     [Export] public Label totalFoundLabel;
@@ -50,7 +50,7 @@ public partial class EndGameScreen : Control
     [ExportGroup("Buttons & Navigation")]
     [Export] public Button lobbyButton;
     [Export] public Button menuButton;
-    
+
     [Export(PropertyHint.File, "*.tscn")] public string lobbyScenePath;
     [Export(PropertyHint.File, "*.tscn")] public string menuScenePath;
 
@@ -94,12 +94,16 @@ public partial class EndGameScreen : Control
         int maxBlue = (mainGame.StartingTeam == MainGame.Team.Blue) ? 9 : 8;
         int maxRed = (mainGame.StartingTeam == MainGame.Team.Red) ? 9 : 8;
 
-        int foundBlue = maxBlue - mainGame.PointsBlue;
-        int foundRed = maxRed - mainGame.PointsRed;
+        int totalBlueRevealed = maxBlue - mainGame.PointsBlue;
+        int totalRedRevealed = maxRed - mainGame.PointsRed;
+
+        int blueFoundOwn = totalBlueRevealed - mainGame.RedOpponentFound;
+        
+        int redFoundOwn = totalRedRevealed - mainGame.BlueOpponentFound;
 
         TeamGameStats blueStats = new TeamGameStats
         {
-            Found = foundBlue,
+            Found = blueFoundOwn,
             Neutral = mainGame.BlueNeutralFound,
             Opponent = mainGame.BlueOpponentFound,
             Streak = mainGame.BlueMaxStreak
@@ -107,7 +111,7 @@ public partial class EndGameScreen : Control
 
         TeamGameStats redStats = new TeamGameStats
         {
-            Found = foundRed,
+            Found = redFoundOwn,
             Neutral = mainGame.RedNeutralFound,
             Opponent = mainGame.RedOpponentFound,
             Streak = mainGame.RedMaxStreak
@@ -121,7 +125,7 @@ public partial class EndGameScreen : Control
                 BlueStats = blueStats,
                 RedStats = redStats
             };
-            
+
             mainGame.P2PNet.SendRpcToAllClients("game_ended", payload);
             GD.Print("[EndGameScreen] Stats calculated and RPC sent.");
         }
@@ -132,7 +136,7 @@ public partial class EndGameScreen : Control
     private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
     {
         if (packet.type != "game_ended") return false;
-        
+
         if (mainGame != null && mainGame.isHost) return false;
 
         try
@@ -178,7 +182,7 @@ public partial class EndGameScreen : Control
 
         UpdateStat(blueVal3, blueBar3, blueStats.Opponent, redStats.Opponent);
         UpdateStat(redVal3, redBar3, redStats.Opponent, blueStats.Opponent);
-            
+
         if (blueVal4 != null) blueVal4.Text = blueStats.Streak.ToString();
         if (redVal4 != null) redVal4.Text = redStats.Streak.ToString();
 
@@ -192,11 +196,11 @@ public partial class EndGameScreen : Control
     private void UpdateStat(Label label, ProgressBar bar, int mainValue, int otherValue)
     {
         int maxValue = mainValue + otherValue;
-        
-        if (maxValue == 0) maxValue = 1; 
+
+        if (maxValue == 0) maxValue = 1;
 
         if (label != null) label.Text = mainValue.ToString();
-        
+
         if (bar != null)
         {
             bar.MaxValue = maxValue;
@@ -205,8 +209,19 @@ public partial class EndGameScreen : Control
             tween.TweenProperty(bar, "value", mainValue, 1.0f).From(0.0f);
         }
     }
-    
-    private void OnLobbyPressed() => GetTree().ChangeSceneToFile(lobbyScenePath);
+
+    private void OnLobbyPressed()
+    {
+        if (eosManager != null && eosManager.isLobbyOwner)
+        {
+            eosManager.UnlockLobby();
+            eosManager.ResetGameSession();
+            GD.Print("Game session reseted and lobby unlocked by host");
+        }
+
+        GetTree().ChangeSceneToFile(lobbyScenePath);
+    }
+
     private void OnMenuPressed()
     {
         GD.Print("MenuButton pressed");

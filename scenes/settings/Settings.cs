@@ -142,18 +142,12 @@ public partial class Settings : Control
 		SettingsManager.Instance.SaveConfig();
 	}
 
-	private void OnBackButtonPressed()
+private void OnBackButtonPressed()
 	{
 		SettingsManager.Instance.SaveConfig();
-		string menuPath = "res://scenes/menu/main.tscn";
-		if (ResourceLoader.Exists(menuPath))
-		{
-			GetTree().ChangeSceneToFile(menuPath);
-		}
-		else
-		{
-			GD.PrintErr($"❌ Nie znaleziono sceny menu: {menuPath}");
-		}
+		this.Visible = false;
+		GetTree().Paused = false; 
+		
 	}
 
 	private void CheckResolutionLock()
