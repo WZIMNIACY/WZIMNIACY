@@ -34,7 +34,10 @@ public partial class RightPanel : Node
         public int Number { get; set; }
         public MainGame.Team TurnTeam { get; set; }
     }
-
+    public sealed class AnimationState
+    {
+        public bool IsAnimating { get; set; }
+    }
     private Dictionary<MainGame.Team, List<string>> oldHints;
 
     public override void _Ready()
@@ -72,26 +75,55 @@ public partial class RightPanel : Node
 
     private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
     {
-        if (packet.type != "hint_given") return false;
+        if (packet.type != "hint_given" && packet.type != "animation_change") return false;
 
         if (mainGame.isHost) return false;
 
-        try
+        if(packet.type == "hint_given")
         {
-            
-            var data = packet.payload.Deserialize<HintNetworkPayload>();
+            try
+            {
+                
+                var data = packet.payload.Deserialize<HintNetworkPayload>();
 
-            GD.Print($"[RightPanel] Received Hint: {data.Word} for {data.TurnTeam}");
+                GD.Print($"[RightPanel] Received Hint: {data.Word} for {data.TurnTeam}");
 
-            UpdateHintDisplay(data.Word, data.Number, data.TurnTeam);
-            
-            return true; 
+                UpdateHintDisplay(data.Word, data.Number, data.TurnTeam);
+                
+                return true; 
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[RightPanel] Error parsing hint: {e.Message}");
+                return true;
+            }
         }
-        catch (Exception e)
+        else if(packet.type == "animation_change")
         {
-            GD.PrintErr($"[RightPanel] Error parsing hint: {e.Message}");
-            return true;
+            try
+            {
+                var data = packet.payload.Deserialize<AnimationState>();
+
+                GD.Print($"[RightPanel] Received Animation State Change: IsAnimating={data.IsAnimating}");
+
+                if(data.IsAnimating)
+                {
+                    HintGenerationAnimationStart();
+                }
+                else
+                {
+                    HintGenerationAnimationStop();
+                }
+
+                return true; 
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"[RightPanel] Error parsing animation state: {e.Message}");
+                return true;
+            }
         }
+        return false; 
     }
 
     public void BroadcastHint(string word, int number, MainGame.Team team)
@@ -136,7 +168,7 @@ public partial class RightPanel : Node
 
 	public void CommitToHistory()
     {
-		if(currentWordLabel != null && currentWordLabel.Text != "" && currentWordLabel.Text != "-")
+		if(currentWordLabel != null && currentWordLabel.Text != "" && currentWordLabel.Text != "-" && currentWordLabel.Text != "...")
         {
             AddToHistory(currentWordLabel.Text, currentWordLabel.Modulate);
 
@@ -157,7 +189,7 @@ public partial class RightPanel : Node
         hintGeneratorCancellation?.Dispose();
         hintGeneratorCancellation = new CancellationTokenSource();
         CancellationToken ct = hintGeneratorCancellation.Token;
-        HintGenerationAnimationStart();
+        HintGenerationAnimationChange(true);
         Hint hint = await GenerateHint(llm, deck, currentTurn);
 
         // It's ok that i only check here because after GenerateHint there are no await,
@@ -168,8 +200,7 @@ public partial class RightPanel : Node
         {
             return;
         }
-
-        HintGenerationAnimationStop();
+        HintGenerationAnimationChange(false);
 
         string cards = string.Join(", ", hint.Cards.Select(x => x.ToString()).ToArray());
         GD.Print($"Hint Generated: {hint.Word}, {hint.NoumberOfSimilarWords}, for words: [{cards}]");
@@ -245,6 +276,33 @@ public partial class RightPanel : Node
         {
             skipButton.Disabled = false;
             skipButton.MouseFilter = Control.MouseFilterEnum.Stop;
+        }
+    }
+
+    private void HintGenerationAnimationChange(bool isAnimating)
+    {
+        if(mainGame != null && mainGame.isHost)
+        {
+            var net = mainGame.P2PNet;
+
+            if (net != null)
+            {
+                var payload = new AnimationState
+                {
+                    IsAnimating = isAnimating
+                };
+
+                net.SendRpcToAllClients("animation_change", payload);
+                GD.Print($"[RightPanel] Broadcasted animation state change: IsAnimating={isAnimating}");
+            }
+        }
+        if (isAnimating)
+        {
+            HintGenerationAnimationStart();
+        }
+        else
+        {
+            HintGenerationAnimationStop();
         }
     }
 
