@@ -36,9 +36,13 @@ public partial class PlayerListContainer : PanelContainer
 					icon.Texture = GD.Load<Texture2D>(member.Value.profileIconPath);
 					var label = playerRow.GetChild<Label>(1);
 					label.Text = member.Value.name;
-					var font = member.Value.puid == mainGame.P2PNet.LocalPuid.ToString()
-						? boldFont
-						: baseFont;
+
+					var font = baseFont;
+					if (member.Value.puid == mainGame.P2PNet.LocalPuid.ToString())
+					{
+						label.Text += " (TY)";
+						font = boldFont;
+					}
 					label.AddThemeFontOverride("font", font);
 					index++;
 				}
