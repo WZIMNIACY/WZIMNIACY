@@ -17,8 +17,9 @@ public partial class RightPanel : Node
     [Export] public VBoxContainer historyList;
     [Export] public ScrollContainer historyScroll;
     [Export] public Button skipButton;
+    [Export] private CardManager cardManager;
 
-	private Color blueTeamColor = new Color("5AD2C8FF");
+    private Color blueTeamColor = new Color("5AD2C8FF");
 	private Color redTeamColor = new Color("E65050FF");
 
     private EOSManager eosManager;
@@ -210,6 +211,49 @@ public partial class RightPanel : Node
             currentTurn == MainGame.Team.Blue
         );
         BroadcastHint(hint.Word, hint.NoumberOfSimilarWords, currentTurn);
+
+        if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman && currentTurn == MainGame.Team.Blue) // AI is assigned to Blue team
+        {
+            PickAiCards(hint.Word, hint.NoumberOfSimilarWords);
+        }
+        else
+        {
+            GD.Print($"[AIvsHuman] not asking AI to pick a card, gamemode={eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman} turn={currentTurn == MainGame.Team.Blue}");
+        }
+    }
+
+    private async void PickAiCards(string word, int numberOfCards)
+    {
+        int numberOfCardsLeft = numberOfCards;
+
+        do
+        {
+            GD.Print($"[AIvsHuman] Asking AI to pick a card... ({numberOfCards - numberOfCardsLeft + 1}/{numberOfCards})");
+            game.Card pickedCard = await mainGame.llmPlayer.PickCardFromDeck(cardManager.Deck, new Hint(word, null, numberOfCardsLeft));
+
+            GD.Print($"[AIvsHuman] AI picked card: {pickedCard.Word} {pickedCard.Team}");
+            CardManager.CardType? pickedCardType = cardManager.OnCardConfirmedByAI(pickedCard);
+
+            if (pickedCardType != CardManager.CardType.Blue) // break the loop if AI picked a wrong card
+            {
+                GD.Print("[AIvsHuman] AI picked a wrong card. Ending turn.");
+                return;
+            }
+
+            if (pickedCardType is not null)
+            {
+                GD.Print("[AIvsHuman] AI pick is valid.");
+                numberOfCardsLeft--;
+            }
+            else
+            {
+                GD.Print("[AIvsHuman] AI pick is invalid. Asking again...");
+            }
+
+        } while (numberOfCardsLeft > 0 && !mainGame.isGameFinished);
+
+        GD.Print("[AIvsHuman] AI is out of picks. Ending turn.");
+        mainGame.OnSkipTurnPressed();
     }
 
     public void UpdateHintDisplay(string word, int number, MainGame.Team team)

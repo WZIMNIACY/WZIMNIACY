@@ -383,7 +383,7 @@ layout_mode = 2
 mainGame = NodePath("../../../../../..")
 cardManager = NodePath("..")
 
-[node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll", "skipButton")]
+[node name="RightPanel" type="PanelContainer" parent="Panel/HBoxContainer" node_paths=PackedStringArray("currentWordLabel", "historyList", "historyScroll", "skipButton", "cardManager")]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("1_s3esy")
@@ -393,6 +393,7 @@ currentWordLabel = NodePath("VRightPanel/PasswordContainer/MarginContainer/HBoxC
 historyList = NodePath("VRightPanel/HintBoxContainer/HistoryScroll/MarginContainer/HistoryList")
 historyScroll = NodePath("VRightPanel/HintBoxContainer/HistoryScroll")
 skipButton = NodePath("VRightPanel/SkipTurnContainer/PanelContainer/Button")
+cardManager = NodePath("../MiddlePanel/VMiddlePanel/GridContainer")
 
 [node name="VRightPanel" type="VBoxContainer" parent="Panel/HBoxContainer/RightPanel"]
 custom_minimum_size = Vector2(313.033, 0)
@@ -479,6 +480,8 @@ text = "Pomiń turę"
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxTexture_ygxny")
+
+[node name="Node" type="Node" parent="Panel/HBoxContainer/RightPanel"]
 
 [node name="InputPanel" type="PanelContainer" parent="Panel" node_paths=PackedStringArray("wordInput", "numberInput", "sendButton")]
 layout_mode = 1

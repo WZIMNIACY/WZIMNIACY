@@ -26,6 +26,7 @@ public partial class MainGame : Control
 
 
     private bool isGameStarted = false;
+    public bool isGameFinished {get; private set;} = false;
     private readonly Dictionary<int, P2PNetworkManager.GamePlayer> playersByIndex = new();
     public Dictionary<int, P2PNetworkManager.GamePlayer> PlayersByIndex => playersByIndex;
 
@@ -34,6 +35,7 @@ public partial class MainGame : Control
     private EOSManager eosManager;
 
     private ILLM llm;
+    public AIPlayer.LLMPlayer llmPlayer { get; private set; }
 
     // Określa czy lokalny gracz jest hostem (właścicielem lobby EOS) - wartość ustawiana dynamicznie na podstawie EOSManager.IsLobbyOwner
     public bool isHost = false;
@@ -664,6 +666,11 @@ public partial class MainGame : Control
             }
         }
 
+        if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman)
+        {
+            llmPlayer = new AIPlayer.LLMPlayer(llm);
+        }
+
         EmitSignal(SignalName.GameReady);
         EmitSignal(SignalName.NewTurnStart);
         sendSelectionsTimer.Start();
@@ -1248,6 +1255,8 @@ public partial class MainGame : Control
         if (!isHost) return;
 
         sendSelectionsTimer.Stop();
+
+        isGameFinished = true;
 
         gameRightPanel.CancelHintGeneration();
         GD.Print($"Koniec gry! Wygrywa: {winner}");
