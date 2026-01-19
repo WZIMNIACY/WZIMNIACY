@@ -231,18 +231,19 @@ public partial class CardManager : GridContainer
 		mainGame.HostConfirmCardAndBroadcast(cardId, eosManager.localProductUserIdString);
 	}
 
-    public bool OnCardConfirmedByAI(game.Card confirmedCard)
+    public CardType? OnCardConfirmedByAI(game.Card confirmedCard)
     {
         foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
         {
             if (card.cardInfo.Word == confirmedCard.Word) // TODO: check if the card is already selected
             {
                 OnCardConfirmed(card);
-                return true; // true if card found
+                return card.Type; // zwracam typ bo libka AI zwraca zle typy kart
             }
         }
 
-        return false; // false if card not found
+        GD.PrintErr("AI confirmed card not found among AgentCards");
+        return null;
     }
 
     private void HideAllCards()

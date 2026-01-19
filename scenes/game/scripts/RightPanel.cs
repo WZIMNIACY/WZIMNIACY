@@ -201,21 +201,24 @@ public partial class RightPanel : Node
             game.Card pickedCard = await mainGame.llmPlayer.PickCardFromDeck(cardManager.Deck, new Hint(word, cardManager.Deck.Cards, numberOfCardsLeft));
 
             GD.Print($"[AIvsHuman] AI picked card: {pickedCard.Word} {pickedCard.Team}");
-            bool pickedCardIsValid = cardManager.OnCardConfirmedByAI(pickedCard);
+            CardManager.CardType? pickedCardType = cardManager.OnCardConfirmedByAI(pickedCard);
 
-            if (pickedCard.Team != game.Team.Blue) // break the loop if AI picked a wrong card
+            if (pickedCardType != CardManager.CardType.Blue) // break the loop if AI picked a wrong card
             {
-                GD.Print("[AIvsHuman] AI picked a human's card. Ending turn.");
+                GD.Print("[AIvsHuman] AI picked a wrong card. Ending turn.");
                 return;
             }
 
-            if (pickedCardIsValid)
+            if (pickedCardType is not null)
             {
                 GD.Print("[AIvsHuman] AI pick is valid.");
                 numberOfCardsLeft--;
             }
             else
+            {
                 GD.Print("[AIvsHuman] AI pick is invalid. Asking again...");
+            }
+
         } while (numberOfCardsLeft > 0);
 
         GD.Print("[AIvsHuman] AI is out of picks. Ending turn.");
