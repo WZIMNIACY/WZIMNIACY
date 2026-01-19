@@ -1013,7 +1013,7 @@ public partial class MainGame : Control
         }
 
         bool kapitnBomba = false; // jak macie flagę to podepniemy później
-        game.Team actualTour = turnAtPick.ToGameTeam();
+        game.Team actualTour = (turnAtPick == Team.Blue) ? game.Team.Blue : game.Team.Red;
 
         try
         {
