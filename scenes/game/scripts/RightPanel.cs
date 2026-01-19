@@ -17,15 +17,14 @@ public partial class RightPanel : Node
     [Export] public VBoxContainer historyList;
     [Export] public ScrollContainer historyScroll;
     [Export] public Button skipButton;
+    [Export] private CardManager cardManager;
 
-	private Color blueTeamColor = new Color("5AD2C8FF");
+    private Color blueTeamColor = new Color("5AD2C8FF");
 	private Color redTeamColor = new Color("E65050FF");
 
     private EOSManager eosManager;
 
     private MainGame mainGame;
-
-    private CardManager cardManager;
 
     private Godot.Timer hintGenerationAnimationTimer;
 
@@ -54,8 +53,6 @@ public partial class RightPanel : Node
         eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
 
         mainGame = GetTree().CurrentScene as MainGame;
-
-        cardManager = mainGame.GetNode<CardManager>("CardManager");
 
         CallDeferred(nameof(SubscribeToNetwork));
         
@@ -184,26 +181,44 @@ public partial class RightPanel : Node
         );
         BroadcastHint(hint.Word, hint.NoumberOfSimilarWords, currentTurn);
 
-        if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman && currentTurn == MainGame.Team.Red)
+        if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman && currentTurn == MainGame.Team.Blue) // AI is assigned to Blue team
+        {
             PickAiCards(hint.Word, hint.NoumberOfSimilarWords);
+        }
+        else
+        {
+            GD.Print($"[AIvsHuman] not asking AI to pick a card, gamemode={eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman} turn={currentTurn == MainGame.Team.Blue}");
+        }
     }
 
-    private async void PickAiCards(string word, int number)
+    private async void PickAiCards(string word, int numberOfCards)
     {
-        while (number < 0)
-        {
-            GD.Print("Asking AI to pick a card...");
-            game.Card pickedCard = await mainGame.llmPlayer.PickCardFromDeck(cardManager.Deck, new Hint(word, cardManager.Deck.Cards, number));
+        int numberOfCardsLeft = numberOfCards;
 
-            GD.Print($"AI picked card: {pickedCard.ToString()}");
+        do
+        {
+            GD.Print($"[AIvsHuman] Asking AI to pick a card... ({numberOfCards - numberOfCardsLeft + 1}/{numberOfCards})");
+            game.Card pickedCard = await mainGame.llmPlayer.PickCardFromDeck(cardManager.Deck, new Hint(word, cardManager.Deck.Cards, numberOfCardsLeft));
+
+            GD.Print($"[AIvsHuman] AI picked card: {pickedCard.Word} {pickedCard.Team}");
             bool pickedCardIsValid = cardManager.OnCardConfirmedByAI(pickedCard);
 
-            if (pickedCardIsValid)
-                number--;
-            else
-                GD.Print("AI picked an invalid card. Asking again...");
-        }
+            if (pickedCard.Team != game.Team.Blue) // break the loop if AI picked a wrong card
+            {
+                GD.Print("[AIvsHuman] AI picked a human's card. Ending turn.");
+                return;
+            }
 
+            if (pickedCardIsValid)
+            {
+                GD.Print("[AIvsHuman] AI pick is valid.");
+                numberOfCardsLeft--;
+            }
+            else
+                GD.Print("[AIvsHuman] AI pick is invalid. Asking again...");
+        } while (numberOfCardsLeft > 0);
+
+        GD.Print("[AIvsHuman] AI is out of picks. Ending turn.");
         mainGame.OnSkipTurnPressed();
     }
 
