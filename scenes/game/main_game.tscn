@@ -536,7 +536,7 @@ layout_mode = 2
 text = "Wysłać
 "
 
-[node name="ReactionOverlay" type="Control" parent="Panel"]
+[node name="ReactionOverlay" type="Control" parent="Panel" node_paths=PackedStringArray("reactionBubble", "reactionLabel")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -545,6 +545,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("21_dp4e7")
+reactionBubble = NodePath("ReactionBubble")
+reactionLabel = NodePath("ReactionBubble/MarginContainer/ReactionLabel")
 
 [node name="ReactionBubble" type="PanelContainer" parent="Panel/ReactionOverlay"]
 custom_minimum_size = Vector2(300, 40)

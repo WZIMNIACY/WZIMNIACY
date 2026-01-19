@@ -2,29 +2,21 @@ using Godot;
 
 public partial class ReactionOverlay : Control
 {
-	private Control reactionBubble;
-	private Label reactionLabel;
+	[Export] private Control reactionBubble;
+	[Export] private Label reactionLabel;
 
 	private SceneTreeTimer hideTimer;
 
 	public override void _Ready()
 	{
-		reactionBubble = GetNodeOrNull<Control>("ReactionBubble");
-		reactionLabel = GetNodeOrNull<Label>("ReactionBubble/MarginContainer/ReactionLabel");
-
 		if (reactionBubble == null || reactionLabel == null)
 		{
-			GD.PrintErr("[ReactionOverlay] CRITICAL: Missing nodes. Expected 'ReactionBubble' and 'ReactionBubble/ReactionLabel'. Overlay disabled.");
+			GD.PrintErr("[ReactionOverlay] CRITICAL: reactionBubble or reactionLabel not assigned in Inspector. Overlay disabled.");
 			return;
 		}
 
 		reactionBubble.Visible = false;
-
-		// Usuń auto-test, bo w multiplayerze miesza w debugowaniu.
-		// Jeśli chcesz, zostaw tylko na Debug build:
-		// if (OS.IsDebugBuild()) ShowReaction("Test reakcji", 2.0f);
 	}
-
 
 	public void ShowReaction(string text, float seconds = 2.5f)
 	{

@@ -148,14 +148,14 @@ public partial class MainGame : Control
     private sealed class ReactionPayload
     {
         public string text { get; set; }
-        public int durationMs { get; set; }
+        public uint durationMs { get; set; }
     }
-
     private bool p2pJsonTestSent = false;
     // =====================
 
     private Task reactionTask;
     private bool isShuttingDown = false;
+    private const int ReactionDurationMs = 2500;
 
     private readonly HashSet<int> confirmedCardIds = new();
 
@@ -322,13 +322,9 @@ public partial class MainGame : Control
                 return true;
             }
 
-            float seconds = 2.5f;
-            if (payload.durationMs > 0)
-            {
-                seconds = payload.durationMs / 1000.0f;
-            }
-
+            float seconds = payload.durationMs / 1000.0f;
             ShowReactionBubble(payload.text, seconds);
+
             return true;
         }
         // ==========================
@@ -973,7 +969,7 @@ public partial class MainGame : Control
         GD.Print($"[MainGame] SendRpcToAllClients(turn_changed) sent={sent} currentTurn={currentTurn} turnCounter={turnCounter}");
     }
 
-    private void BroadcastReaction(string text, int durationMs = 2500)
+    private void BroadcastReaction(string text, uint durationMs = ReactionDurationMs)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -981,7 +977,7 @@ public partial class MainGame : Control
         }
 
         // Host i tak powinien zobaczyć to samo od razu
-        ShowReactionBubble(text, durationMs / 1000.0f);
+        CallDeferred(nameof(ShowReactionBubble), text, durationMs / 1000.0f);
 
         if (p2pNet == null) return;
         if (!isHost) return;
@@ -995,14 +991,6 @@ public partial class MainGame : Control
         int sent = p2pNet.SendRpcToAllClients("reaction", payload);
         GD.Print($"[MainGame] SendRpcToAllClients(reaction) sent={sent}");
     }
-    
-    private game.Team MapToGameTeam(MainGame.Team team)
-    {
-        if (team == MainGame.Team.Blue) return game.Team.Blue;
-        if (team == MainGame.Team.Red) return game.Team.Red;
-        return game.Team.Blue;
-    }
-
 
     private async Task<string> TryBuildReactionTextAsync(Hint hint, Card pickedCard, Team turnAtPick)
     {
@@ -1025,7 +1013,7 @@ public partial class MainGame : Control
         }
 
         bool kapitnBomba = false; // jak macie flagę to podepniemy później
-        game.Team actualTour = MapToGameTeam(turnAtPick);
+        game.Team actualTour = turnAtPick.ToGameTeam();
 
         try
         {
@@ -1063,8 +1051,8 @@ public partial class MainGame : Control
                 return;
             }
 
-            // UI + RPC
-            BroadcastReaction(cleanText, 2500);
+            // UI + RPC (NA MAIN THREAD)
+            CallDeferred(nameof(BroadcastReaction), cleanText, (uint)ReactionDurationMs);
         }
         catch (Exception e)
         {
@@ -1153,7 +1141,7 @@ public partial class MainGame : Control
         // 4) Generujemy i broadcastujemy reakcję ASYNC (nie blokujemy gry)
         if (hintSnapshot == null)
         {
-            GD.PrintErr("[MainGame] Reaction skipped (hintSnapshot is null). Did you call SetLastGeneratedHint()?");
+            GD.Print("[MainGame] Reaction skipped (hintSnapshot is null). Did you call SetLastGeneratedHint()?");
             return;
         }
 
