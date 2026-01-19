@@ -2,6 +2,10 @@ using Godot;
 
 public partial class Settings : Control
 {
+	// --- SIGNALS ---
+	[Signal]
+	public delegate void BackRequestedEventHandler();
+
 	// --- UI ELEMENTS ---
 	[ExportGroup("Navigation")]
 	[Export] private Button backButton;
@@ -145,9 +149,7 @@ public partial class Settings : Control
 private void OnBackButtonPressed()
 	{
 		SettingsManager.Instance.SaveConfig();
-		this.Visible = false;
-		GetTree().Paused = false; 
-		
+		EmitSignal(SignalName.BackRequested);
 	}
 
 	private void CheckResolutionLock()

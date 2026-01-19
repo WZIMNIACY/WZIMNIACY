@@ -17,6 +17,10 @@ public partial class MainMenu : Node
     private Tween loadingTween;
     private const float CreateTimeout = 5.0f; // 5 sekund timeout
 
+    [Export] private Control settingsMenuNode;
+    [Export] private Control helpMenuNode;
+    private Control mainPanel;
+
     // Sekretne menu admina
     private string secretCode = "";
     private const string SecretTrigger = "kakor";
@@ -32,8 +36,27 @@ public partial class MainMenu : Node
         settingsButton = GetNode<Button>("Panel/MenuCenter/VMenu/Settings/SettingsButton");
         helpButton = GetNode<Button>("Panel/MenuCenter/VMenu/Help/HelpButton");
         loadingOverlay = GetNode<ColorRect>("Panel/MenuCenter/VMenu/CreateGame/CreateGameButton/LoadingOverlay");
+        mainPanel = GetNode<Control>("Panel");
 
         eosManager = GetNode<EOSManager>("/root/EOSManager");
+
+        // Połącz sygnały powrotu z Settings i Help
+        if (settingsMenuNode != null)
+        {
+            var settingsScript = settingsMenuNode as Settings;
+            if (settingsScript != null)
+            {
+                settingsScript.BackRequested += OnSettingsClosed;
+            }
+        }
+        if (helpMenuNode != null)
+        {
+            var helpScript = helpMenuNode as Help;
+            if (helpScript != null)
+            {
+                helpScript.BackRequested += OnHelpClosed;
+            }
+        }
 
         createButton.Pressed += OnCreateGamePressed;
         joinButton.Pressed += OnJoinGamePressed;
@@ -208,14 +231,42 @@ public partial class MainMenu : Node
 
     private void OnSettingsPressed()
     {
-        GD.Print("Loading Settings scene...");
-        GetTree().ChangeSceneToFile(SettingsSceneString);
+        GD.Print("Opening Settings...");
+        if (settingsMenuNode != null && mainPanel != null)
+        {
+            mainPanel.Visible = false;
+            settingsMenuNode.Visible = true;
+        }
+    }
+
+    private void OnSettingsClosed()
+    {
+        GD.Print("Closing Settings...");
+        if (settingsMenuNode != null && mainPanel != null)
+        {
+            settingsMenuNode.Visible = false;
+            mainPanel.Visible = true;
+        }
     }
 
     private void OnHelpPressed()
     {
-        GD.Print("Loading Help scene...");
-        GetTree().ChangeSceneToFile(HelpSceneString);
+        GD.Print("Opening Help...");
+        if (helpMenuNode != null && mainPanel != null)
+        {
+            mainPanel.Visible = false;
+            helpMenuNode.Visible = true;
+        }
+    }
+
+    private void OnHelpClosed()
+    {
+        GD.Print("Closing Help...");
+        if (helpMenuNode != null && mainPanel != null)
+        {
+            helpMenuNode.Visible = false;
+            mainPanel.Visible = true;
+        }
     }
 
     private void ShowAdminMenu()

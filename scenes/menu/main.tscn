@@ -1,11 +1,12 @@
-[gd_scene load_steps=7 format=3 uid="uid://c2yf84d4xmho2"]
+[gd_scene load_steps=9 format=3 uid="uid://c2yf84d4xmho2"]
 
 [ext_resource type="Script" uid="uid://dghu5uw7p572c" path="res://scenes/menu/MainMenu.cs" id="1_3xm2k"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="1_h2yge"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="1_ig7tw"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="2_0xm2m"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="3_1bvp3"]
-[ext_resource type="GradientTexture2D" path="res://assets/textures/gradients/loading_gradient.tres" id="6_loading"]
+[ext_resource type="PackedScene" uid="uid://bfxpcutxox0tt" path="res://scenes/settings/Settings.tscn" id="6_gmxck"]
+[ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="7_ec7jh"]
 
 [node name="Main" type="Control" node_paths=PackedStringArray("createButton", "joinButton", "settingsButton", "helpButton", "quitButton", "settingsMenuNode", "helpMenuNode")]
 layout_mode = 3

@@ -2,6 +2,9 @@ using Godot;
 
 public partial class Help : Control
 {
+	[Signal]
+	public delegate void BackRequestedEventHandler();
+
 	private Button backButton;
 
 	public override void _Ready()
@@ -21,8 +24,6 @@ public partial class Help : Control
 
 	private void OnBackButtonPressed()
 	{
-		// ZMIANA: Nie ładujemy nowej sceny, tylko się ukrywamy.
-		// Dzięki temu MainMenu pod spodem nadal tam jest.
-		this.Visible = false;
+		EmitSignal(SignalName.BackRequested);
 	}
 }
