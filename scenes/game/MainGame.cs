@@ -1207,6 +1207,15 @@ public partial class MainGame : Control
                 break;
 
             case CardManager.CardType.Common:
+                if (currentTurn == Team.Blue)
+                {
+                    blueNeutralFound++;
+                }
+                else if (currentTurn == Team.Red)
+                {
+                    redNeutralFound++;
+                }
+                
                 TurnChange();
                 break;
 
