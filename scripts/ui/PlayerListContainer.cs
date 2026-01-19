@@ -2,6 +2,8 @@ using Godot;
 public partial class PlayerListContainer : PanelContainer
 {
 	[Export] VBoxContainer playerListVBox;
+	[Export] Font baseFont;
+	[Export] Font boldFont;
 	private MainGame mainGame;
 
 	[Export] public MainGame.Team team;
@@ -11,7 +13,7 @@ public partial class PlayerListContainer : PanelContainer
 		base._Ready();
 		mainGame = GetNode<MainGame>("/root/Control");
 		GD.Print("MainGame found: " + (mainGame != null));
-		
+
 		mainGame.GameReady += SetPlayerListVBox;
 	}
 
@@ -26,7 +28,7 @@ public partial class PlayerListContainer : PanelContainer
 		foreach(var member in mainGame.PlayersByIndex)
 		{
 			if((member.Value.team == team))
-			{	
+			{
 				var child = playerListVBox.GetChildren();
 				if (index < 5 && child[index] is HBoxContainer playerRow)
 				{
@@ -34,6 +36,14 @@ public partial class PlayerListContainer : PanelContainer
 					icon.Texture = GD.Load<Texture2D>(member.Value.profileIconPath);
 					var label = playerRow.GetChild<Label>(1);
 					label.Text = member.Value.name;
+
+					var font = baseFont;
+					if (member.Value.puid == mainGame.P2PNet.LocalPuid.ToString())
+					{
+						label.Text += " (TY)";
+						font = boldFont;
+					}
+					label.AddThemeFontOverride("font", font);
 					index++;
 				}
 			}
