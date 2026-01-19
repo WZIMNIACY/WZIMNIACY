@@ -198,7 +198,7 @@ public partial class RightPanel : Node
         do
         {
             GD.Print($"[AIvsHuman] Asking AI to pick a card... ({numberOfCards - numberOfCardsLeft + 1}/{numberOfCards})");
-            game.Card pickedCard = await mainGame.llmPlayer.PickCardFromDeck(cardManager.Deck, null);
+            game.Card pickedCard = await mainGame.llmPlayer.PickCardFromDeck(cardManager.Deck, new Hint(word, null, numberOfCardsLeft));
 
             GD.Print($"[AIvsHuman] AI picked card: {pickedCard.Word} {pickedCard.Team}");
             CardManager.CardType? pickedCardType = cardManager.OnCardConfirmedByAI(pickedCard);
