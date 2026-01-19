@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3 uid="uid://bqfm3bpx8hfit"]
+[gd_scene load_steps=37 format=3 uid="uid://bqfm3bpx8hfit"]
 
 [ext_resource type="Script" uid="uid://cxp073y36dgti" path="res://scenes/game/MainGame.cs" id="1_o6v7o"]
 [ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://assets/themes/main_game.tres" id="1_s3esy"]
@@ -20,6 +20,7 @@
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="16_v72ow"]
 [ext_resource type="Script" uid="uid://cfufconx8s1kg" path="res://scripts/P2PNetworkManager.cs" id="19_stils"]
 [ext_resource type="PackedScene" uid="uid://da78r3ltx830e" path="res://scenes/loadingscreen/loadingscreen.tscn" id="20_mssxc"]
+[ext_resource type="Script" uid="uid://cdtyyk14un12j" path="res://scenes/game/scripts/ReactionOverlay.cs" id="21_dp4e7"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dp4e7"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -81,6 +82,22 @@ bg_color = Color(0.6, 0.6, 0.6, 0)
 texture = ExtResource("7_wi4c7")
 region_rect = Rect2(2.7949371, 0, 57.93286, 64)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wyrr4"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.045983486, 0.14422828, 0.14423111, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0.9304132, 0.83479613, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_o6v7o"]
 bg_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
 border_width_left = 2
@@ -96,7 +113,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager", "loadingScreen")]
+[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager", "loadingScreen", "reactionOverlay")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -119,6 +136,7 @@ settingsScene = NodePath("Settings")
 helpScene = NodePath("HelpScene")
 cardManager = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer")
 loadingScreen = NodePath("LoadingScreen")
+reactionOverlay = NodePath("Panel/ReactionOverlay")
 metadata/_edit_horizontal_guides_ = [-92.0]
 
 [node name="BoxContainer" type="BoxContainer" parent="."]
@@ -521,6 +539,58 @@ layout_mode = 2
 text = "Wysłać
 "
 
+[node name="ReactionOverlay" type="Control" parent="Panel" node_paths=PackedStringArray("reactionBubble", "reactionLabel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("21_dp4e7")
+reactionBubble = NodePath("ReactionBubble")
+reactionLabel = NodePath("ReactionBubble/MarginContainer/ReactionLabel")
+
+[node name="ReactionBubble" type="PanelContainer" parent="Panel/ReactionOverlay"]
+custom_minimum_size = Vector2(300, 40)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.065
+anchor_top = 0.022
+anchor_right = 0.065
+anchor_bottom = 0.03
+offset_left = -29.248016
+offset_top = 9.5199995
+offset_right = 10.751984
+offset_bottom = 49.52
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_wyrr4")
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/ReactionOverlay/ReactionBubble"]
+layout_mode = 2
+
+[node name="ReactionLabel" type="Label" parent="Panel/ReactionOverlay/ReactionBubble/MarginContainer"]
+custom_minimum_size = Vector2(300, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91764706, 0.96862745, 0.9647059, 1)
+theme_override_fonts/font = ExtResource("10_wjob3")
+autowrap_mode = 2
+
+[node name="TailBorder" type="Polygon2D" parent="Panel/ReactionOverlay/ReactionBubble"]
+position = Vector2(-61.95015, -2.7759998)
+scale = Vector2(0.53613275, 0.6558824)
+color = Color(0, 0.92941177, 0.8352941, 1)
+offset = Vector2(400, 65)
+polygon = PackedVector2Array(-257.65063, -58.901352, -238.15071, -72.62332, -214.75081, -58.90135)
+uv = PackedVector2Array(-260.49963, -59.00003, -225.49963, -88.00003, -197.49963, -60.00003)
+
+[node name="Tail" type="Polygon2D" parent="Panel/ReactionOverlay/ReactionBubble"]
+position = Vector2(237.25323, 54.224)
+scale = Vector2(0.72764677, 0.8403497)
+color = Color(0.047058824, 0.14509805, 0.14509805, 1)
+polygon = PackedVector2Array(-292.02237, -72.58883, -306.00214, -61.879005, -274.70087, -61.58157)
+uv = PackedVector2Array(-314.5, -92, -338.5, -68, -297.5, -69)
+
 [node name="MenuPanel" type="Panel" parent="."]
 visible = false
 layout_mode = 1
@@ -645,6 +715,8 @@ script = ExtResource("19_stils")
 
 [node name="LoadingScreen" parent="." instance=ExtResource("20_mssxc")]
 layout_mode = 1
+offset_top = -1.0
+offset_bottom = -1.0
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
 [connection signal="pressed" from="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer/Button" to="." method="OnSkipTurnPressed"]
