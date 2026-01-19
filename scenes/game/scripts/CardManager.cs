@@ -231,7 +231,21 @@ public partial class CardManager : GridContainer
 		mainGame.HostConfirmCardAndBroadcast(cardId, eosManager.localProductUserIdString);
 	}
 
-	private void HideAllCards()
+    public bool OnCardConfirmedByAI(game.Card confirmedCard)
+    {
+        foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
+        {
+            if (card.cardInfo.Word == confirmedCard.Word) // TODO: check if the card is already selected
+            {
+                OnCardConfirmed(card);
+                return true; // true if card found
+            }
+        }
+
+        return false; // false if card not found
+    }
+
+    private void HideAllCards()
 	{
 		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
 		{

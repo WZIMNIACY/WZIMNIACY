@@ -25,6 +25,8 @@ public partial class RightPanel : Node
 
     private MainGame mainGame;
 
+    private CardManager cardManager;
+
     private Godot.Timer hintGenerationAnimationTimer;
 
     private CancellationTokenSource hintGeneratorCancellation;
@@ -52,6 +54,8 @@ public partial class RightPanel : Node
         eosManager = GetNodeOrNull<EOSManager>("/root/EOSManager");
 
         mainGame = GetTree().CurrentScene as MainGame;
+
+        cardManager = mainGame.GetNode<CardManager>("CardManager");
 
         CallDeferred(nameof(SubscribeToNetwork));
         
@@ -179,6 +183,28 @@ public partial class RightPanel : Node
             currentTurn == MainGame.Team.Blue
         );
         BroadcastHint(hint.Word, hint.NoumberOfSimilarWords, currentTurn);
+
+        if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman && currentTurn == MainGame.Team.Red)
+            PickAiCards(hint.Word, hint.NoumberOfSimilarWords);
+    }
+
+    private async void PickAiCards(string word, int number)
+    {
+        while (number < 0)
+        {
+            GD.Print("Asking AI to pick a card...");
+            game.Card pickedCard = await mainGame.llmPlayer.PickCardFromDeck(cardManager.Deck, new Hint(word, cardManager.Deck.Cards, number));
+
+            GD.Print($"AI picked card: {pickedCard.ToString()}");
+            bool pickedCardIsValid = cardManager.OnCardConfirmedByAI(pickedCard);
+
+            if (pickedCardIsValid)
+                number--;
+            else
+                GD.Print("AI picked an invalid card. Asking again...");
+        }
+
+        mainGame.OnSkipTurnPressed();
     }
 
     public void UpdateHintDisplay(string word, int number, MainGame.Team team)

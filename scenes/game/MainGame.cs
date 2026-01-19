@@ -34,6 +34,7 @@ public partial class MainGame : Control
     private EOSManager eosManager;
 
     private ILLM llm;
+    public AIPlayer.LLMPlayer llmPlayer { get; private set; }
 
     // Określa czy lokalny gracz jest hostem (właścicielem lobby EOS) - wartość ustawiana dynamicznie na podstawie EOSManager.IsLobbyOwner
     public bool isHost = false;
@@ -662,6 +663,11 @@ public partial class MainGame : Control
 
                 llm = new DeepSeekLLM(apiKey);
             }
+        }
+
+        if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman)
+        {
+            llmPlayer = new AIPlayer.LLMPlayer(llm);
         }
 
         EmitSignal(SignalName.GameReady);
