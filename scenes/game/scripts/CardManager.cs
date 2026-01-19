@@ -187,7 +187,7 @@ public partial class CardManager : GridContainer
 		GD.Print("Karta kliknięta: " + card.Name);
 		card.SetColor();
 		card.MouseFilter = MouseFilterEnum.Ignore;
-        ClearAllSelections();
+        card.ClearSelections();
 
         if (Deck == null)
         {
