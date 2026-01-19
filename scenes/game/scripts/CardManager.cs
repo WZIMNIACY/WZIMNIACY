@@ -186,9 +186,9 @@ public partial class CardManager : GridContainer
 		GD.Print("Karta kliknięta: " + card.Name);
 		card.SetColor();
 		card.MouseFilter = MouseFilterEnum.Ignore;
-		HideAllCards();
+        card.ClearSelections();
 
-		if (Deck == null)
+        if (Deck == null)
         {
             LoadDeck();
         }
@@ -231,7 +231,7 @@ public partial class CardManager : GridContainer
 		mainGame.HostConfirmCardAndBroadcast(cardId, eosManager.localProductUserIdString);
 	}
 
-	private void HideAllCards()
+	public void ClearAllSelections()
 	{
 		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
 		{
