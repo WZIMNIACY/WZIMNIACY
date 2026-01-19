@@ -1096,6 +1096,7 @@ public partial class MainGame : Control
     public void SetTurnBlue()
     {
         GD.Print("Turn blue...");
+        cardManager.ClearAllSelections();
         currentTurn = Team.Blue;
         if (playerTeam == currentTurn)
             gameRightPanel.EnableSkipButton();
@@ -1110,6 +1111,7 @@ public partial class MainGame : Control
     public void SetTurnRed()
     {
         GD.Print("Turn red...");
+        cardManager.ClearAllSelections();
         currentTurn = Team.Red;
         if (playerTeam == currentTurn)
             gameRightPanel.EnableSkipButton();
