@@ -1,13 +1,13 @@
 [gd_scene load_steps=7 format=3 uid="uid://c2yf84d4xmho2"]
 
-[ext_resource type="Script" uid="uid://yfaggvbm7jh1" path="res://scenes/menu/MainMenu.cs" id="1_3xm2k"]
+[ext_resource type="Script" uid="uid://dghu5uw7p572c" path="res://scenes/menu/MainMenu.cs" id="1_3xm2k"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="1_h2yge"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="1_ig7tw"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="2_0xm2m"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="3_1bvp3"]
 [ext_resource type="GradientTexture2D" path="res://assets/textures/gradients/loading_gradient.tres" id="6_loading"]
 
-[node name="Main" type="Control" node_paths=PackedStringArray("createButton", "joinButton", "settingsButton", "helpButton", "quitButton")]
+[node name="Main" type="Control" node_paths=PackedStringArray("createButton", "joinButton", "settingsButton", "helpButton", "quitButton", "settingsMenuNode", "helpMenuNode")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,6 +20,8 @@ joinButton = NodePath("Panel/MenuCenter/VMenu/JoinGame/JoinGameButton")
 settingsButton = NodePath("Panel/MenuCenter/VMenu/Settings/SettingsButton")
 helpButton = NodePath("Panel/MenuCenter/VMenu/Help/HelpButton")
 quitButton = NodePath("Panel/MenuCenter/VMenu/Quit/QuitButton")
+settingsMenuNode = NodePath("Settings")
+helpMenuNode = NodePath("HelpScene")
 
 [node name="Panel" type="ColorRect" parent="."]
 layout_mode = 1
@@ -143,3 +145,11 @@ theme_override_colors/font_color = Color(0, 1, 0.8, 1)
 theme_override_fonts/font = ExtResource("1_h2yge")
 theme_override_font_sizes/font_size = 24
 text = "Wzimniacy"
+
+[node name="Settings" parent="." instance=ExtResource("6_gmxck")]
+visible = false
+layout_mode = 1
+
+[node name="HelpScene" parent="." instance=ExtResource("7_ec7jh")]
+visible = false
+layout_mode = 1

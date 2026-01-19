@@ -23,13 +23,34 @@ public partial class Settings : Control
 		if (scaleUISlider != null)
 		{
 			scaleUISlider.MinValue = 0.5f; 
-			scaleUISlider.MaxValue = 2.0f; 
+			scaleUISlider.MaxValue = 3.0f; 
 			scaleUISlider.Step = 0.1f;
 		}
 
 		SetupVideoOptions();
 		SyncUIWithManager();
 		ConnectSignals();
+
+		// Nasłuchiwanie na zmiany skali z Managera
+		if (SettingsManager.Instance != null)
+		{
+			SettingsManager.Instance.OnUiScaleChanged += UpdateSliderVisuals;
+		}
+	}
+
+	public override void _ExitTree()
+	{
+		// Sprzątanie po zdarzeniu
+		if (SettingsManager.Instance != null)
+		{
+			SettingsManager.Instance.OnUiScaleChanged -= UpdateSliderVisuals;
+		}
+	}
+
+	private void UpdateSliderVisuals(float newScale)
+	{
+		// SetValueNoSignal zapobiega pętli nieskończonej
+		scaleUISlider?.SetValueNoSignal(newScale);
 	}
 
 	private void SetupVideoOptions()
@@ -121,23 +142,14 @@ public partial class Settings : Control
 		SettingsManager.Instance.SaveConfig();
 	}
 
-	private void OnBackButtonPressed()
+private void OnBackButtonPressed()
 	{
 		SettingsManager.Instance.SaveConfig();
-		// Zmień tę ścieżkę na właściwą dla Twojego projektu!
-		string menuPath = "res://scenes/menu/main.tscn";
-		if (ResourceLoader.Exists(menuPath))
-		{
-			GetTree().ChangeSceneToFile(menuPath);
-		}
-		else
-		{
-			GD.PrintErr($"❌ Nie znaleziono sceny menu: {menuPath}");
-		}
+		this.Visible = false;
+		GetTree().Paused = false; 
+		
 	}
 
-	// Blokuje zmianę rozdzielczości, gdy jesteśmy w trybie Fullscreen lub Borderless
-	// (ponieważ te tryby wymuszają natywną rozdzielczość)
 	private void CheckResolutionLock()
 	{
 		if (resolutionOptionButton == null) return;

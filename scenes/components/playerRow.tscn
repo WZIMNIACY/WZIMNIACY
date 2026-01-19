@@ -5,19 +5,19 @@
 [node name="playerRow" type="HBoxContainer"]
 
 [node name="ProfilePicture" type="TextureRect" parent="."]
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(21, 21)
 layout_mode = 2
 size_flags_horizontal = 0
+expand_mode = 1
 stretch_mode = 4
-
-[node name="HSpacer" type="Control" parent="."]
-layout_mode = 2
-size_flags_horizontal = 3
 
 [node name="PlayerNicknameLabel" type="Label" parent="."]
 layout_mode = 2
 size_flags_horizontal = 8
 theme_override_fonts/font = ExtResource("1_y36rg")
-text = "Ziomeczek (TY)"
 horizontal_alignment = 2
 vertical_alignment = 1
+
+[node name="HSpacer" type="Control" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3

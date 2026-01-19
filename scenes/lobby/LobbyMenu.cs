@@ -40,6 +40,7 @@ public partial class LobbyMenu : Control
     private EscapeBackHandler escapeBackHandler;
     // Custom tooltip
     private CustomTooltip customTooltip;
+    private PopupSystem popupSystem;
     private PasteDetector apiKeyPasteDetector;
     private string lobbyReadyTooltip = "";
     private string apiKeyErrorMessage = "";
@@ -64,10 +65,11 @@ public partial class LobbyMenu : Control
         public static bool isTeamNotEmpty { get; set; } = false;
         public static bool isNeutralTeamEmpty { get; set; } = true;
         public static bool isAPIKeySet { get; set; } = false;
+        public static bool allPlayersInLobbyView { get; set; } = true;
 
         public static bool IsReadyToStart()
         {
-            return aiTypeSet && gameModeSet && isAPIKeySet && isTeamNotEmpty && !isAnyTeamFull && isNeutralTeamEmpty;
+            return aiTypeSet && gameModeSet && isAPIKeySet && isTeamNotEmpty && !isAnyTeamFull && isNeutralTeamEmpty && allPlayersInLobbyView;
         }
 
     }
@@ -76,8 +78,22 @@ public partial class LobbyMenu : Control
     {
         base._Ready();
 
+        alreadySwitchedToGame = false;
+
         // Pobierz EOSManager z autoload
         eosManager = GetNode<EOSManager>("/root/EOSManager");
+
+        // Oznacz gracza jako obecnego w widoku lobby
+        if (eosManager != null)
+        {
+            eosManager.SetPlayerInLobbyView(true);
+
+            if (eosManager.isLobbyOwner)
+            {
+                eosManager.ResetGameSession();
+                eosManager.UnlockLobby();
+            }
+        }
 
         // Inicjalizuj LobbyLeaveConfirmation
         leaveConfirmation = GetNode<LobbyLeaveConfirmation>("LobbyLeaveConfirmation");
@@ -143,18 +159,22 @@ public partial class LobbyMenu : Control
         if (blueTeamList != null)
         {
             blueTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, blueTeamList);
+            blueTeamList.FixedIconSize = new Vector2I(21, 21);
         }
         if (redTeamList != null)
         {
             redTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, redTeamList);
+            redTeamList.FixedIconSize = new Vector2I(21, 21);
         }
         if (neutralTeamList != null)
         {
             neutralTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, neutralTeamList);
+            neutralTeamList.FixedIconSize = new Vector2I(21, 21);
         }
         if (universalTeamList != null)
         {
             universalTeamList.GuiInput += (inputEvent) => OnTeamListGuiInput(inputEvent, universalTeamList);
+            universalTeamList.FixedIconSize = new Vector2I(21, 21);
         }
 
         if (blueTeamJoinButton != null)
@@ -243,6 +263,9 @@ public partial class LobbyMenu : Control
 
         // Załaduj custom tooltip ze sceny
         LoadCustomTooltip();
+
+        // Załaduj custom popup ze sceny
+        LoadPopupSystem();
     }
 
     /// <summary>
@@ -255,6 +278,19 @@ public partial class LobbyMenu : Control
         {
             customTooltip = tooltipScene.Instantiate<CustomTooltip>();
             AddChild(customTooltip);
+        }
+    }
+
+    /// <summary>
+    /// Ładuje custom popup system ze sceny
+    /// </summary>
+    private void LoadPopupSystem()
+    {
+        var popupScene = GD.Load<PackedScene>("res://scenes/popup/PopupSystem.tscn");
+        if (popupScene != null)
+        {
+            popupSystem = popupScene.Instantiate<PopupSystem>();
+            AddChild(popupSystem);
         }
     }
 
@@ -275,6 +311,12 @@ public partial class LobbyMenu : Control
         alreadySwitchedToGame = true;
 
         GD.Print($"🎮 Switching to game. Session={sessionId}, Host={hostUserId}, Seed={seed}");
+
+        // Oznacz gracza jako nieobecnego w widoku lobby (przechodzi do gry)
+        if (eosManager != null)
+        {
+            eosManager.SetPlayerInLobbyView(false);
+        }
 
         // Zmiana sceny uruchamiana synchronicznie dla hosta i klientów na podstawie atrybutów lobby
         GetTree().ChangeSceneToFile("res://scenes/game/main_game.tscn");
@@ -359,6 +401,14 @@ public partial class LobbyMenu : Control
 
             string userId = member.ContainsKey("userId") ? member["userId"].ToString() : "";
 
+            // Sprawdź czy gracz jest w widoku lobby
+            bool inLobbyView = true; // Domyślnie true
+            if (member.ContainsKey("inLobbyView"))
+            {
+                string inLobbyViewStr = member["inLobbyView"].ToString().ToLower();
+                inLobbyView = inLobbyViewStr == "true";
+            }
+
             if (isLocalPlayer)
             {
                 detectedLocalTeam = team;
@@ -376,6 +426,12 @@ public partial class LobbyMenu : Control
                 displayName += " (TY)";
             }
 
+            // Dodaj oznaczenie dla gracza który nie wrócił do lobby
+            if (!inLobbyView && !isLocalPlayer)
+            {
+                displayName += " (w grze)";
+            }
+
             // Przypisz do odpowiedniej drużyny według atrybutu
             if (team == EOSManager.Team.Blue)
             {
@@ -387,7 +443,7 @@ public partial class LobbyMenu : Control
                     { "team", team.ToString() },
                     { "profileIcon", profileIcon }
                 });
-                
+
                 // Ustaw ikonę jeśli istnieje
                 if (profileIcon > 0 && eosManager != null)
                 {
@@ -397,7 +453,7 @@ public partial class LobbyMenu : Control
                         blueTeamList.SetItemIcon(index, ResourceLoader.Load<Texture2D>(iconPath));
                     }
                 }
-                
+
                 GD.Print($"  ➕ Blue: {displayName} (Icon: {profileIcon})");
             }
             else if (team == EOSManager.Team.Red)
@@ -410,7 +466,7 @@ public partial class LobbyMenu : Control
                     { "team", team.ToString() },
                     { "profileIcon", profileIcon }
                 });
-                
+
                 // Ustaw ikonę jeśli istnieje
                 if (profileIcon > 0 && eosManager != null)
                 {
@@ -420,7 +476,7 @@ public partial class LobbyMenu : Control
                         redTeamList.SetItemIcon(index, ResourceLoader.Load<Texture2D>(iconPath));
                     }
                 }
-                
+
                 GD.Print($"  ➕ Red: {displayName} (Icon: {profileIcon})");
             }
             else if (team == EOSManager.Team.Universal)
@@ -433,7 +489,7 @@ public partial class LobbyMenu : Control
                     { "team", team.ToString() },
                     { "profileIcon", profileIcon }
                 });
-                
+
                 // Ustaw niebieską ikonę dla Universal team
                 if (profileIcon > 0 && eosManager != null)
                 {
@@ -443,7 +499,7 @@ public partial class LobbyMenu : Control
                         universalTeamList.SetItemIcon(index, ResourceLoader.Load<Texture2D>(iconPath));
                     }
                 }
-                
+
                 GD.Print($"  ➕ Universal: {displayName} (Icon: {profileIcon})");
             }
             else // team == EOSManager.Team.None (NeutralTeam)
@@ -860,6 +916,16 @@ public partial class LobbyMenu : Control
             GD.Print("❌ Neutral team has players.");
         }
 
+        // Sprawdź czy wszyscy gracze są w widoku lobby (nie w grze)
+        if (eosManager != null)
+        {
+            LobbyStatus.allPlayersInLobbyView = eosManager.AreAllPlayersInLobbyView();
+            if (!LobbyStatus.allPlayersInLobbyView)
+            {
+                GD.Print("❌ Not all players are in lobby view yet.");
+            }
+        }
+
         if (eosManager != null && eosManager.isLobbyOwner)
         {
             UpdateHostReadyStatus();
@@ -984,6 +1050,9 @@ public partial class LobbyMenu : Control
                         unmetConditions.Add("Klucz API nie jest poprawny");
                     }
                 }
+
+                if (!LobbyStatus.allPlayersInLobbyView)
+                    unmetConditions.Add("Nie wszyscy gracze wrócili do lobby");
 
                 if (unmetConditions.Count > 0)
                 {
@@ -1385,65 +1454,50 @@ public partial class LobbyMenu : Control
     /// </summary>
     private void ShowHardwareWarningDialog(EOSManager.AIType selectedAIType, string currentHardwareInfo)
     {
-        var dialog = new AcceptDialog();
-        dialog.Title = "Ostrzeżenie - Niewystarczający sprzęt";
-
         string message = "Twój komputer nie spełnia zalecanych wymagań dla lokalnego LLM.\n\n";
-        message += " Twój sprzęt:\n";
+        message += "★ Twój sprzęt:\n";
         message += currentHardwareInfo + "\n\n";
-        message += "Zalecane wymagania:\n";
+        message += "★ Zalecane wymagania:\n";
         message += $"• CPU: {HardwareResources.GetMinCPUCores} rdzeni\n";
         message += $"• RAM: {HardwareResources.GetMinMemoryMB / 1024} GB ({HardwareResources.GetMinMemoryMB} MB) \n";
         message += $"  lub\n";
         message += $"• VRAM: {HardwareResources.GetMinVRAMMB / 1024} GB ({HardwareResources.GetMinVRAMMB} MB)\n\n";
-        message += " Uruchomienie lokalnego LLM może spowodować:\n";
+        message += "★ Uruchomienie lokalnego LLM może spowodować:\n";
         message += "• Spowolnienie systemu\n";
         message += "• Niską jakość odpowiedzi AI\n";
         message += "• Błędy lub zawieszenia gry\n\n";
         message += "Zalecane jest użycie trybu API dla lepszej wydajności.\n\n";
         message += "Czy mimo to chcesz kontynuować z lokalnym LLM?";
 
-        dialog.DialogText = message;
-        dialog.AddButton("Nie, powróć", true, "cancel");
-        dialog.OkButtonText = "Kontynuuj mimo to";
-
-        // Czcionka
-        var font = GD.Load<FontFile>("res://assets/fonts/SpaceMono-Bold.ttf");
-        if (font != null)
+        if (popupSystem != null)
         {
-            var theme = new Theme();
-            theme.DefaultFont = font;
-            theme.DefaultFontSize = 14;
-            dialog.Theme = theme;
+            popupSystem.ShowConfirmation(
+                "★ OSTRZEŻENIE - NIEWYSTARCZAJĄCY SPRZĘT ★",
+                message,
+                "KONTYNUUJ MIMO TO",
+                "NIE, POWRÓĆ",
+                () =>
+                {
+                    GD.Print($"✅ User confirmed local LLM despite hardware warning");
+
+                    // Zablokuj buttonList by uniknąć wielokrotnych zapytań
+                    BlockButtonToHandleTooManyRequests(aiTypeList);
+
+                    //Zmien typ AI
+                    eosManager.SetAIType(selectedAIType);
+                    LobbyStatus.aiTypeSet = true;
+                    UpdateHostReadyStatus();
+                },
+                () =>
+                {
+                    GD.Print($"❌ User cancelled local LLM selection");
+                }
+            );
         }
-
-        dialog.Confirmed += () =>
+        else
         {
-            GD.Print($"✅ User confirmed local LLM despite hardware warning");
-
-            // Zablokuj buttonList by uniknąć wielokrotnych zapytań
-            BlockButtonToHandleTooManyRequests(aiTypeList);
-
-            //Zmien typ AI
-            eosManager.SetAIType(selectedAIType);
-            LobbyStatus.aiTypeSet = true;
-            UpdateHostReadyStatus();
-
-            dialog.QueueFree();
-        };
-
-        dialog.CustomAction += (actionName) =>
-        {
-            if (actionName.ToString() == "cancel")
-            {
-                GD.Print($"❌ User cancelled local LLM selection");
-                dialog.QueueFree();
-            }
-        };
-
-        // Dodaj do drzewa i wyświetl
-        GetTree().Root.AddChild(dialog);
-        dialog.PopupCentered();
+            GD.PrintErr("❌ PopupSystem is null, cannot show hardware warning dialog");
+        }
     }
 
     private void OnCopyIdButtonPressed()

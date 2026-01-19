@@ -1,12 +1,23 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 
 public partial class SettingsManager : Node
 {
+	// Zdarzenie, na które UI nasłuchuje, aby zaktualizować suwak
+	public event Action<float> OnUiScaleChanged;
+
 	public static SettingsManager Instance { get; private set; }
 
 	private const string SAVE_PATH = "user://settings.cfg";
 	private const float MIN_DB = -80.0f;
+	
+	// Wymiary bazowe
+	private const float DESIGN_WIDTH = 1152.0f;
+	private const float DESIGN_HEIGHT = 648.0f;
+	
+	// Limit skali UI
+	private const float MAX_UI_SCALE = 3.0f; 
 
 	public enum WindowMode
 	{
@@ -74,8 +85,20 @@ public partial class SettingsManager : Node
 		if (!availableResolutions.Contains(screenRes))
 		{
 			availableResolutions.Insert(0, screenRes);
-			GD.Print($"🖥️ Wykryto i dodano natywną rozdzielczość: {screenRes}");
 		}
+	}
+
+	// --- LOGIKA SKALOWANIA ---
+	private float GetAutoCalculatedScale(Vector2I? targetRes = null)
+	{
+		Vector2I size = targetRes ?? DisplayServer.ScreenGetSize();
+		
+		float scaleX = size.X / DESIGN_WIDTH;
+		float scaleY = size.Y / DESIGN_HEIGHT;
+		
+		float finalScale = Mathf.Min(scaleX, scaleY);
+		
+		return Mathf.Clamp(finalScale, 0.5f, MAX_UI_SCALE);
 	}
 	
 	public void LoadConfig()
@@ -85,7 +108,7 @@ public partial class SettingsManager : Node
 
 		if (err != Error.Ok)
 		{
-			GD.Print("⚠ Brak pliku ustawień (pierwsze uruchomienie).");
+			GD.Print("⚠ Brak pliku ustawień. Ustawiam wartości domyślne.");
 			SetDefaultDefaultsBasedOnHardware();
 			return;
 		}
@@ -104,8 +127,10 @@ public partial class SettingsManager : Node
 		int resY = (int)config.GetValue("Video", "ResolutionHeight", 1080);
 		Video.Resolution = new Vector2I(resX, resY);
 
-		float rawScale = (float)config.GetValue("Video", "UiScale", 1.0f);
-		Video.UiScale = Mathf.Clamp(rawScale, 0.5f, 2.0f);
+		float fallbackScale = GetAutoCalculatedScale(Video.Resolution);
+		float rawScale = (float)config.GetValue("Video", "UiScale", fallbackScale);
+		
+		Video.UiScale = Mathf.Clamp(rawScale, 0.5f, MAX_UI_SCALE);
 
 		Video.VSync = (bool)config.GetValue("Video", "VSync", true);
 
@@ -114,7 +139,7 @@ public partial class SettingsManager : Node
 			availableResolutions.Add(Video.Resolution);
 		}
 		
-		GD.Print("📂 Ustawienia załadowane z pliku.");
+		GD.Print($"📂 Ustawienia załadowane. Skala UI: {Video.UiScale}");
 	}
 
 	private void SetDefaultDefaultsBasedOnHardware()
@@ -122,7 +147,10 @@ public partial class SettingsManager : Node
 		Vector2I screenRes = DisplayServer.ScreenGetSize();
 		Video.Resolution = screenRes;
 		Video.DisplayMode = WindowMode.Fullscreen;
-		Video.UiScale = 1.0f;
+		
+		Video.UiScale = GetAutoCalculatedScale(screenRes);
+		
+		GD.Print($"[Auto-Setup] Wykryto: {screenRes}. Ustawiono skalę UI na: {Video.UiScale}");
 	}
 
 	public void SaveConfig()
@@ -187,9 +215,12 @@ public partial class SettingsManager : Node
 
 	public void SetUiScale(float value)
 	{
-		float safeValue = Mathf.Clamp(value, 0.5f, 2.0f);
+		float safeValue = Mathf.Clamp(value, 0.5f, MAX_UI_SCALE);
 		Video.UiScale = safeValue;
 		GetTree().Root.ContentScaleFactor = safeValue;
+		
+		// Powiadamiamy UI o zmianie skali
+		OnUiScaleChanged?.Invoke(safeValue);
 	}
 
 	public void SetVSync(bool enabled)
@@ -209,43 +240,72 @@ public partial class SettingsManager : Node
 		ApplyWindowMode();
 	}
 
+	// --- ZARZĄDZANIE OKNEM I SKALĄ ---
+
 	private void ApplyWindowMode()
 	{
+		Vector2I targetResForScaling = Video.Resolution;
+		
+		if (Video.DisplayMode == WindowMode.Borderless || Video.DisplayMode == WindowMode.Fullscreen)
+		{
+			targetResForScaling = DisplayServer.ScreenGetSize();
+		}
+		
+		float targetScale = GetAutoCalculatedScale(targetResForScaling);
+
 		switch (Video.DisplayMode)
 		{
 			case WindowMode.Windowed:
 				DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
 				DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.Borderless, false);
-				SetWindowSizeAndCenter(); // Używa Video.Resolution
+				SetWindowSizeAndCenter(targetScale); 
 				break;
 
 			case WindowMode.Borderless:
-				// FIX: Pobieramy aktualną rozdzielczość monitora "na sztywno"
 				Vector2I nativeRes = DisplayServer.ScreenGetSize();
-				
 				DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
 				DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.Borderless, true);
 				
-				// Ustawiamy rozmiar i pozycję na cały ekran
-				DisplayServer.WindowSetSize(nativeRes);
-				DisplayServer.WindowSetPosition(Vector2I.Zero);
+				GetWindow().Size = nativeRes;
+				GetWindow().Position = Vector2I.Zero;
+				
+				ApplyScaleWithDelay(targetScale);
 				break;
 
 			case WindowMode.Fullscreen:
 				DisplayServer.WindowSetMode(DisplayServer.WindowMode.ExclusiveFullscreen);
+				ApplyScaleWithDelay(targetScale);
 				break;
 		}
 	}
-	
-	private void SetWindowSizeAndCenter()
+
+	private async void ApplyScaleWithDelay(float scale)
 	{
-		DisplayServer.WindowSetSize(Video.Resolution);
+		await ToSignal(GetTree().CreateTimer(0.15f), SceneTreeTimer.SignalName.Timeout);
+		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		SetUiScale(scale);
+	}
+	
+	private async void SetWindowSizeAndCenter(float scaleToApply)
+	{
+		// Zmiana rozmiaru
+		GetWindow().Size = Video.Resolution;
+		
+		// Czekanie na OS
+		await ToSignal(GetTree().CreateTimer(0.15f), SceneTreeTimer.SignalName.Timeout);
+
+		// Centrowanie
 		Vector2I screenRes = DisplayServer.ScreenGetSize();
 		Vector2I pos = (screenRes / 2) - (Video.Resolution / 2);
 		
 		if (pos.X < 0) pos.X = 0;
 		if (pos.Y < 0) pos.Y = 0;
 		
-		DisplayServer.WindowSetPosition(pos);
+		GetWindow().Position = pos;
+		
+		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		
+		// Aplikacja skali po ustabilizowaniu okna
+		SetUiScale(scaleToApply);
 	}
 }

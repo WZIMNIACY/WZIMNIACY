@@ -1,11 +1,11 @@
 [gd_scene load_steps=7 format=3 uid="uid://b8xk4j2p5n7qw"]
 
-[ext_resource type="Script" uid="uid://d3qcvlrxpnrc2" path="res://scripts/ui/EscapeBackHandler.cs" id="1_escape"]
-[ext_resource type="Script" uid="uid://baqxgvwrnvlw" path="res://scripts/ui/PasteDetector.cs" id="1_paste"]
+[ext_resource type="Script" uid="uid://bwjgk2kjaa2yw" path="res://scripts/ui/EscapeBackHandler.cs" id="1_escape"]
+[ext_resource type="Script" uid="uid://ch0kcd7ixskvj" path="res://scripts/ui/PasteDetector.cs" id="1_paste"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="3_6mxdh"]
 [ext_resource type="StyleBox" uid="uid://dgkp41umsnv7g" path="res://assets/inputs/InputPlaceHolder.tres" id="3_mm0ga"]
 [ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://assets/buttons/button_border2.tres" id="5_6mxdh"]
-[ext_resource type="Script" uid="uid://crimrqvlwfkpw" path="res://scenes/lobbysearch/LobbySearchMenu.cs" id="5_search"]
+[ext_resource type="Script" uid="uid://c1bggnqhmel41" path="res://scenes/lobbysearch/LobbySearchMenu.cs" id="5_search"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="7_ty5cw"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="8_ty5cw"]
 
@@ -23,8 +23,6 @@ joinButton = NodePath("Panel/CenterContainer/LobbyConnectPanel/ConnectionContain
 
 [node name="PasteDetector" type="Node" parent="."]
 script = ExtResource("1_paste")
-MinPasteLength = 3
-MaxPasteTime = 0.1
 
 [node name="EscapeBackHandler" type="Node" parent="."]
 script = ExtResource("1_escape")

@@ -11,55 +11,9 @@ public partial class PasteDetector : Node
     /// LineEdit który ma być monitorowany
     /// </summary>
     [Export]
-    public LineEdit Target
-    {
-        get => target;
-        set
-        {
-            // Odłącz stary target jeśli był
-            if (target != null)
-            {
-                target.TextChanged -= OnTextChanged;
-            }
+    public LineEdit Target { get; set; }
 
-            target = value;
-
-            // Podłącz nowy target
-            if (target != null)
-            {
-                target.TextChanged += OnTextChanged;
-                lastChangeTime = Time.GetTicksMsec() / 1000.0;
-            }
-        }
-    }
-    private LineEdit target;
-
-    /// <summary>
-    /// Minimalna liczba znaków wprowadzonych jednocześnie aby uznać za paste
-    /// </summary>
-    [Export]
-    public int MinPasteLength { get; set; } = 3;
-
-    /// <summary>
-    /// Maksymalny czas (w sekundach) pomiędzy zmianami tekstu aby uznać za paste
-    /// </summary>
-    [Export]
-    public float MaxPasteTime { get; set; } = 0.02f;
-
-    private string previousText = "";
-    private double lastChangeTime = 0;
     private Action<string> onPasteCallback;
-
-    public override void _Ready()
-    {
-        base._Ready();
-
-        if (Target != null)
-        {
-            Target.TextChanged += OnTextChanged;
-            lastChangeTime = Time.GetTicksMsec() / 1000.0;
-        }
-    }
 
     public override void _Input(InputEvent @event)
     {
@@ -91,40 +45,5 @@ public partial class PasteDetector : Node
     public void RegisterPasteCallback(Action<string> callback)
     {
         onPasteCallback = callback;
-    }
-
-    /// <summary>
-    /// Wywoływane gdy tekst w polu się zmienia
-    /// </summary>
-    private void OnTextChanged(string newText)
-    {
-        double currentTime = Time.GetTicksMsec() / 1000.0;
-        double timeDiff = currentTime - lastChangeTime;
-
-        // Oblicz różnicę w długości tekstu
-        int lengthDiff = newText.Length - previousText.Length;
-
-        // Wykryj paste
-        bool isPaste = (timeDiff < MaxPasteTime && newText.Length >= MinPasteLength && lengthDiff >= -1) ||
-                       lengthDiff >= MinPasteLength;
-
-        if (isPaste)
-        {
-            // Wywołaj callback z całym nowym tekstem
-            onPasteCallback?.Invoke(newText);
-        }
-
-        previousText = newText;
-        lastChangeTime = currentTime;
-    }
-
-    public override void _ExitTree()
-    {
-        base._ExitTree();
-
-        if (Target != null)
-        {
-            Target.TextChanged -= OnTextChanged;
-        }
     }
 }

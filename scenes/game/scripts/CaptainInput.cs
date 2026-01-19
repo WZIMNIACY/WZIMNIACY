@@ -7,6 +7,7 @@ public partial class CaptainInput : Control
 	[Export] public LineEdit wordInput;
 	[Export] public SpinBox numberInput;
 	[Export] public Button sendButton;
+    [Export] public bool visible = false;
 
 	private Color blueTeamColor = new Color("5AD2C8FF");
 	private Color redTeamColor = new Color("E65050FF");
@@ -14,7 +15,8 @@ public partial class CaptainInput : Control
     public override void _Ready()
     {
 		base._Ready();
-		
+        Visible = visible;
+
         if(sendButton != null)
 			sendButton.Pressed += OnSendPressed;
 		if (wordInput != null)
@@ -28,7 +30,7 @@ public partial class CaptainInput : Control
 
 	public void SetupTurn(bool isBlueTeam)
 	{
-		this.Visible = true;
+		this.Visible = visible;
 
 		if(wordInput != null)
 		{
@@ -47,7 +49,7 @@ public partial class CaptainInput : Control
 	private void OnSendPressed()
 	{
 		if(wordInput == null) return;
-		
+
 		string text = wordInput.Text.Trim();
 		int number = (int)numberInput.Value;
 
@@ -60,7 +62,7 @@ public partial class CaptainInput : Control
 		if(!string.IsNullOrEmpty(text))
 		{
 			EmitSignal(SignalName.HintGiven, text, number);
-			
+
 			this.Visible = false;
 		}
 	}
@@ -68,6 +70,6 @@ public partial class CaptainInput : Control
 	private void ShowError(string message)
     {
         GD.Print($"Błąd: {message}");
-        wordInput.Modulate = new Color(1, 0.3f, 0.3f); 
+        wordInput.Modulate = new Color(1, 0.3f, 0.3f);
     }
 }
