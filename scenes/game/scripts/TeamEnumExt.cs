@@ -22,4 +22,15 @@ public static class TeamEnumExt
              _ => throw new ArgumentOutOfRangeException(nameof(team), team, null) // zeby kompilator nie dawal ostrzezenia
         };
     }
+
+    public static MainGame.Team FromEOSManagerTeam(EOSManager.Team team)
+    {
+        return team switch
+        {
+            EOSManager.Team.Red => MainGame.Team.Red,
+            EOSManager.Team.Blue or EOSManager.Team.Universal => MainGame.Team.Blue,
+            EOSManager.Team.None => MainGame.Team.None,
+            _ => throw new ArgumentOutOfRangeException(nameof(team), team, null)
+        };
+    }
 }
