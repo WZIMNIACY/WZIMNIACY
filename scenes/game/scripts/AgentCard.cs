@@ -13,6 +13,9 @@ public partial class AgentCard : PanelContainer
     [Export] private Label debugSelectionsDisplay;
     [Export] private HBoxContainer iconsContainer;
     [Export] private Button confirmButton;
+    [Export] private TextureRect frontSideRect;
+    [Export] private TextureRect revealedBackgroundRect;
+    [Export] private TextureRect revealedFaceRect;
 
     [ExportGroup("Card Textures")]
     [Export] private Texture2D[] blueCardTextures;
@@ -135,29 +138,30 @@ public partial class AgentCard : PanelContainer
 
 	public void SetColor()
 	{
-		if (cardImage == null) return;
+		frontSideRect.Visible = false;
+        revealedBackgroundRect.Visible = true;
 
-        cardImage.Modulate = Colors.White;
-
-        switch (type)
+        if (revealedFaceRect != null)
         {
-            case CardManager.CardType.Blue:
-                SetTextureFromArray(blueCardTextures);
-                break;
+            revealedFaceRect.Visible = true;
+            revealedFaceRect.Modulate = Colors.White;
 
-            case CardManager.CardType.Red:
-                SetTextureFromArray(redCardTextures);
-                break;
-
-            case CardManager.CardType.Assassin:
-                if (assassinCardTexture != null) 
-                    cardImage.Texture = assassinCardTexture;
-                break;
-
-            case CardManager.CardType.Common:
-            default:
-                SetTextureFromArray(neutralCardTextures);
-                break;
+            switch (type)
+            {
+                case CardManager.CardType.Blue:
+                    SetTextureFromArray(blueCardTextures);
+                    break;
+                case CardManager.CardType.Red:
+                    SetTextureFromArray(redCardTextures);
+                    break;
+                case CardManager.CardType.Assassin:
+                    if (assassinCardTexture != null) revealedFaceRect.Texture = assassinCardTexture;
+                    break;
+                case CardManager.CardType.Common:
+                default:
+                    SetTextureFromArray(neutralCardTextures);
+                    break;
+            }
         }
 	}
 
@@ -169,7 +173,7 @@ public partial class AgentCard : PanelContainer
 
         if (textures[finalIndex] != null)
         {
-            cardImage.Texture = textures[finalIndex];
+            revealedFaceRect.Texture = textures[finalIndex];
         }
     }
 

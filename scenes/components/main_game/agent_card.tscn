@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3 uid="uid://s7i54u0fg4ly"]
+[gd_scene load_steps=37 format=3 uid="uid://s7i54u0fg4ly"]
 
 [ext_resource type="Script" uid="uid://hwnq2i8b5xl4" path="res://scenes/game/scripts/AgentCard.cs" id="1_m8y6f"]
 [ext_resource type="Texture2D" uid="uid://baao70koi3hi7" path="res://assets/textures/card/agent_Blue (1).png" id="2_j4stv"]
@@ -30,6 +30,7 @@
 [ext_resource type="Texture2D" uid="uid://ckaakfx5nhvxw" path="res://assets/textures/card/agent_Yellow (7).png" id="26_bt42a"]
 [ext_resource type="Texture2D" uid="uid://7l1lp2rbgmo6" path="res://assets/textures/card/agent_Yellow (8).png" id="27_2l58x"]
 [ext_resource type="Texture2D" uid="uid://dvyn0srg5ldbp" path="res://assets/textures/card/agent_Yellow (9).png" id="28_ryheo"]
+[ext_resource type="Texture2D" uid="uid://c1hrh127olptt" path="res://assets/textures/card/B_side_min.png" id="31_ek2h2"]
 [ext_resource type="Script" uid="uid://bi1n2d2fo43dy" path="res://scenes/components/main_game/ConfirmButton.cs" id="31_m1nus"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hiodb"]
@@ -59,7 +60,7 @@ corner_radius_top_right = 100
 corner_radius_bottom_right = 100
 corner_radius_bottom_left = 100
 
-[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage", "debugSelectionsDisplay", "iconsContainer", "confirmButton")]
+[node name="PanelContainer" type="PanelContainer" node_paths=PackedStringArray("highlightBorder", "contentContainer", "textLabel", "cardImage", "debugSelectionsDisplay", "iconsContainer", "confirmButton", "frontSideRect", "revealedBackgroundRect", "revealedFaceRect")]
 offset_right = 110.0
 offset_bottom = 110.0
 script = ExtResource("1_m8y6f")
@@ -70,6 +71,9 @@ cardImage = NodePath("AgentCard")
 debugSelectionsDisplay = NodePath("DebugSelectionsDisplay")
 iconsContainer = NodePath("VBoxContainer/MarginContainer/IconsContainer")
 confirmButton = NodePath("VBoxContainer/Control/ConfirmButton")
+frontSideRect = NodePath("AgentCard")
+revealedBackgroundRect = NodePath("RevealedBackground")
+revealedFaceRect = NodePath("RevealedBackground/RevealedFace")
 blueCardTextures = Array[Texture2D]([ExtResource("2_j4stv"), ExtResource("3_yjsox"), ExtResource("4_m1nus"), ExtResource("5_ek2h2"), ExtResource("6_k372n"), ExtResource("7_jcbga"), ExtResource("8_qtrba"), ExtResource("9_pewy5"), ExtResource("10_0g8n4")])
 redCardTextures = Array[Texture2D]([ExtResource("3_x1yns"), ExtResource("12_ywob3"), ExtResource("13_ljert"), ExtResource("14_uu8dr"), ExtResource("15_6d8uw"), ExtResource("16_qiw4n"), ExtResource("17_vqsxn"), ExtResource("18_i856i"), ExtResource("19_8x3ig")])
 neutralCardTextures = Array[Texture2D]([ExtResource("4_8aqop"), ExtResource("21_h5h7b"), ExtResource("22_7huni"), ExtResource("23_x23sg"), ExtResource("24_le00o"), ExtResource("25_61gdx"), ExtResource("26_bt42a"), ExtResource("27_2l58x"), ExtResource("28_ryheo")])
@@ -81,6 +85,23 @@ layout_mode = 2
 size_flags_horizontal = 3
 texture = ExtResource("2_m8y6f")
 expand_mode = 2
+stretch_mode = 5
+
+[node name="RevealedBackground" type="TextureRect" parent="."]
+visible = false
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+texture = ExtResource("31_ek2h2")
+expand_mode = 2
+stretch_mode = 5
+
+[node name="RevealedFace" type="TextureRect" parent="RevealedBackground"]
+layout_mode = 0
+offset_left = 17.0
+offset_top = 3.0
+offset_right = 99.0
+offset_bottom = 79.0
+expand_mode = 1
 stretch_mode = 5
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
