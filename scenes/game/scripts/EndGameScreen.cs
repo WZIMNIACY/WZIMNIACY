@@ -146,7 +146,8 @@ public partial class EndGameScreen : Control
         // stały delay wg kontraktu
         await ToSignal(GetTree().CreateTimer(2.5f), SceneTreeTimer.SignalName.Timeout);
 
-        ShowGameOver(blueStats, redStats, winner, reason);
+       // UI musi być modyfikowane na main thread -> CallDeferred
+       CallDeferred(nameof(ShowGameOver), blueStats, redStats, winner, reason);
     }
 
     private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
