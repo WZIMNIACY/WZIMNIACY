@@ -226,4 +226,4 @@ theme_override_styles/normal = ExtResource("3_q5ip6")
 theme_override_styles/pressed = ExtResource("3_q5ip6")
 theme_override_styles/hover = ExtResource("4_gl5ki")
 theme_override_styles/focus = ExtResource("4_gl5ki")
-text = "← Menu"
+text = "← Powrót"
