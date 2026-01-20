@@ -2,6 +2,7 @@ using AI;
 using Epic.OnlineServices;
 using Godot;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text.Json;
 using hints;
@@ -690,7 +691,7 @@ public partial class MainGame : Control
         {
             gameRightPanel.DisableSkipButton();
         }
-        
+
         if (isHost)
         {
             if (eosManager.currentAIType == EOSManager.AIType.LocalLLM)
@@ -899,7 +900,7 @@ public partial class MainGame : Control
         }
 
         reactionOverlay.ShowReaction(text, seconds);
-    }   
+    }
 
     private void StartCaptainPhase()
     {
@@ -1019,12 +1020,14 @@ public partial class MainGame : Control
             return null;
         }
 
-        bool kapitnBomba = false; // jak macie flagę to podepniemy później
-        game.Team actualTour = turnAtPick.ToAiLibTeam();
+		var args = OS.GetCmdlineArgs();
+		bool captain_bomb = args.Contains("--kapitanbomba");
+
+		game.Team actualTour = turnAtPick.ToAiLibTeam();
 
         try
         {
-            string reactionRaw = await global::Reaction.Reaction.create(llm, hint, pickedCard, kapitnBomba, actualTour);
+            string reactionRaw = await global::Reaction.Reaction.create(llm, hint, pickedCard, captain_bomb, actualTour);
             return reactionRaw;
         }
         catch (Exception e)
@@ -1454,7 +1457,7 @@ public partial class MainGame : Control
                 {
                     redNeutralFound++;
                 }
-                
+
                 TurnChange();
                 break;
 
