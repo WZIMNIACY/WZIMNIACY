@@ -1343,8 +1343,8 @@ public partial class MainGame : Control
             gameRightPanel.DisableSkipButton();
         scoreContainerBlue.SetDiodeOn();
         scoreContainerRed.SetDiodeOff();
-        teamListBlue.Modulate = new Color(2.8f, 2.8f, 2.8f, 1f);
-        teamListRed.Modulate = new Color(1f, 1f, 1f, 1f);
+        teamListBlue.SelfModulate = new Color(2.8f, 2.8f, 2.8f, 1f);
+        teamListRed.SelfModulate = new Color(1f, 1f, 1f, 1f);
     }
 
     public void SetTurnRed()
@@ -1358,8 +1358,8 @@ public partial class MainGame : Control
             gameRightPanel.DisableSkipButton();
         scoreContainerBlue.SetDiodeOff();
         scoreContainerRed.SetDiodeOn();
-        teamListBlue.Modulate = new Color(1f, 1f, 1f, 1f);
-        teamListRed.Modulate = new Color(2.8f, 2.8f, 2.8f, 1f);
+        teamListBlue.SelfModulate = new Color(1f, 1f, 1f, 1f);
+        teamListRed.SelfModulate = new Color(2.8f, 2.8f, 2.8f, 1f);
     }
 
     public void OnCardSelected(AgentCard card)
