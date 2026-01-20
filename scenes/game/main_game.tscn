@@ -713,10 +713,12 @@ layout_mode = 1
 [node name="P2PNetworkManager" type="Node" parent="."]
 script = ExtResource("19_stils")
 
-[node name="LoadingScreen" parent="." instance=ExtResource("20_mssxc")]
+[node name="LoadingScreen" parent="." node_paths=PackedStringArray("mainGame") instance=ExtResource("20_mssxc")]
+visible = false
 layout_mode = 1
 offset_top = -1.0
 offset_bottom = -1.0
+mainGame = NodePath("..")
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
 [connection signal="pressed" from="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer/Button" to="." method="OnSkipTurnPressed"]
