@@ -39,7 +39,6 @@ public partial class RightPanel : Node
         );
     }
 
-
     private Godot.Timer hintGenerationAnimationTimer;
 
     private CancellationTokenSource hintGeneratorCancellation;
@@ -73,6 +72,12 @@ public partial class RightPanel : Node
 
         CallDeferred(nameof(SubscribeToNetwork));
 
+    }
+
+    public override void _ExitTree()
+    {
+        CancelHintGeneration();
+        base._ExitTree();
     }
 
     private void SubscribeToNetwork()
@@ -229,7 +234,7 @@ public partial class RightPanel : Node
         );
         BroadcastHint(hint.Word, hint.NoumberOfSimilarWords, currentTurn);
 
-        if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman && currentTurn == MainGame.Team.Blue) // AI is assigned to Blue team
+        if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman && currentTurn == MainGame.Team.Red) // AI is assigned to Red team
         {
             PickAiCards(hint.Word, hint.NoumberOfSimilarWords);
         }
@@ -251,7 +256,7 @@ public partial class RightPanel : Node
             GD.Print($"[AIvsHuman] AI picked card: {pickedCard.Word} {pickedCard.Team}");
             CardManager.CardType? pickedCardType = cardManager.OnCardConfirmedByAI(pickedCard);
 
-            if (pickedCardType != CardManager.CardType.Blue) // break the loop if AI picked a wrong card
+            if (pickedCardType != CardManager.CardType.Red) // break the loop if AI picked a wrong card
             {
                 GD.Print("[AIvsHuman] AI picked a wrong card. Ending turn.");
                 return;

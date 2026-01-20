@@ -733,9 +733,7 @@ public partial class MainGame : Control
             index = 0,
             puid = eosManager.localProductUserIdString,
             name = GetDisplayNameFromLobby(eosManager.localProductUserIdString),
-            team = eosManager.GetTeamForUser(eosManager.localProductUserIdString) == EOSManager.Team.Blue
-                ? Team.Blue
-                : Team.Red,
+            team = TeamEnumExt.FromEOSManagerTeam(eosManager.GetTeamForUser(eosManager.localProductUserIdString)),
             profileIconPath = eosManager.GetProfileIconPathForUser(eosManager.localProductUserIdString)
         });
 
@@ -765,9 +763,7 @@ public partial class MainGame : Control
                 index = index,
                 puid = puid,
                 name = GetDisplayNameFromLobby(puid),
-                team = eosManager.GetTeamForUser(puid) == EOSManager.Team.Blue
-                    ? Team.Blue
-                    : Team.Red,
+                team = TeamEnumExt.FromEOSManagerTeam(eosManager.GetTeamForUser(puid)),
                 profileIconPath = eosManager.GetProfileIconPathForUser(puid)
             });
 
