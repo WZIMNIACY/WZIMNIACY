@@ -72,7 +72,7 @@ public partial class RightPanel : Node
         mainGame = GetTree().CurrentScene as MainGame;
 
         CallDeferred(nameof(SubscribeToNetwork));
-        
+
     }
 
     private void SubscribeToNetwork()
@@ -98,14 +98,14 @@ public partial class RightPanel : Node
         {
             try
             {
-                
+
                 var data = packet.payload.Deserialize<HintNetworkPayload>();
 
                 GD.Print($"[RightPanel] Received Hint: {data.Word} for {data.TurnTeam}");
 
                 UpdateHintDisplay(data.Word, data.Number, data.TurnTeam);
-                
-                return true; 
+
+                return true;
             }
             catch (Exception e)
             {
@@ -130,7 +130,7 @@ public partial class RightPanel : Node
                     HintGenerationAnimationStop();
                 }
 
-                return true; 
+                return true;
             }
             catch (Exception e)
             {
@@ -138,14 +138,14 @@ public partial class RightPanel : Node
                 return true;
             }
         }
-        return false; 
+        return false;
     }
 
     public void BroadcastHint(string word, int number, MainGame.Team team)
     {
-        if (!mainGame.isHost) 
+        if (!mainGame.isHost)
         {
-            return; 
+            return;
         }
 
         var net = mainGame.P2PNet;
@@ -276,7 +276,7 @@ public partial class RightPanel : Node
     public void UpdateHintDisplay(string word, int number, MainGame.Team team)
     {
         bool isBlue = (team == MainGame.Team.Blue);
-        
+
         UpdateHintDisplay(word, number, isBlue);
     }
 
@@ -399,6 +399,17 @@ public partial class RightPanel : Node
 
     private async Task<Hint> GenerateHint(ILLM llm, game.Deck deck, MainGame.Team currentTurn)
     {
-        return await Hint.Create(deck, llm, currentTurn.ToAiLibTeam(), oldHints[currentTurn]);
+        Hint hint = null;
+        const uint GENERATE_HINT_MAX_TRIES = 3;
+        for (int i = 0; i < GENERATE_HINT_MAX_TRIES; i++)
+        {
+            hint = await Hint.Create(deck, llm, currentTurn.ToAiLibTeam(), oldHints[currentTurn]);
+            if (!oldHints[currentTurn].Contains(hint.Word))
+            {
+                break;
+            }
+            GD.Print($"Generated already shown hint. Try {i + 1} out of {GENERATE_HINT_MAX_TRIES}");
+        }
+        return hint;
     }
 }
