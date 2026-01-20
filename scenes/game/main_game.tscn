@@ -113,7 +113,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager", "loadingScreen")]
+[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager", "loadingScreen", "reactionOverlay")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -136,6 +136,7 @@ settingsScene = NodePath("Settings")
 helpScene = NodePath("HelpScene")
 cardManager = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer")
 loadingScreen = NodePath("LoadingScreen")
+reactionOverlay = NodePath("Panel/ReactionOverlay")
 metadata/_edit_horizontal_guides_ = [-92.0]
 
 [node name="BoxContainer" type="BoxContainer" parent="."]
