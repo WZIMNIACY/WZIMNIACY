@@ -714,6 +714,14 @@ public partial class MainGame : Control
         if (eosManager.currentGameMode == EOSManager.GameMode.AIvsHuman)
         {
             llmPlayer = new AIPlayer.LLMPlayer(llm);
+            playersByIndex.Add(-1, new P2PNetworkManager.GamePlayer
+            {
+                index = -1,
+                puid = "ai_player",
+                name = "AI",
+                team = Team.Red,
+                profileIconPath = eosManager.GetProfileIconPath(EOSManager.Team.Red, 1)
+            });
         }
 
         EmitSignal(SignalName.GameReady);
