@@ -161,6 +161,8 @@ public partial class MainGame : Control
 
     private readonly HashSet<int> confirmedCardIds = new();
 
+    private EndGameReason lastEndGameReason = EndGameReason.AllCardsFound;
+
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
@@ -1297,7 +1299,10 @@ public partial class MainGame : Control
 
         UpdatePointsDisplay();
         if (pointsBlue == 0)
+        {
+            lastEndGameReason = EndGameReason.AllCardsFound;
             EndGame(Team.Blue);
+        }
     }
 
     public void RemovePointRed()
@@ -1316,7 +1321,10 @@ public partial class MainGame : Control
 
         UpdatePointsDisplay();
         if (pointsRed == 0)
+        {
+            lastEndGameReason = EndGameReason.AllCardsFound;
             EndGame(Team.Red);
+        }
     }
 
     public void TurnChange()
@@ -1459,6 +1467,7 @@ public partial class MainGame : Control
                 break;
 
             case CardManager.CardType.Assassin:
+                lastEndGameReason = EndGameReason.AssassinPicked;
                 if (currentTurn == Team.Blue)
                     EndGame(Team.Red);
                 else
@@ -1496,7 +1505,7 @@ public partial class MainGame : Control
 
         if (endGameScreen != null)
         {
-            endGameScreen.TriggerGameOver(winner);
+            endGameScreen.TriggerGameOver(winner, lastEndGameReason);
         }
     }
 

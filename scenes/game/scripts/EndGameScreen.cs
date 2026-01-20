@@ -3,11 +3,18 @@ using System;
 using System.Text.Json;
 using Epic.OnlineServices;
 
+public enum EndGameReason
+{
+    AllCardsFound,
+    AssassinPicked
+}
+
 public partial class EndGameScreen : Control
 {
     public sealed class EndGamePayload
     {
         public MainGame.Team Winner { get; set; }
+        public EndGameReason Reason { get; set; }
         public TeamGameStats BlueStats { get; set; }
         public TeamGameStats RedStats { get; set; }
     }
@@ -87,7 +94,7 @@ public partial class EndGameScreen : Control
         }
     }
 
-    public void TriggerGameOver(MainGame.Team winner)
+    public void TriggerGameOver(MainGame.Team winner, EndGameReason reason)
     {
         if (mainGame == null) return;
 
@@ -122,6 +129,7 @@ public partial class EndGameScreen : Control
             var payload = new EndGamePayload
             {
                 Winner = winner,
+                Reason = reason,
                 BlueStats = blueStats,
                 RedStats = redStats
             };
@@ -130,7 +138,15 @@ public partial class EndGameScreen : Control
             GD.Print("[EndGameScreen] Stats calculated and RPC sent.");
         }
 
-        ShowGameOver(blueStats, redStats, winner);
+        ShowGameOverWithDelay(blueStats, redStats, winner, reason);
+    }
+
+    private async void ShowGameOverWithDelay(TeamGameStats blueStats, TeamGameStats redStats, MainGame.Team winner, EndGameReason reason)
+    {
+        // stały delay wg kontraktu
+        await ToSignal(GetTree().CreateTimer(2.5f), SceneTreeTimer.SignalName.Timeout);
+
+        ShowGameOver(blueStats, redStats, winner, reason);
     }
 
     private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
@@ -145,7 +161,7 @@ public partial class EndGameScreen : Control
 
             GD.Print($"[EndGameScreen] Received Game Over! Winner: {data.Winner}");
 
-            ShowGameOver(data.BlueStats, data.RedStats, data.Winner);
+            ShowGameOverWithDelay(data.BlueStats, data.RedStats, data.Winner, data.Reason);
             return true;
         }
         catch (Exception e)
@@ -155,7 +171,7 @@ public partial class EndGameScreen : Control
         }
     }
 
-    public void ShowGameOver(TeamGameStats blueStats, TeamGameStats redStats, MainGame.Team winner)
+    public void ShowGameOver(TeamGameStats blueStats, TeamGameStats redStats, MainGame.Team winner, EndGameReason reason)
     {
         Visible = true;
         ZIndex = 100;
@@ -172,6 +188,16 @@ public partial class EndGameScreen : Control
                 winnerTitle.Text = "CZERWONI WYGRYWAJĄ!";
                 winnerTitle.Modulate = new Color("E65050");
             }
+        }
+
+        if (subTitle != null)
+        {
+            subTitle.Text = reason switch
+            {
+                EndGameReason.AllCardsFound => "Powód: odnaleziono wszystkie karty drużyny zwycięskiej.",
+                EndGameReason.AssassinPicked => "Powód: trafiono zabójcę (assassin).",
+                _ => "Powód: nieznany."
+            };
         }
 
         UpdateStat(blueVal1, blueBar1, blueStats.Found, redStats.Found);
