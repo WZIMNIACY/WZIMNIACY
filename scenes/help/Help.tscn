@@ -95,6 +95,7 @@ size_flags_vertical = 3
 mouse_default_cursor_shape = 2
 theme = ExtResource("2_hfsoe")
 theme_override_colors/font_selected_color = Color(0, 0, 0, 1)
+theme_override_colors/font_hovered_color = Color(0, 0, 0, 1)
 theme_override_colors/font_unselected_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_joa0n")
 theme_override_styles/tab_unselected = SubResource("StyleBoxFlat_hfsoe")
@@ -106,48 +107,170 @@ current_tab = 0
 [node name="Zasady Gry" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
 layout_mode = 2
 bbcode_enabled = true
-text = "AAA
-A
-a
-a
-a
-aa
-a
-a
-a
-a
-a
-a
-a
-a
-a
-a
-a
-aa
-a
-a
-a
-a
-a
-a
-a
-a
-"
+text = "
+[center][b][font_size=26]ZASADY GRY[/font_size][/b][/center]
+
+[b]CEL GRY:[/b]
+Dwie drużyny – [color=#ff5555][b]Czerwona[/b][/color] i [color=#5588ff][b]Niebieska[/b][/color] – rywalizują o to, kto pierwszy odnajdzie wszystkich swoich Agentów na planszy.
+
+[b]ROLE:[/b]
+[ul]
+[b]Szef Wywiadu (AI):[/b] Zna tożsamość wszystkich kart. Jego zadaniem jest naprowadzenie drużyny na właściwe słowa.
+[b]Agenci (Ty):[/b] Widzą tylko słowa na planszy. Muszą odgadnąć, które z nich należą do ich drużyny, na podstawie wskazówki Szefa.
+[/ul]
+
+[center][b]--- PRZEBIEG TURY ---[/b][/center]
+
+1. [b]Wskazówka:[/b] Szef podaje [color=yellow]jedno słowo[/color] (skojarzenie) oraz [color=yellow]liczbę[/color] (ile kart pasuje do tego słowa).
+   [i]Przykład: \"Zwierzę 3\" (oznacza, że 3 karty na stole kojarzą się ze zwierzęciem).[/i]
+
+2. [b]Zgadywanie:[/b] Jako Agent klikasz w słowa, które Twoim zdaniem pasują do skojarzenia.
+
+[center][b]--- RODZAJE KART ---[/b][/center]
+
+Po kliknięciu w kartę, odkrywa się jej tożsamość:
+
+[color=#55ff55]✔ [b]TWOJA DRUŻYNA[/b][/color]
+Zdobywacie punkt! Możesz zgadywać dalej (do liczby podanej przez Szefa + 1).
+
+[color=gray]✖ [b]NIEWINNY CYWIL[/b][/color]
+Pudło. Twoja tura natychmiast się kończy.
+
+[color=#ffaa00]! [b]AGENT PRZECIWNIKA[/b][/color]
+Pudło. Punkt dla wroga i koniec Twojej tury.
+
+[color=#ff0000]☠ [b]ZABÓJCA[/b][/color]
+[b]GAME OVER.[/b] Jeśli klikniesz to słowo, Twoja drużyna natychmiast [b]PRZEGRYWA[/b] grę!
+
+[center][b]--- WYGRANA ---[/b][/center]
+
+Wygrywa drużyna, która jako pierwsza odsłoni wszystkich swoich Agentów, lub gdy przeciwnik trafi na Zabójcę.
+[center][b]--- WAŻNE ---[/b][/center]
+
+Pamiętaj, że Szefem Wywiadu jest [color=#aaccff]Sztuczna Inteligencja[/color]. Czasami jej skojarzenia mogą być abstrakcyjne. Spróbuj myśleć nieszablonowo!"
 metadata/_tab_index = 0
 
-[node name="Jak stworzyć grę?" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
+[node name="Tryby Gry" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
 visible = false
 layout_mode = 2
+bbcode_enabled = true
+text = "
+[center][b][font_size=26]TRYBY GRY[/font_size][/b][/center]
+
+W obu trybach rola [b]Szefa Wywiadu[/b] (osoby dającej wskazówki) przypada zawsze [color=#aaccff]Sztucznej Inteligencji[/color]. Wy wcielacie się w rolę Agentów i musicie odgadywać hasła.
+
+[center][b]--- DOSTĘPNE WARIANTY ---[/b][/center]
+
+[b][font_size=20]1. AI MASTER (PvP)[/font_size][/b]
+[i]Klasyczna rywalizacja ludzi.[/i]
+
+[b]Kto gra?[/b]
+[color=#ff5555]Drużyna Ludzi A[/color] vs [color=#5588ff]Drużyna Ludzi B[/color]
+
+[b]Zasady:[/b]
+Sztuczna Inteligencja jest bezstronnym sędzią i Szefem dla obu drużyn. Generuje wskazówki na zmianę dla Czerwonych i Niebieskich.
+Wygrywa drużyna, która lepiej zrozumie tok myślenia AI i szybciej odkryje swoje karty.
+
+
+[b][font_size=20]2. AI vs HUMAN (PvE)[/font_size][/b]
+[i]Współpraca przeciwko maszynie.[/i]
+
+[b]Kto gra?[/b]
+[color=#55ff55]Drużyna Ludzi[/color] vs [color=#aa0000]Drużyna AI[/color]
+
+[b]Zasady:[/b]
+Wszyscy gracze są w jednej drużynie. Waszym przeciwnikiem jest komputer.
+[ul]
+[b]Wasza tura:[/b] AI daje wam wskazówkę, a wy wspólnie naradzacie się, które karty wybrać.
+[b]Tura AI:[/b] Komputer \"myśli\" i sam próbuje odgadnąć swoje hasła na planszy.
+[/ul]
+
+[color=#ffaa00][b]OGRANICZENIA LOBBY[/b][/color]
+Ten tryb jest przeznaczony dla mniejszych grup.
+[ul]
+[b]Limit graczy:[/b] Maksymalnie [b]5 osób[/b].
+[b]Zmiana trybu:[/b] Jeśli w lobby jest więcej niż 5 graczy, nie będziesz mógł przełączyć się na ten tryb. Wybór tego trybu automatycznie zmniejsza limit slotów w lobby z 10 do 5.
+[/ul]"
 metadata/_tab_index = 1
 
-[node name="Jak dołączyć do gry?" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
+[node name="Multiplayer" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
 visible = false
 layout_mode = 2
+bbcode_enabled = true
+text = "
+[center][b][font_size=26]MULTIPLAYER[/font_size][/b][/center]
+
+Chcesz zagrać ze znajomymi? Jedna osoba musi stworzyć pokój (Host), a reszta do niego dołączyć (Klienci).
+
+[b][font_size=20]1. TWORZENIE GRY (HOST)[/font_size][/b]
+
+1. W menu głównym kliknij przycisk [color=yellow]Utwórz Grę[/color].
+2. [b]Wybierz tryb:[/b] Decydujesz, czy gracie przeciwko sobie (AI Master), czy razem przeciwko botowi (AI vs Human).
+   [i][color=gray]Pamiętaj: Tryb AI vs Human ma limit do 5 graczy![/color][/i]
+3. [b]Konfiguracja AI:[/b]
+   - Jeśli używasz [b]zewnętrznego API[/b], wklej swój klucz API w odpowiednie pole.
+   - Jeśli korzystasz z [b]Local LLM[/b], nie musisz nic wpisywać – gra użyje modelu lokalnego.
+4. Wybierz swoją drużynę ([color=#ff5555]Czerwoni[/color] lub [color=#5588ff]Niebiescy[/color]).
+5. [b]Zaproś znajomych:[/b]
+   Na górze ekranu zobaczysz [color=#55ff55][b]LOBBY ID[/b][/color] (np. A1X9). Skopiuj go lub podyktuj znajomym.
+6. Gdy wszyscy dołączą i wybiorą drużyny, kliknij [color=yellow]Rozpocznij Grę[/color].
+
+
+[b][font_size=20]2. DOŁĄCZANIE DO GRY[/font_size][/b]
+
+1. Poproś hosta o podanie [b]LOBBY ID[/b].
+2. W menu głównym wpisz lub wklej ten kod w pole tekstowe.
+3. Kliknij przycisk [color=yellow]Dołącz[/color].
+4. Wybierz drużynę, do której chcesz należeć.
+5. Czekaj – gra rozpocznie się automatycznie, gdy Host wystartuje rozgrywkę.
+
+[center][i][color=gray]Upewnij się, że masz stabilne połączenie z internetem![/color][/i][/center]"
 metadata/_tab_index = 2
 
-[node name="AI" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
+[node name="AI i LLM" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
 visible = false
 layout_mode = 2
+bbcode_enabled = true
+text = "
+[center][b][font_size=26]SZTUCZNA INTELIGENCJA (AI)[/font_size][/b][/center]
+
+Ta gra nie posiada \"oskryptowanych\" dialogów. Wszystkie wypowiedzi Szefa Wywiadu są generowane na żywo przez model językowy (LLM). Masz dwie drogi, aby to uruchomić:
+
+[b][font_size=20]1. CLOUD API (Łatwiejsze)[/font_size][/b]
+[i]Zalecane dla słabszych komputerów.[/i]
+
+W tym trybie gra łączy się z serwerami dostawcy, który wykonuje obliczenia za Ciebie.
+
+[ul]
+[b]Wymagania:[/b] Musisz posiadać własny [color=yellow]Klucz API (API Key)[/color].
+[b]Skąd wziąć klucz?[/b] Zarejestruj się na stronie dostawcy, wygeneruj klucz i wklej go w ustawieniach lobby.
+[b]Koszt:[/b] Korzystanie z API może wiązać się z niewielkimi opłatami po stronie dostawcy (zależnie od Twojego planu).
+[/ul]
+
+
+[b][font_size=20]2. LOCAL LLM[/font_size][/b]
+[i]Darmowe, prywatne, ale wymaga potężnego sprzętu.[/i]
+
+W tym trybie model AI działa [b]bezpośrednio na Twoim komputerze[/b].
+
+[color=#ff5555][b]WAŻNE [/b][/color]
+Gra [b]NIE[/b] zawiera wbudowanego modelu. Musisz samodzielnie pobrać i uruchomić serwer LLM  w tle, zanim włączysz grę!
+
+[b]Szacowane wymagania dla modelu 20B:[/b]
+[ul]
+[b]Karta Graficzna (GPU):[/b] Minimum [color=yellow]16GB VRAM[/color].
+[b]RAM:[/b] Jeśli używasz procesora (CPU) – min. [color=yellow]24GB RAM[/color].
+[/ul]
+
+
+[center][b][font_size=20]OSTRZEŻENIE O POŁĄCZENIU[/font_size][/b][/center]
+
+Mózgiem operacji jest komputer [b]Hosta (Założyciela gry)[/b].
+
+[color=#ff0000][b]WYJŚCIE HOSTA A LOCAL LLM[/b][/color]
+Jeśli Host korzystający z własnego modelu (Local LLM) opuści rozgrywkę, jego komputer przestaje przetwarzać dane dla reszty graczy. Oznacza to natychmiastowy koniec dostępu do \"inteligencji\" Szefa Wywiadu.
+
+[center][i]Dla płynnej rozgrywki upewnijcie się, że Host ma stabilne łącze![/i][/center]"
 metadata/_tab_index = 3
 
 [node name="CornerAnchor" type="Control" parent="."]
