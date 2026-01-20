@@ -1,8 +1,13 @@
-[gd_scene load_steps=2 format=3 uid="uid://da78r3ltx830e"]
+[gd_scene load_steps=7 format=3 uid="uid://da78r3ltx830e"]
 
 [ext_resource type="Script" uid="uid://col1whs84j4qa" path="res://scenes/loadingscreen/LoadingScreen.cs" id="1_tra3l"]
+[ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="2_ktvom"]
+[ext_resource type="Texture2D" uid="uid://cxe452b4dnphf" path="res://assets/textures/misc/potat.png" id="2_tmjyc"]
+[ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="4_q2y0y"]
+[ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="5_7mg5h"]
+[ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="6_fs44g"]
 
-[node name="Control" type="Control"]
+[node name="Control" type="Control" node_paths=PackedStringArray("potato", "quitToMenuButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -10,11 +15,64 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tra3l")
+potato = NodePath("Panel/CenterContainer/VBoxContainer/CenterContainer/MarginContainer/Sprite2D")
+quitToMenuButton = NodePath("Panel/CenterContainer/VBoxContainer/QuitButton")
 
-[node name="Label" type="Label" parent="."]
-layout_mode = 0
-offset_left = 526.0
-offset_top = 262.0
-offset_right = 601.0
-offset_bottom = 333.0
-text = "Loading..."
+[node name="Panel" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -24.0
+offset_top = -14.0
+offset_right = 23.0
+offset_bottom = 16.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/CenterContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_bottom = 40
+
+[node name="Label" type="Label" parent="Panel/CenterContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_ktvom")
+theme_override_font_sizes/font_size = 20
+text = "Startowanie gry"
+
+[node name="CenterContainer" type="CenterContainer" parent="Panel/CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/CenterContainer/VBoxContainer/CenterContainer"]
+layout_mode = 2
+theme_override_constants/margin_bottom = 120
+
+[node name="Sprite2D" type="Sprite2D" parent="Panel/CenterContainer/VBoxContainer/CenterContainer/MarginContainer"]
+position = Vector2(5, 43)
+rotation = -1.3351768
+scale = Vector2(0.12351189, 0.10775869)
+texture = ExtResource("2_tmjyc")
+
+[node name="QuitButton" type="Button" parent="Panel/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_hover_color = Color(0.105882354, 0.105882354, 0.105882354, 1)
+theme_override_fonts/font = ExtResource("4_q2y0y")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = ExtResource("5_7mg5h")
+theme_override_styles/pressed = ExtResource("5_7mg5h")
+theme_override_styles/hover = ExtResource("6_fs44g")
+text = "Wróć do menu"
+
+[connection signal="pressed" from="Panel/CenterContainer/VBoxContainer/QuitButton" to="." method="OnQuitButtonPressed"]

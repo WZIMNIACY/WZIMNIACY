@@ -113,7 +113,7 @@ corner_radius_bottom_left = 16
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8xp80"]
 content_margin_left = 149.0
 
-[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager", "loadingScreen", "reactionOverlay")]
+[node name="Control" type="Control" node_paths=PackedStringArray("endGameScreen", "menuPanel", "scoreContainerBlue", "scoreContainerRed", "teamListBlue", "teamListRed", "gameRightPanel", "gameInputPanel", "turnLabel", "settingsScene", "helpScene", "cardManager", "loadingScreen")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -136,7 +136,6 @@ settingsScene = NodePath("Settings")
 helpScene = NodePath("HelpScene")
 cardManager = NodePath("Panel/HBoxContainer/MiddlePanel/VMiddlePanel/GridContainer")
 loadingScreen = NodePath("LoadingScreen")
-reactionOverlay = NodePath("Panel/ReactionOverlay")
 metadata/_edit_horizontal_guides_ = [-92.0]
 
 [node name="BoxContainer" type="BoxContainer" parent="."]
@@ -713,10 +712,12 @@ layout_mode = 1
 [node name="P2PNetworkManager" type="Node" parent="."]
 script = ExtResource("19_stils")
 
-[node name="LoadingScreen" parent="." instance=ExtResource("20_mssxc")]
+[node name="LoadingScreen" parent="." node_paths=PackedStringArray("mainGame") instance=ExtResource("20_mssxc")]
+visible = false
 layout_mode = 1
 offset_top = -1.0
 offset_bottom = -1.0
+mainGame = NodePath("..")
 
 [connection signal="pressed" from="Panel/HBoxContainer/LeftPanel/VLeftPanel/MenuBtnContainer/MenuButton" to="." method="OnMenuButtonPressed"]
 [connection signal="pressed" from="Panel/HBoxContainer/RightPanel/VRightPanel/SkipTurnContainer/PanelContainer/Button" to="." method="OnSkipTurnPressed"]

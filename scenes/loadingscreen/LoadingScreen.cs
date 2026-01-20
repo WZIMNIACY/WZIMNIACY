@@ -1,17 +1,50 @@
 using Godot;
-//Nazwa wszedzie powinna byc LoadingScreen.cs
-//Jest jakis problem z nazwa skryptu a godotem
+
 public partial class LoadingScreen : Control
 {
-	public void ShowLoading()
+    [Export] Sprite2D potato;
+    [Export] Button quitToMenuButton;
+    [Export] MainGame mainGame;
+
+    private Godot.Timer showQuitButtonTimer;
+
+    public override void _Ready()
+    {
+        base._Ready();
+        showQuitButtonTimer = new Timer();
+        showQuitButtonTimer.WaitTime = 60.0;
+        showQuitButtonTimer.OneShot = true;
+        showQuitButtonTimer.Autostart = false;
+        showQuitButtonTimer.Timeout += () => { quitToMenuButton.Visible = true; };
+        AddChild(showQuitButtonTimer);
+        showQuitButtonTimer.Start();
+        quitToMenuButton.Visible = false;
+    }
+
+    public override void _Process(double delta)
+    {
+        base._Process(delta);
+        potato.RotationDegrees += 270f * (float)delta;
+    }
+
+    public void ShowLoading()
 	{
-		Visible = true;
+        showQuitButtonTimer.Start();
+        quitToMenuButton.Visible = false;
+        Visible = true;
 		MouseFilter = MouseFilterEnum.Stop;
 	}
 
 	public void HideLoading()
 	{
-		Visible = false;
-		MouseFilter = MouseFilterEnum.Ignore;
+        showQuitButtonTimer.Stop();
+        quitToMenuButton.Visible = false;
+        Visible = false;
+        MouseFilter = MouseFilterEnum.Ignore;
 	}
+
+    public void OnQuitButtonPressed()
+    {
+        mainGame.OnQuitButtonPressed();
+    }
 }
