@@ -64,6 +64,12 @@ public partial class EndGameScreen : Control
     private EOSManager eosManager;
     private MainGame mainGame;
 
+    // Buffer for deferred UI call (CallDeferred can't pass custom types via Variant)
+    private TeamGameStats pendingBlueStats;
+    private TeamGameStats pendingRedStats;
+    private MainGame.Team pendingWinner;
+    private EndGameReason pendingReason;
+
     public override void _Ready()
     {
         base._Ready();
@@ -146,8 +152,22 @@ public partial class EndGameScreen : Control
         // stały delay wg kontraktu
         await ToSignal(GetTree().CreateTimer(2.5f), SceneTreeTimer.SignalName.Timeout);
 
-       // UI musi być modyfikowane na main thread -> CallDeferred
-       CallDeferred(nameof(ShowGameOver), blueStats, redStats, winner, reason);
+        // Jeśli scena już zniknęła, nie dotykamy UI
+        if (!IsInsideTree()) return;
+
+        // Zapis do bufora (CallDeferred nie przenosi custom typów przez Variant)
+        pendingBlueStats = blueStats;
+        pendingRedStats = redStats;
+        pendingWinner = winner;
+        pendingReason = reason;
+
+       /// Wywołanie bez argumentów -> thread-safe + bez Variant problemu
+       CallDeferred(nameof(ShowGameOverDeferred));
+    }
+
+    private void ShowGameOverDeferred()
+    {
+        ShowGameOver(pendingBlueStats, pendingRedStats, pendingWinner, pendingReason);
     }
 
     private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
