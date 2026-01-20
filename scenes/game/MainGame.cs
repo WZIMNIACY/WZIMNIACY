@@ -720,7 +720,7 @@ public partial class MainGame : Control
                 puid = "ai_player",
                 name = "AI",
                 team = Team.Red,
-                profileIconPath = eosManager.GetProfileIconPath(EOSManager.Team.Red, 1)
+                profileIconPath = eosManager.GetProfileIconPath(EOSManager.Team.Red, 5)
             });
         }
 
