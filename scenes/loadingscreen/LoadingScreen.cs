@@ -11,13 +11,14 @@ public partial class LoadingScreen : Control
     public override void _Ready()
     {
         base._Ready();
+
         showQuitButtonTimer = new Timer();
         showQuitButtonTimer.WaitTime = 60.0;
         showQuitButtonTimer.OneShot = true;
         showQuitButtonTimer.Autostart = false;
         showQuitButtonTimer.Timeout += () => { quitToMenuButton.Visible = true; };
         AddChild(showQuitButtonTimer);
-        showQuitButtonTimer.Start();
+
         quitToMenuButton.Visible = false;
     }
 
