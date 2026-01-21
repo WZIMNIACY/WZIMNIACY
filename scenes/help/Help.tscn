@@ -1,9 +1,59 @@
-[gd_scene load_steps=5 format=3 uid="uid://cu6vu1ayjqexh"]
+[gd_scene load_steps=9 format=3 uid="uid://cu6vu1ayjqexh"]
 
+[ext_resource type="Theme" uid="uid://dvuu7nso1icxm" path="res://assets/themes/main_game.tres" id="2_hfsoe"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="2_joa0n"]
 [ext_resource type="Script" uid="uid://dfksn3d2c0owx" path="res://scenes/help/Help.cs" id="2_vxrbp"]
 [ext_resource type="StyleBox" uid="uid://ch7l8tuol4erl" path="res://assets/buttons/button_border2.tres" id="3_yqd7e"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="4_ah480"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hfsoe"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 1, 0.8, 1)
+border_blend = true
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ru4e3"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 1, 0.8, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 1, 0.8, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tpb4e"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 1, 0.8, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 1, 0.8, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
 
 [node name="HelpScene" type="Control"]
 layout_mode = 3
@@ -14,7 +64,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_vxrbp")
 
-[node name="HelpPanel" type="ColorRect" parent="."]
+[node name="Panel" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -23,67 +73,205 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.105882354, 0.105882354, 0.105882354, 1)
 
-[node name="HelpCenter" type="CenterContainer" parent="HelpPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 100
 
-[node name="VHelp" type="VBoxContainer" parent="HelpPanel/HelpCenter"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 10
 alignment = 1
 
-[node name="HelpLabel" type="Label" parent="HelpPanel/HelpCenter/VHelp"]
+[node name="TabContainer" type="TabContainer" parent="Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0, 1, 0.8, 1)
+size_flags_vertical = 3
+mouse_default_cursor_shape = 2
+theme = ExtResource("2_hfsoe")
+theme_override_colors/font_selected_color = Color(0, 0, 0, 1)
+theme_override_colors/font_hovered_color = Color(0, 0, 0, 1)
+theme_override_colors/font_unselected_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_joa0n")
-theme_override_font_sizes/font_size = 20
-text = "Zasady Gry"
-horizontal_alignment = 1
+theme_override_styles/tab_unselected = SubResource("StyleBoxFlat_hfsoe")
+theme_override_styles/tab_hovered = SubResource("StyleBoxFlat_ru4e3")
+theme_override_styles/tab_selected = SubResource("StyleBoxFlat_tpb4e")
+tab_alignment = 1
+current_tab = 0
 
-[node name="RulesPanel" type="ScrollContainer" parent="HelpPanel/HelpCenter/VHelp"]
-custom_minimum_size = Vector2(500, 200)
+[node name="Zasady Gry" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
 layout_mode = 2
-size_flags_vertical = 3
+bbcode_enabled = true
+text = "
+[center][b][font_size=26]ZASADY GRY[/font_size][/b][/center]
 
-[node name="GameRules" type="RichTextLabel" parent="HelpPanel/HelpCenter/VHelp/RulesPanel"]
-clip_contents = false
-custom_minimum_size = Vector2(500, 200)
+[b]CEL GRY:[/b]
+Dwie drużyny – [color=#ff5555][b]Czerwona[/b][/color] i [color=#5588ff][b]Niebieska[/b][/color] – rywalizują o to, kto pierwszy odnajdzie wszystkich swoich Agentów na planszy.
+
+[b]ROLE:[/b]
+[ul]
+[b]Szef Wywiadu (AI):[/b] Zna tożsamość wszystkich kart. Jego zadaniem jest naprowadzenie drużyny na właściwe słowa.
+[b]Agenci (Ty):[/b] Widzą tylko słowa na planszy. Muszą odgadnąć, które z nich należą do ich drużyny, na podstawie wskazówki Szefa.
+[/ul]
+
+[center][b]--- PRZEBIEG TURY ---[/b][/center]
+
+1. [b]Wskazówka:[/b] Szef podaje [color=yellow]jedno słowo[/color] (skojarzenie) oraz [color=yellow]liczbę[/color] (ile kart pasuje do tego słowa).
+   [i]Przykład: \"Zwierzę 3\" (oznacza, że 3 karty na stole kojarzą się ze zwierzęciem).[/i]
+
+2. [b]Zgadywanie:[/b] Jako Agent klikasz w słowa, które Twoim zdaniem pasują do skojarzenia.
+
+[center][b]--- RODZAJE KART ---[/b][/center]
+
+Po kliknięciu w kartę, odkrywa się jej tożsamość:
+
+[color=#55ff55]✔ [b]TWOJA DRUŻYNA[/b][/color]
+Zdobywacie punkt! Możesz zgadywać dalej.
+
+[color=gray]✖ [b]NIEWINNY CYWIL[/b][/color]
+Pudło. Twoja tura natychmiast się kończy.
+
+[color=#ffaa00]! [b]AGENT PRZECIWNIKA[/b][/color]
+Pudło. Punkt dla wroga i koniec Twojej tury.
+
+[color=#ff0000]☠ [b]ZABÓJCA[/b][/color]
+[b]GAME OVER.[/b] Jeśli klikniesz to słowo, Twoja drużyna natychmiast [b]PRZEGRYWA[/b] grę!
+
+[center][b]--- WYGRANA ---[/b][/center]
+
+Wygrywa drużyna, która jako pierwsza odsłoni wszystkich swoich Agentów, lub gdy przeciwnik trafi na Zabójcę.
+[center][b]--- WAŻNE ---[/b][/center]
+
+Pamiętaj, że Szefem Wywiadu jest [color=#aaccff]Sztuczna Inteligencja[/color]. Czasami jej skojarzenia mogą być abstrakcyjne. Spróbuj myśleć nieszablonowo!"
+metadata/_tab_index = 0
+
+[node name="Tryby Gry" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
+visible = false
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-text = "1. Znajdź lobby lub stwórz własne.
-2. Zaproś znajomych używając kodu pokoju.
-3. Rozpocznij grę, gdy wszyscy będą gotowi.
-4. ...
-5
-6
-7
-8
-9
-10
+bbcode_enabled = true
+text = "
+[center][b][font_size=26]TRYBY GRY[/font_size][/b][/center]
+
+W obu trybach rola [b]Szefa Wywiadu[/b] (osoby dającej wskazówki) przypada zawsze [color=#aaccff]Sztucznej Inteligencji[/color]. Wy wcielacie się w rolę Agentów i musicie odgadywać hasła.
+
+[center][b]--- DOSTĘPNE WARIANTY ---[/b][/center]
+
+[b][font_size=20]1. AI MASTER (PvP)[/font_size][/b]
+[i]Klasyczna rywalizacja ludzi.[/i]
+
+[b]Kto gra?[/b]
+[color=#ff5555]Drużyna Ludzi A[/color] vs [color=#5588ff]Drużyna Ludzi B[/color]
+
+[b]Zasady:[/b]
+Sztuczna Inteligencja jest bezstronnym sędzią i Szefem dla obu drużyn. Generuje wskazówki na zmianę dla Czerwonych i Niebieskich.
+Wygrywa drużyna, która lepiej zrozumie tok myślenia AI i szybciej odkryje swoje karty.
 
 
-312
-312
-3
-123
-123
-12
-31
-23
-123
-123
-123
-123
-12
-31
-23
-123
-123"
+[b][font_size=20]2. AI vs HUMAN (PvE)[/font_size][/b]
+[i]Współpraca przeciwko maszynie.[/i]
+
+[b]Kto gra?[/b]
+[color=#55ff55]Drużyna Ludzi[/color] vs [color=#aa0000]Drużyna AI[/color]
+
+[b]Zasady:[/b]
+Wszyscy gracze są w jednej drużynie. Waszym przeciwnikiem jest komputer.
+[ul]
+[b]Wasza tura:[/b] AI daje wam wskazówkę, a wy wspólnie naradzacie się, które karty wybrać.
+[b]Tura AI:[/b] Komputer \"myśli\" i sam próbuje odgadnąć swoje hasła na planszy.
+[/ul]
+
+[color=#ffaa00][b]OGRANICZENIA LOBBY[/b][/color]
+Ten tryb jest przeznaczony dla mniejszych grup.
+[ul]
+[b]Limit graczy:[/b] Maksymalnie [b]5 osób[/b].
+[b]Zmiana trybu:[/b] Jeśli w lobby jest więcej niż 5 graczy, nie będziesz mógł przełączyć się na ten tryb. Wybór tego trybu automatycznie zmniejsza limit slotów w lobby z 10 do 5.
+[/ul]"
+metadata/_tab_index = 1
+
+[node name="Multiplayer" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+bbcode_enabled = true
+text = "
+[center][b][font_size=26]MULTIPLAYER[/font_size][/b][/center]
+
+Chcesz zagrać ze znajomymi? Jedna osoba musi stworzyć pokój (Host), a reszta do niego dołączyć (Klienci).
+
+[b][font_size=20]1. TWORZENIE GRY (HOST)[/font_size][/b]
+
+1. W menu głównym kliknij przycisk [color=yellow]Utwórz Grę[/color].
+2. [b]Wybierz tryb:[/b] Decydujesz, czy gracie przeciwko sobie (AI Master), czy razem przeciwko botowi (AI vs Human).
+   [i][color=gray]Pamiętaj: Tryb AI vs Human ma limit do 5 graczy![/color][/i]
+3. [b]Konfiguracja AI:[/b]
+   - Jeśli używasz [b]zewnętrznego API[/b], wklej swój klucz API w odpowiednie pole.
+   - Jeśli korzystasz z [b]Local LLM[/b], nie musisz nic wpisywać – gra użyje modelu lokalnego.
+4. Wybierz swoją drużynę ([color=#ff5555]Czerwoni[/color] lub [color=#5588ff]Niebiescy[/color]).
+5. [b]Zaproś znajomych:[/b]
+   Na górze ekranu zobaczysz [color=#55ff55][b]LOBBY ID[/b][/color] (np. XF7P0V). Skopiuj go lub podyktuj znajomym.
+6. Gdy wszyscy dołączą i wybiorą drużyny, kliknij [color=yellow]Rozpocznij Grę[/color].
+
+
+[b][font_size=20]2. DOŁĄCZANIE DO GRY[/font_size][/b]
+
+1. Poproś hosta o podanie [b]LOBBY ID[/b].
+2. W menu głównym wpisz lub wklej ten kod w pole tekstowe.
+3. Kliknij przycisk [color=yellow]Dołącz[/color].
+4. Wybierz drużynę, do której chcesz należeć.
+5. Czekaj – gra rozpocznie się automatycznie, gdy Host wystartuje rozgrywkę.
+
+[center][i][color=gray]Upewnij się, że masz stabilne połączenie z internetem![/color][/i][/center]"
+metadata/_tab_index = 2
+
+[node name="AI i LLM" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+bbcode_enabled = true
+text = "
+[center][b][font_size=26]SZTUCZNA INTELIGENCJA (AI)[/font_size][/b][/center]
+
+Ta gra nie posiada \"oskryptowanych\" dialogów. Wszystkie wypowiedzi Szefa Wywiadu są generowane na żywo przez model językowy (LLM). Masz dwie drogi, aby to uruchomić:
+
+[b][font_size=20]1. CLOUD API (Łatwiejsze)[/font_size][/b]
+[i]Zalecane dla słabszych komputerów.[/i]
+
+W tym trybie gra łączy się z serwerami dostawcy, który wykonuje obliczenia za Ciebie.
+
+[ul]
+[b]Wymagania:[/b] Musisz posiadać własny [color=yellow]Klucz API (API Key)[/color].
+[b]Skąd wziąć klucz?[/b] Zarejestruj się na stronie dostawcy, wygeneruj klucz i wklej go w ustawieniach lobby.
+[b]Koszt:[/b] Korzystanie z API może wiązać się z niewielkimi opłatami po stronie dostawcy (zależnie od Twojego planu).
+[/ul]
+
+
+[b][font_size=20]2. LOCAL LLM[/font_size][/b]
+[i]Darmowe, prywatne, ale wymaga potężnego sprzętu.[/i]
+
+W tym trybie model AI działa [b]bezpośrednio na Twoim komputerze[/b].
+
+[color=#ff5555][b]WAŻNE [/b][/color]
+Gra [b]NIE[/b] zawiera wbudowanego modelu. Musisz samodzielnie pobrać i uruchomić serwer LLM  w tle, zanim włączysz grę!
+
+[b]Szacowane wymagania dla modelu 20B:[/b]
+[ul]
+[b]Karta Graficzna (GPU):[/b] Minimum [color=yellow]16GB VRAM[/color].
+[b]RAM:[/b] Jeśli używasz procesora (CPU) – min. [color=yellow]24GB RAM[/color].
+[/ul]
+
+
+[center][b][font_size=20]OSTRZEŻENIE O POŁĄCZENIU[/font_size][/b][/center]
+
+Mózgiem operacji jest komputer [b]Hosta (Założyciela gry)[/b].
+
+[color=#ff0000][b]WYJŚCIE HOSTA A LOCAL LLM[/b][/color]
+Jeśli Host korzystający z własnego modelu (Local LLM) opuści rozgrywkę, jego komputer przestaje przetwarzać dane dla reszty graczy. Oznacza to natychmiastowy koniec dostępu do \"inteligencji\" Szefa Wywiadu.
+
+[center][i]Dla płynnej rozgrywki upewnijcie się, że Host ma stabilne łącze![/i][/center]"
+metadata/_tab_index = 3
 
 [node name="CornerAnchor" type="Control" parent="."]
 anchors_preset = 0
@@ -127,4 +315,4 @@ theme_override_styles/normal = ExtResource("3_yqd7e")
 theme_override_styles/pressed = ExtResource("3_yqd7e")
 theme_override_styles/hover = ExtResource("4_ah480")
 theme_override_styles/focus = ExtResource("4_ah480")
-text = "← Menu"
+text = "← Powrót"
