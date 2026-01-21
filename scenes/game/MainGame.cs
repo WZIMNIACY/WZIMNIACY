@@ -254,6 +254,9 @@ public partial class MainGame : Control
             );
         }
 
+        eosManager.Connect(EOSManager.SignalName.LobbyOwnerChanged, new Callable(this, nameof(OnHostLeave)));
+        AddChild(eosManager.popupSystem);
+
         sendSelectionsTimer = new Timer();
         sendSelectionsTimer.WaitTime = 0.05f;
         sendSelectionsTimer.OneShot = false;
@@ -1531,6 +1534,15 @@ public partial class MainGame : Control
     {
         string localPuid = eosManager?.localProductUserIdString;
         return PuidToIndex(localPuid);
+    }
+
+    private void OnHostLeave()
+    {
+        GD.Print("[MainGame] Host has left the game.");
+        eosManager.popupSystem.ShowMessage("Host wyszedł.", "Gra się zakończyła z powodu wyjścia hosta z gry.", () =>
+        {
+            OnQuitButtonPressed();
+        });
     }
 }
 

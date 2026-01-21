@@ -55,8 +55,11 @@ public partial class EOSManager : Node
 	[Signal]
 	public delegate void GameSessionStartRequestedEventHandler(string sessionId, string hostUserId, ulong seed);
 
-	// Stałe konfiguracyjne
-	private const int MinNicknameLength = 2;
+    [Signal]
+    public delegate void LobbyOwnerChangedEventHandler();
+
+    // Stałe konfiguracyjne
+    private const int MinNicknameLength = 2;
 	private const int MaxNicknameLength = 20;
 	private const int UserIdDisplayLength = 8;
 	private const int RandomSuffixMax = 10000;
@@ -334,7 +337,7 @@ public partial class EOSManager : Node
 	//Limit graczy w trybie AI vs Human (Universal Team)
 	private const int MaxPlayersInAIvsHuman = 5;
 	// Custom popup system
-	private PopupSystem popupSystem;
+	public PopupSystem popupSystem { get; private set; }
 
 	// Enum dla drużyn
 	public enum Team
@@ -2297,9 +2300,10 @@ public partial class EOSManager : Node
 		{
 			string promotedUserId = data.TargetUserId.ToString();
 			GD.Print($"  👑 Member PROMOTED to host: {GetShortUserId(promotedUserId)}");
+            EmitSignal(SignalName.LobbyOwnerChanged);
 
-			// Jeśli to MY zostaliśmy awansowani
-			if (promotedUserId == localProductUserId.ToString())
+            // Jeśli to MY zostaliśmy awansowani
+            if (promotedUserId == localProductUserId.ToString())
 			{
 				GD.Print("  👑 ✅ YOU have been promoted to lobby owner!");
 				isLobbyOwner = true;
