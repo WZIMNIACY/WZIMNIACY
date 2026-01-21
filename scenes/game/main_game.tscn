@@ -540,6 +540,7 @@ text = "Wysłać
 "
 
 [node name="ReactionOverlay" type="Control" parent="Panel" node_paths=PackedStringArray("reactionBubble", "reactionLabel")]
+z_index = 200
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
