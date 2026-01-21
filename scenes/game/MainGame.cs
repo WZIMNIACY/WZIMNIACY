@@ -255,7 +255,6 @@ public partial class MainGame : Control
         }
 
         eosManager.Connect(EOSManager.SignalName.LobbyOwnerChanged, new Callable(this, nameof(OnHostLeave)));
-        AddChild(eosManager.popupSystem);
 
         sendSelectionsTimer = new Timer();
         sendSelectionsTimer.WaitTime = 0.05f;
