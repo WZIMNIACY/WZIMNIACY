@@ -1,9 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://c2yf84d4xmho2"]
+[gd_scene load_steps=9 format=3 uid="uid://c2yf84d4xmho2"]
 
 [ext_resource type="Script" uid="uid://dghu5uw7p572c" path="res://scenes/menu/MainMenu.cs" id="1_3xm2k"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="1_h2yge"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="1_ig7tw"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="2_0xm2m"]
+[ext_resource type="Texture2D" uid="uid://dh1xtfhb0oksf" path="res://assets/textures/misc/Logo.png" id="2_ijfal"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="3_1bvp3"]
 [ext_resource type="PackedScene" uid="uid://bfxpcutxox0tt" path="res://scenes/settings/Settings.tscn" id="6_gmxck"]
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="7_ec7jh"]
@@ -44,6 +45,14 @@ grow_vertical = 2
 [node name="VMenu" type="VBoxContainer" parent="Panel/MenuCenter"]
 layout_mode = 2
 theme_override_constants/separation = 10
+
+[node name="TextureRect" type="TextureRect" parent="Panel/MenuCenter/VMenu"]
+custom_minimum_size = Vector2(150, 100)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("2_ijfal")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="MainMenu" type="Label" parent="Panel/MenuCenter/VMenu"]
 layout_mode = 2
@@ -120,6 +129,7 @@ theme_override_styles/hover = ExtResource("3_1bvp3")
 text = "Wyjdź z gry"
 
 [node name="CornerAnchor" type="Control" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 0
 offset_right = 40.0
