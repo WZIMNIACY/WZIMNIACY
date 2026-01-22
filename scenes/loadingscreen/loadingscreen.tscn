@@ -7,7 +7,7 @@
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="5_7mg5h"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="6_fs44g"]
 
-[node name="Control" type="Control" node_paths=PackedStringArray("potato", "quitToMenuButton")]
+[node name="Control" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,8 +15,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tra3l")
-potato = NodePath("Panel/CenterContainer/VBoxContainer/CenterContainer/MarginContainer/Sprite2D")
-quitToMenuButton = NodePath("Panel/CenterContainer/VBoxContainer/QuitButton")
+potatoPath = NodePath("Panel/CenterContainer/VBoxContainer/CenterContainer/MarginContainer/Sprite2D")
+quitToMenuButtonPath = NodePath("Panel/CenterContainer/VBoxContainer/QuitButton")
 
 [node name="Panel" type="ColorRect" parent="."]
 layout_mode = 1

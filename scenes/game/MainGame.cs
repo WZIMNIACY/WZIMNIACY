@@ -1208,6 +1208,10 @@ public partial class MainGame : Control
         {
             await gameRightPanel.GenerateAndUpdateHint(llm, cardManager.Deck, currentTurn);
         }
+        else
+        {
+            gameRightPanel.HintGenerationAnimationStart();
+        }
     }
 
     private void UpdateMaxStreak()
