@@ -2,7 +2,6 @@ using game;
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
 
 public partial class CardManager : GridContainer
@@ -89,7 +88,7 @@ public partial class CardManager : GridContainer
 	}
 
 	public void LoadDeck(){
-		string json = File.ReadAllText("assets/WordVectorBase.json");
+		string json = FileAccess.GetFileAsString("res://assets/WordVectorBase.json");
 		namesVectorDb = JsonSerializer.Deserialize<Dictionary<string, List<double>>>(json);
 		game.Team cardTeam = mainGame.StartingTeam == MainGame.Team.Red
 			? game.Team.Red

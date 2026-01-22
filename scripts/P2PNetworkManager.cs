@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using Epic.OnlineServices;
-using Epic.OnlineServices.P2P;  
+using Epic.OnlineServices.P2P;
 
 public partial class P2PNetworkManager : Node
 {
@@ -34,7 +34,7 @@ public partial class P2PNetworkManager : Node
     private ProductUserId hostPuid;
 
     // Host: lista klientów (PUID)
-    private readonly Dictionary<string, ProductUserId> hostClients = new(); 
+    private readonly Dictionary<string, ProductUserId> hostClients = new();
     // Handshake state
     private bool clientHandshakeComplete = false;
     private readonly HashSet<string> hostWelcomedClients = new();
@@ -75,7 +75,7 @@ public partial class P2PNetworkManager : Node
     }
 
     // Host może (opcjonalnie) zbudować payload z dodatkowymi danymi (name/team)
-    // żeby P2P nie znał EOSManager.    
+    // żeby P2P nie znał EOSManager.
     public Func<GameStartPayload> hostBuildGameStartPayload;
     // =============================
 
@@ -533,6 +533,7 @@ public partial class P2PNetworkManager : Node
             catch (Exception e)
             {
                 GD.PrintErr($"[P2PNetworkManager] Handler exception for type={parsed.type}: {e.Message}");
+                GD.PrintErr(e.StackTrace);
             }
         }
 

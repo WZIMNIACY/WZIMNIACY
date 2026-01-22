@@ -13,9 +13,12 @@ public partial class AgentCard : PanelContainer
     [Export] private Label debugSelectionsDisplay;
     [Export] private HBoxContainer iconsContainer;
     [Export] private Button confirmButton;
-    [Export] private TextureRect frontSideRect;
-    [Export] private TextureRect revealedBackgroundRect;
-    [Export] private TextureRect revealedFaceRect;
+    [Export] private NodePath frontSideRectPath;
+    [Export] private NodePath revealedBackgroundRectPath;
+    [Export] private NodePath revealedFaceRectPath;
+    private TextureRect frontSideRect;
+    private TextureRect revealedBackgroundRect;
+    private TextureRect revealedFaceRect;
 
     [ExportGroup("Card Textures")]
     [Export] private Texture2D[] blueCardTextures;
@@ -56,6 +59,10 @@ public partial class AgentCard : PanelContainer
     public override void _Ready()
 	{
 		base._Ready();
+        frontSideRect = GetNode<TextureRect>(frontSideRectPath);
+        revealedBackgroundRect = GetNode<TextureRect>(revealedBackgroundRectPath);
+        revealedFaceRect = GetNode<TextureRect>(revealedFaceRectPath);
+
 		CallDeferred(nameof(SetPivotCenter));
 
 		MouseEntered += OnHoverEnter;

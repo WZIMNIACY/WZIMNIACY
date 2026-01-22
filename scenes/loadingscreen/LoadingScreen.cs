@@ -2,15 +2,21 @@ using Godot;
 
 public partial class LoadingScreen : Control
 {
-    [Export] Sprite2D potato;
-    [Export] Button quitToMenuButton;
-    [Export] MainGame mainGame;
+    [Export] NodePath potatoPath;
+    [Export] NodePath quitToMenuButtonPath;
+    [Export] NodePath mainGamePath;
+    Sprite2D potato;
+    Button quitToMenuButton;
+    MainGame mainGame;
 
     private Godot.Timer showQuitButtonTimer;
 
     public override void _Ready()
     {
         base._Ready();
+        potato = GetNode<Sprite2D>(potatoPath);
+        quitToMenuButton = GetNode<Button>(quitToMenuButtonPath);
+        mainGame = GetNode<MainGame>(mainGamePath);
 
         showQuitButtonTimer = new Timer();
         showQuitButtonTimer.WaitTime = 60.0;
