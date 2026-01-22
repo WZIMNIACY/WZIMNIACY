@@ -85,6 +85,10 @@ public partial class EscapeBackHandler : Node
         }
     }
 
+    /// <summary>
+    /// Obsługuje nieprzechwycone zdarzenia wejściowe (ESC) i wywołuje logikę powrotu, jeśli żaden input nie ma fokusu.
+    /// </summary>
+    /// <param name="@event">Zdarzenie wejściowe przekazane przez Godot.</param>
     public override void _UnhandledInput(InputEvent @event)
     {
         base._UnhandledInput(@event);
@@ -101,7 +105,7 @@ public partial class EscapeBackHandler : Node
                 // Jeśli trwa dołączanie do lobby, zablokuj ESC
                 if (eosManager != null && eosManager.isJoiningLobby)
                 {
-                    GD.Print("[EscapeBackHandler] ESC zablokowany - trwa dołączanie do lobby...");
+                    GD.Print("[EscapeBackHandler:Input] ESC zablokowany - trwa dołączanie do lobby...");
                     viewport.SetInputAsHandled();
                     return;
                 }
@@ -190,7 +194,7 @@ public partial class EscapeBackHandler : Node
 
         if (ShowConfirmDialog && !LeaveLobbyBeforeExit)
         {
-            GD.PrintErr("[EscapeBackHandler] You can not change scene without leaving lobby");
+            GD.PrintErr("[EscapeBackHandler] Cannot change scene without leaving lobby");
             return;
         }
 

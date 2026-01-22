@@ -35,8 +35,11 @@ namespace Diagnostics
         /// </summary>
         private class VRAMInfo
         {
+            /// <summary>Wartość VRAM w megabajtach.</summary>
             public float valueMB { get; set; }
+            /// <summary>Status detekcji VRAM.</summary>
             public VRAMStatus status { get; set; }
+            /// <summary>Komunikat pomocniczy, gdy brak dokładnej wartości.</summary>
             public string message { get; set; }
 
             public VRAMInfo()
@@ -48,12 +51,17 @@ namespace Diagnostics
         }
 
         // Zalecane wymagania sprzętowe
+    /// <summary>Minimalna liczba rdzeni CPU dla trybu AI.</summary>
         private const int MinCPUCores = 8;
+    /// <summary>Minimalna ilość pamięci RAM w MB dla trybu AI.</summary>
         private const double MinMemoryMB = 24576;
+    /// <summary>Minimalna ilość VRAM w MB dla trybu AI.</summary>
         private const float MinVRAMMB = 16384;
 
         // Cache dla VRAM 
+    /// <summary>Ostatni wynik detekcji VRAM przechowywany w pamięci.</summary>
         private static VRAMInfo cachedVRAM = null;
+    /// <summary>Flaga informująca, że detekcja VRAM jest w toku.</summary>
         private static bool isVRAMDetectionRunning = false;
 
         /// <summary>

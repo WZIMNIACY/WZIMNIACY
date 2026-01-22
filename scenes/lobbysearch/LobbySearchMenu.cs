@@ -10,6 +10,7 @@ using Godot;
 /// </remarks>
 public partial class LobbySearchMenu : Node
 {
+    /// <summary>Ścieżka do sceny lobby otwieranej po pomyślnym dołączeniu.</summary>
     private const string LobbyScenePath = "res://scenes/lobby/Lobby.tscn";
 
     /// <summary>Autoload EOS do obsługi logiki lobby.</summary>
@@ -24,6 +25,7 @@ public partial class LobbySearchMenu : Node
 
     /// <summary>Detektor wklejania ułatwiający szybkie dołączenie.</summary>
     private PasteDetector pasteDetector;
+    /// <summary>System popupów do komunikatów o błędach i statusie.</summary>
     private PopupSystem popupSystem;
 
     // Animacja przycisku
@@ -37,16 +39,20 @@ public partial class LobbySearchMenu : Node
     // Timeout dla dołączania
     /// <summary>Timer nadzorujący przekroczenie czasu dołączenia.</summary>
     private Timer joinTimeoutTimer;
+    /// <summary>Maksymalny czas oczekiwania na dołączenie do lobby (s).</summary>
     private const float JoinTimeout = 7.0f; // 7 sekund timeout
 
     // Timer dla timeoutu opuszczania lobby
     private Timer leaveTimeoutTimer;
+    /// <summary>Maksymalny czas oczekiwania na opuszczenie lobby (s).</summary>
     private const float LeaveTimeout = 3.0f; // 3 sekund timeout na opuszczenie
 
     // Zabezpieczenie przed wielokrotnym wywołaniem
+    /// <summary>Flaga blokująca wielokrotne uruchomienie procesu dołączania.</summary>
     private bool isPending = false;
 
     // Zapamietany kod lobby do dołączenia po opuszczeniu obecnego
+    /// <summary>Kod lobby zapisany do automatycznego dołączenia po opuszczeniu bieżącego.</summary>
     private string pendingLobbyCodeToJoin = null;
 
     /// <summary>
@@ -126,6 +132,7 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Wywoływane gdy użytkownik wklei tekst do pola lobby ID.
     /// </summary>
+    /// <remarks>Po wklejeniu automatycznie uruchamia procedurę dołączania.</remarks>
     /// <param name="pastedText">Wklejony ciąg znaków (ignorowany; używany do uruchomienia logiki join).</param>
     /// <seealso cref="OnJoinButtonPressed"/>
     private void OnLobbyIdPasted(string pastedText)
@@ -140,6 +147,7 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Wywoływane gdy użytkownik naciśnie Enter w polu lobby ID.
     /// </summary>
+    /// <remarks>Przekierowuje akcję do logiki przycisku dołączania.</remarks>
     /// <param name="text">Aktualny tekst w polu wyszukiwania.</param>
     /// <seealso cref="OnJoinButtonPressed"/>
     private void OnSearchInputSubmitted(string text)
@@ -152,6 +160,7 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Obsługuje cofnięcie do głównego menu z ekranu wyszukiwania lobby.
     /// </summary>
+    /// <remarks>Zmienia scenę na menu główne bez dodatkowej walidacji.</remarks>
     private void OnBackButtonPressed()
     {
         GD.Print("[LobbySearchMenu] Returning to main menu...");
@@ -164,7 +173,7 @@ public partial class LobbySearchMenu : Node
     /// <seealso cref="StartJoiningAnimation"/>
     /// <seealso cref="StopJoiningAnimation"/>
     /// <seealso cref="OnJoinTimeout"/>
-    /// <exception>Loguje błąd, gdy pole wyszukiwania lub <see cref="EOSManager"/> jest puste.</exception>
+    /// <remarks>Loguje błąd, gdy pole wyszukiwania lub <see cref="EOSManager"/> jest puste.</remarks>
     private void OnJoinButtonPressed()
     {
         if (searchInput == null || eosManager == null)
@@ -196,7 +205,7 @@ public partial class LobbySearchMenu : Node
         // Sprawdź czy gracz jest już w jakimś lobby
         if (!string.IsNullOrEmpty(eosManager.currentLobbyId))
         {
-            GD.Print($"⚠️ Player is already in lobby {eosManager.currentLobbyId}, leaving first...");
+            GD.Print($"[LobbySearchMenu:JoinLobby] Player already in lobby {eosManager.currentLobbyId}, leaving first...");
 
             // Zapisz kod lobby do dołączenia po opuszczeniu obecnego
             pendingLobbyCodeToJoin = customId;
@@ -212,9 +221,10 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Faktycznie dołącza do lobby po podanym kodzie
     /// </summary>
+    /// <remarks>Uruchamia timeout oczekiwania na dołączenie.</remarks>
     private void JoinLobbyByCode(string customId)
     {
-        GD.Print($"🔗 Joining lobby: {customId}");
+        GD.Print($"[LobbySearchMenu:JoinLobby] Joining lobby: {customId}");
 
         // Wyszukaj i dołącz do lobby (scena zmieni się automatycznie po sygnale LobbyJoined)
         eosManager.JoinLobbyByCustomId(customId);
@@ -226,6 +236,7 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Rozpoczyna animację "Dołączanie..." z kolejnymi kropkami.
     /// </summary>
+    /// <remarks>Blokuje przyciski na czas trwania procedury dołączania.</remarks>
     /// <seealso cref="OnAnimationTimerTimeout"/>
     private void StartJoiningAnimation()
     {
@@ -251,6 +262,7 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Zatrzymuje animację i przywraca przycisk do stanu początkowego.
     /// </summary>
+    /// <remarks>Resetuje flagi oczekiwania i zatrzymuje timery.</remarks>
     /// <seealso cref="StartJoiningAnimation"/>
     /// <seealso cref="OnJoinTimeout"/>
     private void StopJoiningAnimation()
@@ -278,6 +290,7 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Callback timera animacji – aktualizuje tekst przycisku o kolejne kropki.
     /// </summary>
+    /// <remarks>Wykonuje się cyklicznie tylko, gdy trwa dołączanie.</remarks>
     /// <seealso cref="StartJoiningAnimation"/>
     private void OnAnimationTimerTimeout()
     {
@@ -293,7 +306,7 @@ public partial class LobbySearchMenu : Node
     /// Reaguje na przekroczenie czasu dołączenia: loguje błąd i przywraca stan przycisku po wywołaniu <see cref="OnJoinButtonPressed"/>.
     /// </summary>
     /// <seealso cref="StopJoiningAnimation"/>
-    /// <exception>Loguje błąd w przypadku przekroczenia czasu dołączenia.</exception>
+    /// <remarks>Loguje błąd w przypadku przekroczenia czasu dołączenia.</remarks>
     private void OnJoinTimeout()
     {
         GD.PrintErr("[LobbySearchMenu:JoinLobby] Join timeout - lobby not found or connection failed");
@@ -316,9 +329,10 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Callback gdy przekroczono timeout opuszczania lobby
     /// </summary>
+    /// <remarks>Resetuje stan dołączania i informuje użytkownika o błędzie.</remarks>
     private void OnLeaveTimeout()
     {
-        GD.PrintErr("❌ Leave timeout - failed to leave previous lobby");
+        GD.PrintErr("[LobbySearchMenu:JoinLobby] Leave timeout - failed to leave previous lobby");
 
         // Wyczyść pending lobby code
         pendingLobbyCodeToJoin = null;
@@ -341,7 +355,7 @@ public partial class LobbySearchMenu : Node
     /// </summary>
     /// <param name="errorMessage">Opis błędu przekazany z EOSManager.</param>
     /// <seealso cref="StopJoiningAnimation"/>
-    /// <exception>Loguje błąd, gdy dołączenie do lobby się nie powiedzie.</exception>
+    /// <remarks>Loguje błąd, gdy dołączenie do lobby się nie powiedzie.</remarks>
     private void OnLobbyJoinFailed(string errorMessage)
     {
         GD.PrintErr($"[LobbySearchMenu:JoinLobby] Failed to join lobby: {errorMessage}");
@@ -385,9 +399,10 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Callback wywoływany po opuszczeniu lobby
     /// </summary>
+    /// <remarks>Jeśli zapisano kod docelowego lobby, inicjuje ponowne dołączanie.</remarks>
     private void OnLobbyLeftSuccessfully()
     {
-        GD.Print($"✅ Successfully left lobby");
+        GD.Print("[LobbySearchMenu:JoinLobby] Successfully left lobby");
 
         leaveTimeoutTimer.Stop();
 
@@ -397,7 +412,7 @@ public partial class LobbySearchMenu : Node
             string codeToJoin = pendingLobbyCodeToJoin;
             pendingLobbyCodeToJoin = null;
 
-            GD.Print($"➡️ Now joining lobby: {codeToJoin}");
+            GD.Print($"[LobbySearchMenu:JoinLobby] Now joining lobby: {codeToJoin}");
             JoinLobbyByCode(codeToJoin);
         }
     }
@@ -405,6 +420,7 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Callback wywoływany po pomyślnym dołączeniu do lobby (sygnał <see cref="EOSManager.LobbyJoined"/>); zmienia scenę po krótkim opóźnieniu.
     /// </summary>
+    /// <remarks>Opóźnienie pozwala użytkownikowi zauważyć zmianę statusu.</remarks>
     /// <param name="lobbyId">Identyfikator lobby, do którego dołączono.</param>
     /// <seealso cref="StopJoiningAnimation"/>
     /// <seealso cref="OnJoinButtonPressed"/>
@@ -427,6 +443,7 @@ public partial class LobbySearchMenu : Node
     /// <summary>
     /// Czyści timery oraz odłącza sygnały UI i EOSManager przy zamykaniu sceny.
     /// </summary>
+    /// <remarks>Zapobiega wyciekom sygnałów po ponownym wejściu na scenę.</remarks>
     public override void _ExitTree()
     {
         base._ExitTree();
