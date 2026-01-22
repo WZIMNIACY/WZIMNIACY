@@ -59,9 +59,9 @@ public partial class AgentCard : PanelContainer
     public override void _Ready()
 	{
 		base._Ready();
-        frontSideRect = GetNode<TextureRect>(frontSideRectPath);
-        revealedBackgroundRect = GetNode<TextureRect>(revealedBackgroundRectPath);
-        revealedFaceRect = GetNode<TextureRect>(revealedFaceRectPath);
+        frontSideRect = GetNode<TextureRect>("%AgentCardU");
+        revealedBackgroundRect = GetNode<TextureRect>("%RevealedBackgroundU");
+        revealedFaceRect = GetNode<TextureRect>("%RevealedFaceU");
 
 		CallDeferred(nameof(SetPivotCenter));
 

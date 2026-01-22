@@ -27,11 +27,15 @@ namespace hints
             this.Cards = cards;
         }
 
-        public async static Task<Hint> Create(Deck deck, ILLM llm, Team nowTour, List<string> createdHints)
+        public async static Task<Hint> Create(Deck deck, ILLM llm, Team nowTour, List<string> previousHints, uint maxTokens = 256, bool testMode = false)
         {
+
+            //
+
             //Prompt set up
             string _nowTour = nowTour.ToString();
             string _actualDeck = deck.ToJson();
+            string? lastWrongHint = null;
 
             var assembly = Assembly.GetExecutingAssembly();
             string hintPromptRes = "Hint_Generating.hintPrompt.txt";
@@ -52,7 +56,8 @@ namespace hints
             string userPromptHint = $"" +
             $"_nowTour = {_nowTour}\n" +
             $"_actualDeck = {_actualDeck}" +
-            $"_createdHints = {createdHints}";
+            $"_previousHints = {previousHints}" +
+            $"_lastWrongHint = {((lastWrongHint == null)? "" : lastWrongHint)}\n";
 
             //Genereting hint
             while (true)
@@ -60,16 +65,47 @@ namespace hints
                 try
                 {
                     Console.WriteLine("Generating hint...");
-                    string response = await llm.SendRequestAsync(systemPromptHint, userPromptHint);
+                    string response = await llm.SendRequestAsync(systemPromptHint, userPromptHint, maxTokens);
                     Hint hint = Hint.FromJson(response);
 
                     bool hintInDeck = deck.Cards.Any(card => card.Word.Equals(hint.Word, StringComparison.OrdinalIgnoreCase));
+                    bool cardsFromHintInDeck = hint.Cards != null && hint.Cards.Any(card => deck.Cards.Any(deckCard => deckCard.Word.Equals(card.Word, StringComparison.OrdinalIgnoreCase)));
                     bool hintIsEmpty = string.IsNullOrWhiteSpace(hint.Word);
                     bool teamOK = hint.Cards != null && hint.Cards.All(card => card.Team == nowTour);
+                    bool hitDoesNotExistInPreviousHints = !previousHints.Any(previousHint => previousHint.Equals(hint.Word, StringComparison.OrdinalIgnoreCase));
 
-                    if (hintInDeck || hintIsEmpty || !teamOK)
+                    if (hintInDeck || hintIsEmpty || !teamOK || !cardsFromHintInDeck || !hitDoesNotExistInPreviousHints)
                     {
-                        Console.WriteLine("Generated hint is invalid, regenerating...");
+
+                        if (hintInDeck)
+                            Console.WriteLine("Generated hint is already in deck, regenerating...");
+                        else if (hintIsEmpty)
+                            Console.WriteLine("Generated hint is empty, regenerating...");
+                        else if (!teamOK)
+                            Console.WriteLine("Generated hint has cards that do not belong to the current team, regenerating...");
+                        else if (!cardsFromHintInDeck)
+                            Console.WriteLine("Generated hint contains cards that are not in the deck, regenerating...");
+                        else if (!hitDoesNotExistInPreviousHints)
+                            Console.WriteLine("Generated hint already exists in previous hints, regenerating...");
+
+                        if (testMode)
+                        {
+
+                            if(lastWrongHint != null)
+                            {
+                                Console.WriteLine("\n\n=== Last Wrong Hint Details ===");
+                                Console.WriteLine(lastWrongHint);
+                                Console.WriteLine("=== End of Last Wrong Hint Details ===\n\n");
+                            }
+                            
+                            
+                            Console.WriteLine("=== Generated Hint Details ===");
+                            Console.WriteLine(response);
+                            Console.WriteLine("=== End of Generated Hint Details ===\n\n");
+                        }
+
+                        lastWrongHint = response;
+
                         continue;
                     }
                     else
@@ -80,6 +116,7 @@ namespace hints
                 catch (HintException ex)
                 {
                     Console.WriteLine($"Failed to parse hint response: {ex.Message}, regenerating...");
+
                     continue;
                 }
             }

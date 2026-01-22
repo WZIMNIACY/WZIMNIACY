@@ -14,7 +14,7 @@ public partial class LoadingScreen : Control
     public override void _Ready()
     {
         base._Ready();
-        potato = GetNode<Sprite2D>(potatoPath);
+        potato = GetNode<Sprite2D>("%LoadingScreenPotato");
         quitToMenuButton = GetNode<Button>(quitToMenuButtonPath);
         mainGame = GetNode<MainGame>(mainGamePath);
 
