@@ -1,9 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://c2yf84d4xmho2"]
+[gd_scene load_steps=9 format=3 uid="uid://c2yf84d4xmho2"]
 
 [ext_resource type="Script" uid="uid://dghu5uw7p572c" path="res://scenes/menu/MainMenu.cs" id="1_3xm2k"]
 [ext_resource type="FontFile" uid="uid://c65l5c77oy1p5" path="res://assets/fonts/SpaceMono-Bold.ttf" id="1_h2yge"]
 [ext_resource type="FontFile" uid="uid://fx12hnivyylk" path="res://assets/fonts/SpaceMono-Regular.ttf" id="1_ig7tw"]
 [ext_resource type="StyleBox" uid="uid://drl2twqn1nt3b" path="res://assets/buttons/button_border.tres" id="2_0xm2m"]
+[ext_resource type="Texture2D" uid="uid://dh1xtfhb0oksf" path="res://assets/textures/misc/Logo.png" id="2_ijfal"]
 [ext_resource type="StyleBox" uid="uid://c01fbiircsfdi" path="res://assets/buttons/button_hover.tres" id="3_1bvp3"]
 [ext_resource type="PackedScene" uid="uid://bfxpcutxox0tt" path="res://scenes/settings/Settings.tscn" id="6_gmxck"]
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="7_ec7jh"]
@@ -16,11 +17,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_3xm2k")
-createButton = NodePath("Panel/MenuCenter/VMenu/CreateGame/CreateGameButton")
-joinButton = NodePath("Panel/MenuCenter/VMenu/JoinGame/JoinGameButton")
-settingsButton = NodePath("Panel/MenuCenter/VMenu/Settings/SettingsButton")
-helpButton = NodePath("Panel/MenuCenter/VMenu/Help/HelpButton")
-quitButton = NodePath("Panel/MenuCenter/VMenu/Quit/QuitButton")
+createButton = NodePath("Panel/MenuCenter/VBoxContainer/VMenu/CreateGame/CreateGameButton")
+joinButton = NodePath("Panel/MenuCenter/VBoxContainer/VMenu/JoinGame/JoinGameButton")
+settingsButton = NodePath("Panel/MenuCenter/VBoxContainer/VMenu/Settings/SettingsButton")
+helpButton = NodePath("Panel/MenuCenter/VBoxContainer/VMenu/Help/HelpButton")
+quitButton = NodePath("Panel/MenuCenter/VBoxContainer/VMenu/Quit/QuitButton")
 settingsMenuNode = NodePath("Settings")
 helpMenuNode = NodePath("HelpScene")
 
@@ -41,11 +42,27 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VMenu" type="VBoxContainer" parent="Panel/MenuCenter"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MenuCenter"]
 layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MenuCenter/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_bottom = 50
+
+[node name="TextureRect" type="TextureRect" parent="Panel/MenuCenter/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(450, 100)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("2_ijfal")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VMenu" type="VBoxContainer" parent="Panel/MenuCenter/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
 theme_override_constants/separation = 10
 
-[node name="MainMenu" type="Label" parent="Panel/MenuCenter/VMenu"]
+[node name="MainMenu" type="Label" parent="Panel/MenuCenter/VBoxContainer/VMenu"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 1, 0.8, 1)
 theme_override_fonts/font = ExtResource("1_h2yge")
@@ -53,10 +70,10 @@ theme_override_font_sizes/font_size = 20
 text = "Main Menu"
 horizontal_alignment = 1
 
-[node name="CreateGame" type="VBoxContainer" parent="Panel/MenuCenter/VMenu"]
+[node name="CreateGame" type="VBoxContainer" parent="Panel/MenuCenter/VBoxContainer/VMenu"]
 layout_mode = 2
 
-[node name="CreateGameButton" type="Button" parent="Panel/MenuCenter/VMenu/CreateGame"]
+[node name="CreateGameButton" type="Button" parent="Panel/MenuCenter/VBoxContainer/VMenu/CreateGame"]
 layout_mode = 2
 size_flags_stretch_ratio = 0.0
 mouse_default_cursor_shape = 2
@@ -67,10 +84,10 @@ theme_override_styles/pressed = ExtResource("2_0xm2m")
 theme_override_styles/hover = ExtResource("3_1bvp3")
 text = "Stwórz grę"
 
-[node name="JoinGame" type="VBoxContainer" parent="Panel/MenuCenter/VMenu"]
+[node name="JoinGame" type="VBoxContainer" parent="Panel/MenuCenter/VBoxContainer/VMenu"]
 layout_mode = 2
 
-[node name="JoinGameButton" type="Button" parent="Panel/MenuCenter/VMenu/JoinGame"]
+[node name="JoinGameButton" type="Button" parent="Panel/MenuCenter/VBoxContainer/VMenu/JoinGame"]
 layout_mode = 2
 mouse_default_cursor_shape = 2
 theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
@@ -80,10 +97,10 @@ theme_override_styles/pressed = ExtResource("3_1bvp3")
 theme_override_styles/hover = ExtResource("3_1bvp3")
 text = "Dołącz do gry"
 
-[node name="Settings" type="VBoxContainer" parent="Panel/MenuCenter/VMenu"]
+[node name="Settings" type="VBoxContainer" parent="Panel/MenuCenter/VBoxContainer/VMenu"]
 layout_mode = 2
 
-[node name="SettingsButton" type="Button" parent="Panel/MenuCenter/VMenu/Settings"]
+[node name="SettingsButton" type="Button" parent="Panel/MenuCenter/VBoxContainer/VMenu/Settings"]
 layout_mode = 2
 mouse_default_cursor_shape = 2
 theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
@@ -93,10 +110,10 @@ theme_override_styles/pressed = ExtResource("3_1bvp3")
 theme_override_styles/hover = ExtResource("3_1bvp3")
 text = "Ustawienia"
 
-[node name="Help" type="VBoxContainer" parent="Panel/MenuCenter/VMenu"]
+[node name="Help" type="VBoxContainer" parent="Panel/MenuCenter/VBoxContainer/VMenu"]
 layout_mode = 2
 
-[node name="HelpButton" type="Button" parent="Panel/MenuCenter/VMenu/Help"]
+[node name="HelpButton" type="Button" parent="Panel/MenuCenter/VBoxContainer/VMenu/Help"]
 layout_mode = 2
 mouse_default_cursor_shape = 2
 theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
@@ -106,10 +123,10 @@ theme_override_styles/pressed = ExtResource("3_1bvp3")
 theme_override_styles/hover = ExtResource("3_1bvp3")
 text = "Pomoc"
 
-[node name="Quit" type="VBoxContainer" parent="Panel/MenuCenter/VMenu"]
+[node name="Quit" type="VBoxContainer" parent="Panel/MenuCenter/VBoxContainer/VMenu"]
 layout_mode = 2
 
-[node name="QuitButton" type="Button" parent="Panel/MenuCenter/VMenu/Quit"]
+[node name="QuitButton" type="Button" parent="Panel/MenuCenter/VBoxContainer/VMenu/Quit"]
 layout_mode = 2
 mouse_default_cursor_shape = 2
 theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
@@ -120,6 +137,7 @@ theme_override_styles/hover = ExtResource("3_1bvp3")
 text = "Wyjdź z gry"
 
 [node name="CornerAnchor" type="Control" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 0
 offset_right = 40.0
