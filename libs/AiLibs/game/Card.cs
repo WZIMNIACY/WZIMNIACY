@@ -6,7 +6,7 @@ using System.Text.Unicode;
 
 namespace game
 {
-    public sealed record Card
+    public class Card
     {
         public string Word { get; init; }
         public List<double>? Vector { get; init; }
@@ -73,5 +73,22 @@ namespace game
             return System.Text.Json.JsonSerializer.Deserialize<Card>(json, options)!;
         }
 
+        public override bool Equals(object? obj)
+        {
+            Card? card = obj as Card;
+            if (card == null)
+                return false;
+
+            return this.GetHashCode() == card.GetHashCode();
+
+            
+        }
+
+        public override int GetHashCode()
+        {
+            return Word.GetHashCode() + Team.GetHashCode();
+        }
+
+        
     }
 }
