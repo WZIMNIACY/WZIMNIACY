@@ -9,7 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://bfxpcutxox0tt" path="res://scenes/settings/Settings.tscn" id="6_gmxck"]
 [ext_resource type="PackedScene" uid="uid://cu6vu1ayjqexh" path="res://scenes/help/Help.tscn" id="7_ec7jh"]
 
-[node name="Main" type="Control" node_paths=PackedStringArray("createButton", "joinButton", "settingsButton", "helpButton", "quitButton", "settingsMenuNode", "helpMenuNode")]
+[node name="Main" type="Control" node_paths=PackedStringArray("createButton", "joinButton", "settingsButton", "helpButton", "quitButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,8 +22,8 @@ joinButton = NodePath("Panel/MenuCenter/VBoxContainer/VMenu/JoinGame/JoinGameBut
 settingsButton = NodePath("Panel/MenuCenter/VBoxContainer/VMenu/Settings/SettingsButton")
 helpButton = NodePath("Panel/MenuCenter/VBoxContainer/VMenu/Help/HelpButton")
 quitButton = NodePath("Panel/MenuCenter/VBoxContainer/VMenu/Quit/QuitButton")
-settingsMenuNode = NodePath("Settings")
-helpMenuNode = NodePath("HelpScene")
+settingsMenuNodePath = NodePath("Settings")
+helpMenuNodePath = NodePath("HelpScene")
 
 [node name="Panel" type="ColorRect" parent="."]
 layout_mode = 1

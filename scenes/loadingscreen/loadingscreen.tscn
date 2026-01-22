@@ -15,7 +15,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tra3l")
-potatoPath = NodePath("Panel/CenterContainer/VBoxContainer/CenterContainer/MarginContainer/Sprite2D")
+potatoPath = NodePath("Panel/CenterContainer/VBoxContainer/CenterContainer/MarginContainer/LoadingScreenPotato")
 quitToMenuButtonPath = NodePath("Panel/CenterContainer/VBoxContainer/QuitButton")
 
 [node name="Panel" type="ColorRect" parent="."]
@@ -59,7 +59,8 @@ layout_mode = 2
 layout_mode = 2
 theme_override_constants/margin_bottom = 120
 
-[node name="Sprite2D" type="Sprite2D" parent="Panel/CenterContainer/VBoxContainer/CenterContainer/MarginContainer"]
+[node name="LoadingScreenPotato" type="Sprite2D" parent="Panel/CenterContainer/VBoxContainer/CenterContainer/MarginContainer"]
+unique_name_in_owner = true
 position = Vector2(5, 43)
 rotation = -1.3351768
 scale = Vector2(0.12351189, 0.10775869)

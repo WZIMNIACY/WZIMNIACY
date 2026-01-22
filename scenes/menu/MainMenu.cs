@@ -6,8 +6,8 @@ public partial class MainMenu : Node
 	// --- NAPRAWIONE ŚCIEŻKI (Tego brakowało!) ---
 	private const string LobbyMenuString = "res://scenes/lobby/Lobby.tscn";
 	private const string LobbySearchMenuString = "res://scenes/lobbysearch/LobbySearch.tscn";
-	
-	// SettingsSceneString i HelpSceneString usunęliśmy celowo, 
+
+	// SettingsSceneString i HelpSceneString usunęliśmy celowo,
 	// bo teraz używamy Overlay (nakładek), a nie zmiany sceny.
 
 	// --- ELEMENTY UI ---
@@ -20,8 +20,10 @@ public partial class MainMenu : Node
 
 	// --- REFERENCJE DO NAKŁADEK (OVERLAYS) ---
 	[ExportGroup("Overlays")]
-	[Export] private Control settingsMenuNode; // Tu przypniesz Settings.tscn w Inspektorze
-	[Export] private Control helpMenuNode;     // Tu przypniesz Help.tscn (jeśli masz)
+	[Export] private NodePath settingsMenuNodePath; // Tu przypniesz Settings.tscn w Inspektorze
+	[Export] private NodePath helpMenuNodePath;     // Tu przypniesz Help.tscn (jeśli masz)
+	private Control settingsMenuNode; // Tu przypniesz Settings.tscn w Inspektorze
+	private Control helpMenuNode;     // Tu przypniesz Help.tscn (jeśli masz)
 
 	// --- MANAGERY ---
 	private EOSManager eosManager;
@@ -41,11 +43,14 @@ public partial class MainMenu : Node
 	{
 		base._Ready();
 
+        settingsMenuNode = GetNode<Control>(settingsMenuNodePath);
+        helpMenuNode = GetNode<Control>(helpMenuNodePath);
+
 		// 1. Walidacja - sprawdzamy też settingsMenuNode
 		if (!AreNodesAssigned())
 		{
 			GD.PrintErr("❌ MainMenu ERROR: Nie przypisano przycisków lub okienek (Settings/Help) w Inspektorze!");
-			return; 
+			return;
 		}
 
 		// 2. Ukrywamy nakładki na start (żeby nie zasłaniały menu)
@@ -82,7 +87,7 @@ public partial class MainMenu : Node
 				if (secretCode.EndsWith(SecretTrigger))
 				{
 					ShowAdminMenu();
-					secretCode = ""; 
+					secretCode = "";
 				}
 			}
 		}
@@ -91,10 +96,10 @@ public partial class MainMenu : Node
 	private bool AreNodesAssigned()
 	{
 		// Sprawdzamy czy przypisano Settings w Inspektorze
-		bool missing = createButton == null || 
-					   joinButton == null || 
-					   quitButton == null || 
-					   settingsButton == null || 
+		bool missing = createButton == null ||
+					   joinButton == null ||
+					   quitButton == null ||
+					   settingsButton == null ||
 					   helpButton == null ||
 					   settingsMenuNode == null; // <--- Ważne!
 
@@ -202,14 +207,14 @@ public partial class MainMenu : Node
 		string currentDeviceId = eosManager != null ? eosManager.GetCurrentDeviceId() : "N/A";
 		adminPopup = new AcceptDialog();
 		adminPopup.Title = "🔧 Menu Admina";
-		
+
 		VBoxContainer content = new VBoxContainer();
 		Label l = new Label(); l.Text = "Sekretne Menu Admina"; content.AddChild(l);
 		TextEdit t = new TextEdit(); t.Text = currentDeviceId; content.AddChild(t);
 		Button b = new Button(); b.Text = "Resetuj ID";
 		b.Pressed += () => { if(eosManager!=null) eosManager.ResetDeviceId(); };
 		content.AddChild(b);
-		
+
 		adminPopup.AddChild(content);
 		GetTree().Root.AddChild(adminPopup);
 		adminPopup.PopupCentered();
