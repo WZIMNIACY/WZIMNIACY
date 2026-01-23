@@ -1,5 +1,13 @@
+/// <summary>
+/// Extension methods and helpers for converting between CardType and Team enums.
+/// </summary>
 public static class CardTypeExt
 {
+    /// <summary>
+    /// Converts a game Team enum to the corresponding CardManager.CardType.
+    /// </summary>
+    /// <param name="team">The team to convert.</param>
+    /// <returns>The corresponding CardType (Red, Blue, Assassin, or Common).</returns>
     public static CardManager.CardType FromGameTeam(game.Team team)
     {
         switch (team)
@@ -15,6 +23,11 @@ public static class CardTypeExt
         }
     }
 
+    /// <summary>
+    /// Converts a CardManager.CardType to the corresponding game Team enum.
+    /// </summary>
+    /// <param name="type">The card type to convert.</param>
+    /// <returns>The corresponding Team (Red, Blue, Assassin, or Neutral).</returns>
     public static game.Team ToGameTeam(this CardManager.CardType type)
     {
         switch (type)

@@ -7,6 +7,10 @@ using System.Text.Json;
 using Epic.OnlineServices;
 using Epic.OnlineServices.P2P;
 
+/// <summary>
+/// Manages Peer-to-Peer networking using Epic Online Services (EOS).
+/// Handles handshake, packet routing, and JSON-based RPC messaging.
+/// </summary>
 public partial class P2PNetworkManager : Node
 {
     // Zgodnie z Twoim planem: handshake + gra na tym samym kanale 0
@@ -48,6 +52,9 @@ public partial class P2PNetworkManager : Node
 
 
     // === JSON RPC (PUBLICZNE MODELE) ===
+    /// <summary>
+    /// Represents a generic network message for JSON RPC.
+    /// </summary>
     public sealed class NetMessage
     {
         public string kind { get; set; }    // "rpc"
@@ -56,6 +63,9 @@ public partial class P2PNetworkManager : Node
     }
 
     // === GAME START RPC MODELS ===
+    /// <summary>
+    /// Represents a player in the game session.
+    /// </summary>
     public sealed class GamePlayer
     {
         public int index { get; set; }          // 0 = host, 1..N = klienci
@@ -65,6 +75,9 @@ public partial class P2PNetworkManager : Node
         public string profileIconPath { get; set; }
     }
 
+    /// <summary>
+    /// Payload data for starting a game session.
+    /// </summary>
     public sealed class GameStartPayload
     {
         public string sessionId { get; set; }
@@ -76,27 +89,64 @@ public partial class P2PNetworkManager : Node
 
     // Host może (opcjonalnie) zbudować payload z dodatkowymi danymi (name/team)
     // żeby P2P nie znał EOSManager.
+    /// <summary>
+    /// Delegate/Func to build the game start payload on the host.
+    /// Allows customization of the initial game state.
+    /// </summary>
     public Func<GameStartPayload> hostBuildGameStartPayload;
     // =============================
 
 
     // === HANDLERY PAKIETÓW (router) ===
     // Handler zwraca true jeśli "zjada" pakiet (czyli był obsłużony)
+    /// <summary>
+    /// Delegate for handling incoming network packets.
+    /// </summary>
+    /// <param name="packet">The received network message.</param>
+    /// <param name="fromPeer">The ID of the peer who sent the message.</param>
+    /// <returns>True if the packet was handled; otherwise, false.</returns>
     public delegate bool PacketHandler(NetMessage packet, ProductUserId fromPeer);
 
+    /// <summary>
+    /// Event triggered when a packet is received.
+    /// </summary>
     public event PacketHandler PacketHandlers;
 
     // --- Przydatne property (do użycia w MainGame / innych plikach) ---
+    /// <summary>
+    /// Gets a value indicating whether this instance is acting as the host.
+    /// </summary>
     public bool IsHost => isHost;
+    /// <summary>
+    /// Gets a value indicating whether the network manager has started.
+    /// </summary>
     public bool Started => started;
+    /// <summary>
+    /// Gets a value indicating whether the client handshake with the host is complete.
+    /// </summary>
     public bool ClientHandshakeComplete => clientHandshakeComplete; // tylko sensowne po stronie klienta
+    /// <summary>
+    /// Gets the current session ID.
+    /// </summary>
     public string SessionId => sessionId;
+    /// <summary>
+    /// Gets the local Product User ID.
+    /// </summary>
     public ProductUserId LocalPuid => localPuid;
+    /// <summary>
+    /// Gets the host's Product User ID.
+    /// </summary>
     public ProductUserId HostPuid => hostPuid;
 
     // === HANDSHAKE EVENT (DODANE) ===
+    /// <summary>
+    /// Event fired when the handshake process is successfully completed.
+    /// </summary>
     public event Action HandshakeCompleted;
 
+    /// <summary>
+    /// Invokes the HandshakeCompleted event.
+    /// </summary>
     private void FireHandshakeCompletedOnce()
     {
         HandshakeCompleted?.Invoke();
@@ -160,6 +210,12 @@ public partial class P2PNetworkManager : Node
     }
 
     // HOST start
+    /// <summary>
+    /// Starts the P2P session as a host.
+    /// </summary>
+    /// <param name="sessionId">The unique session identifier.</param>
+    /// <param name="localPuidString">The local user's Product User ID string.</param>
+    /// <param name="clientPuids">Array of client Product User ID strings expected to join.</param>
     public void StartAsHost(string sessionId, string localPuidString, string[] clientPuids)
     {
         if (!EnsureReady(localPuidString)) return;
@@ -203,6 +259,12 @@ public partial class P2PNetworkManager : Node
     }
 
     // CLIENT start
+    /// <summary>
+    /// Starts the P2P session as a client.
+    /// </summary>
+    /// <param name="sessionId">The unique session identifier.</param>
+    /// <param name="localPuidString">The local user's Product User ID string.</param>
+    /// <param name="hostPuidString">The host's Product User ID string.</param>
     public void StartAsClient(string sessionId, string localPuidString, string hostPuidString)
     {
         if (!EnsureReady(localPuidString)) return;
@@ -226,6 +288,10 @@ public partial class P2PNetworkManager : Node
     }
 
     // (Opcjonalnie) jeśli host ma dynamicznie dopinać graczy po starcie:
+    /// <summary>
+    /// Registers a new client on the host side dynamically.
+    /// </summary>
+    /// <param name="clientPuidString">The client's Product User ID string.</param>
     public void HostRegisterClient(string clientPuidString)
     {
         if (!started || !isHost) return;
@@ -245,6 +311,11 @@ public partial class P2PNetworkManager : Node
         }
     }
 
+    /// <summary>
+    /// Ensures the P2P interface and local PUID are valid.
+    /// </summary>
+    /// <param name="localPuidString">The local PUID string to validate.</param>
+    /// <returns>True if ready; otherwise, false.</returns>
     private bool EnsureReady(string localPuidString)
     {
         if (p2pInterface == null)
@@ -263,6 +334,9 @@ public partial class P2PNetworkManager : Node
         return true;
     }
 
+    /// <summary>
+    /// Sends a HELLO message to the host.
+    /// </summary>
     private void SendClientHello()
     {
         if (hostPuid == null || !hostPuid.IsValid()) return;
@@ -275,6 +349,12 @@ public partial class P2PNetworkManager : Node
     //  RPC SEND (OPCJA B) - GENERYCZNE METODY
     // ============================================================
 
+    /// <summary>
+    /// Sends an RPC message to the host.
+    /// </summary>
+    /// <param name="type">The type of the RPC command.</param>
+    /// <param name="payloadObj">The payload object to serialize and send.</param>
+    /// <returns>True if sent successfully; otherwise, false.</returns>
     public bool SendRpcToHost(string type, object payloadObj)
     {
         if (!started || isHost) return false;
@@ -286,6 +366,13 @@ public partial class P2PNetworkManager : Node
         return true;
     }
 
+    /// <summary>
+    /// Sends an RPC message to a specific peer.
+    /// </summary>
+    /// <param name="peer">The target peer's Product User ID.</param>
+    /// <param name="type">The type of the RPC command.</param>
+    /// <param name="payloadObj">The payload object to serialize and send.</param>
+    /// <returns>True if sent successfully; otherwise, false.</returns>
     public bool SendRpcToPeer(ProductUserId peer, string type, object payloadObj)
     {
         if (!started) return false;
@@ -296,6 +383,12 @@ public partial class P2PNetworkManager : Node
         return true;
     }
 
+    /// <summary>
+    /// Sends an RPC message to all connected clients (Host only).
+    /// </summary>
+    /// <param name="type">The type of the RPC command.</param>
+    /// <param name="payloadObj">The payload object to serialize and send.</param>
+    /// <returns>The number of clients the message was sent to.</returns>
     public int SendRpcToAllClients(string type, object payloadObj)
     {
         if (!started || !isHost) return 0;
@@ -316,6 +409,12 @@ public partial class P2PNetworkManager : Node
         return sent;
     }
 
+    /// <summary>
+    /// Serializes a payload into a JSON RPC string.
+    /// </summary>
+    /// <param name="type">The RPC type.</param>
+    /// <param name="payloadObj">The payload object.</param>
+    /// <returns>The serialized JSON string.</returns>
     private static string BuildRpcJson(string type, object payloadObj)
     {
         var wrapper = new
@@ -328,6 +427,9 @@ public partial class P2PNetworkManager : Node
         return JsonSerializer.Serialize(wrapper);
     }
 
+    /// <summary>
+    /// Sends the game start signal and payload to all welcomed clients.
+    /// </summary>
     private void SendGameStartToWelcomedClients()
     {
         if (!started || !isHost) return;
@@ -377,6 +479,10 @@ public partial class P2PNetworkManager : Node
 
     }
 
+    /// <summary>
+    /// Builds a default game start payload if none is provided by the host delegate.
+    /// </summary>
+    /// <returns>A default GameStartPayload.</returns>
     private GameStartPayload BuildDefaultGameStartPayload()
     {
         var welcomedSorted = new List<string>(hostWelcomedClients);
@@ -420,6 +526,13 @@ public partial class P2PNetworkManager : Node
     //  RECEIVE + ROUTING
     // ============================================================
 
+    /// <summary>
+    /// Handles an incoming packet, routing it based on socket and channel.
+    /// </summary>
+    /// <param name="peer">The sender's Product User ID.</param>
+    /// <param name="socketName">The socket name the packet arrived on.</param>
+    /// <param name="channel">The channel the packet arrived on.</param>
+    /// <param name="payload">The raw packet data.</param>
     private void HandlePacket(ProductUserId peer, string socketName, byte channel, byte[] payload)
     {
         if (socketName != sessionId) return; // ignoruj inne sockety
@@ -490,6 +603,12 @@ public partial class P2PNetworkManager : Node
         }
     }
 
+    /// <summary>
+    /// Attempts to parse and dispatch a JSON RPC message.
+    /// </summary>
+    /// <param name="msg">The raw message string.</param>
+    /// <param name="fromPeer">The sender's Product User ID.</param>
+    /// <returns>True if the message was parsed and dispatched (even if no handler processed it); otherwise, false.</returns>
     private bool TryDispatchJsonRpc(string msg, ProductUserId fromPeer)
     {
         // szybki filtr, żeby nie próbować parsować zwykłych stringów
@@ -545,6 +664,11 @@ public partial class P2PNetworkManager : Node
         return true; // JSON zawsze "zjadamy" (obsłużone albo świadomie pominięte)
     }
 
+    /// <summary>
+    /// Dispatches a local loopback RPC message.
+    /// </summary>
+    /// <param name="type">The RPC type.</param>
+    /// <param name="payloadObj">The payload object.</param>
     private void DispatchLocalRpc(string type, object payloadObj)
     {
         if (PacketHandlers == null) return;
@@ -585,6 +709,11 @@ public partial class P2PNetworkManager : Node
     //  RAW SEND
     // ============================================================
 
+    /// <summary>
+    /// Sends a raw string message to a remote peer.
+    /// </summary>
+    /// <param name="remote">The target peer's Product User ID.</param>
+    /// <param name="text">The text message to send.</param>
     private void SendRaw(ProductUserId remote, string text)
     {
         byte[] bytes = Encoding.UTF8.GetBytes(text);
@@ -612,6 +741,9 @@ public partial class P2PNetworkManager : Node
     //  RECEIVE (EOS)
     // ============================================================
 
+    /// <summary>
+    /// Structure holding received packet data.
+    /// </summary>
     private struct ReceivedPacket
     {
         public ProductUserId peerPuid;
@@ -620,6 +752,11 @@ public partial class P2PNetworkManager : Node
         public byte[] payload;
     }
 
+    /// <summary>
+    /// Attempts to receive the next available packet from the P2P interface.
+    /// </summary>
+    /// <param name="packet">The received packet info, if successful.</param>
+    /// <returns>True if a packet was successfully received; otherwise, false.</returns>
     private bool TryReceivePacket(out ReceivedPacket packet)
     {
         packet = default;

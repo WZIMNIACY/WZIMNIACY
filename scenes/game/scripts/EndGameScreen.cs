@@ -3,71 +3,122 @@ using System;
 using System.Text.Json;
 using Epic.OnlineServices;
 
+/// <summary>
+/// Defines the possible reasons for the game to end.
+/// </summary>
 public enum EndGameReason
 {
+    /// <summary>All agent cards of a team were found.</summary>
     AllCardsFound,
+    /// <summary>The assassin card was picked.</summary>
     AssassinPicked
 }
 
+/// <summary>
+/// Manages the End Game screen, displaying results, statistics, and navigation options.
+/// Handles network synchronization of game results.
+/// </summary>
 public partial class EndGameScreen : Control
 {
+    /// <summary>
+    /// Data structure for sending game end results over the network.
+    /// </summary>
     public sealed class EndGamePayload
     {
+        /// <summary>The winning team.</summary>
         public MainGame.Team Winner { get; set; }
+        /// <summary>The reason for the game ending.</summary>
         public EndGameReason Reason { get; set; }
+        /// <summary>Statistics for the Blue team.</summary>
         public TeamGameStats BlueStats { get; set; }
+        /// <summary>Statistics for the Red team.</summary>
         public TeamGameStats RedStats { get; set; }
     }
 
+    /// <summary>
+    /// Encapsulates game statistics for a single team.
+    /// </summary>
     public class TeamGameStats
     {
+        /// <summary>Number of own agent cards found.</summary>
         public int Found { get; set; }
+        /// <summary>Number of neutral/bystander cards found.</summary>
         public int Neutral { get; set; }
+        /// <summary>Number of opponent's agent cards found.</summary>
         public int Opponent { get; set; }
+        /// <summary>Highest winning streak achieved.</summary>
         public int Streak { get; set; }
     }
 
     [ExportGroup("General")]
+    /// <summary>Label displaying the winner title text.</summary>
     [Export] public Label winnerTitle;
+    /// <summary>Label displaying the game end reason.</summary>
     [Export] public Label subTitle;
 
     [ExportGroup("Blue Team")]
+    /// <summary>Label for Blue team's first statistic (Found).</summary>
     [Export] public Label blueVal1;
+    /// <summary>Progress bar for Blue team's first statistic.</summary>
     [Export] public ProgressBar blueBar1;
+    /// <summary>Label for Blue team's second statistic (Neutral).</summary>
     [Export] public Label blueVal2;
+    /// <summary>Progress bar for Blue team's second statistic.</summary>
     [Export] public ProgressBar blueBar2;
+    /// <summary>Label for Blue team's third statistic (Opponent).</summary>
     [Export] public Label blueVal3;
+    /// <summary>Progress bar for Blue team's third statistic.</summary>
     [Export] public ProgressBar blueBar3;
+    /// <summary>Label for Blue team's fourth statistic (Streak).</summary>
     [Export] public Label blueVal4;
 
     [ExportGroup("Red Team")]
+    /// <summary>Label for Red team's first statistic (Found).</summary>
     [Export] public Label redVal1;
+    /// <summary>Progress bar for Red team's first statistic.</summary>
     [Export] public ProgressBar redBar1;
+    /// <summary>Label for Red team's second statistic (Neutral).</summary>
     [Export] public Label redVal2;
+    /// <summary>Progress bar for Red team's second statistic.</summary>
     [Export] public ProgressBar redBar2;
+    /// <summary>Label for Red team's third statistic (Opponent).</summary>
     [Export] public Label redVal3;
+    /// <summary>Progress bar for Red team's third statistic.</summary>
     [Export] public ProgressBar redBar3;
 
+    /// <summary>Label for Red team's fourth statistic (Streak).</summary>
     [Export] public Label redVal4;
 
     [ExportGroup("Summary")]
+    /// <summary>Label displaying total cards found by both teams.</summary>
     [Export] public Label totalFoundLabel;
+    /// <summary>Label displaying the highest streak achieved in the game.</summary>
     [Export] public Label maxStreakLabel;
 
     [ExportGroup("Buttons & Navigation")]
+    /// <summary>Button to return to the lobby.</summary>
     [Export] public Button lobbyButton;
+    /// <summary>Button to return to the main menu.</summary>
     [Export] public Button menuButton;
 
+    /// <summary>Scene path for the lobby scene.</summary>
     [Export(PropertyHint.File, "*.tscn")] public string lobbyScenePath;
+    /// <summary>Scene path for the main menu scene.</summary>
     [Export(PropertyHint.File, "*.tscn")] public string menuScenePath;
 
+    /// <summary>Reference to the EOS Manager for networking/lobby logic.</summary>
     private EOSManager eosManager;
+    /// <summary>Reference to the MainGame controller.</summary>
     private MainGame mainGame;
 
     // Buffer for deferred UI call (CallDeferred can't pass custom types via Variant)
+    /// <summary>Buffer for deferred Blue team stats (used for thread safety).</summary>
     private TeamGameStats pendingBlueStats;
+    /// <summary>Buffer for deferred Red team stats (used for thread safety).</summary>
     private TeamGameStats pendingRedStats;
+    /// <summary>Buffer for deferred winner (used for thread safety).</summary>
     private MainGame.Team pendingWinner;
+    /// <summary>Buffer for deferred end reason (used for thread safety).</summary>
     private EndGameReason pendingReason;
 
     public override void _Ready()
@@ -92,6 +143,9 @@ public partial class EndGameScreen : Control
         base._ExitTree();
     }
 
+    /// <summary>
+    /// Subscribes to the P2P network packet handlers.
+    /// </summary>
     private void SubscribeToNetwork()
     {
         if (mainGame != null && mainGame.P2PNet != null)
@@ -100,6 +154,11 @@ public partial class EndGameScreen : Control
         }
     }
 
+    /// <summary>
+    /// Triggers the game over state, calculating stats and notifying clients if host.
+    /// </summary>
+    /// <param name="winner">The winning team.</param>
+    /// <param name="reason">The reason for the game ending.</param>
     public void TriggerGameOver(MainGame.Team winner, EndGameReason reason)
     {
         if (mainGame == null) return;
@@ -147,6 +206,13 @@ public partial class EndGameScreen : Control
         ShowGameOverWithDelay(blueStats, redStats, winner, reason);
     }
 
+    /// <summary>
+    /// Initiates the Game Over UI display with a delay.
+    /// </summary>
+    /// <param name="blueStats">Included statistics for blue team.</param>
+    /// <param name="redStats">Included statistics for red team.</param>
+    /// <param name="winner">The winning team.</param>
+    /// <param name="reason">The reason for game over.</param>
     private async void ShowGameOverWithDelay(TeamGameStats blueStats, TeamGameStats redStats, MainGame.Team winner, EndGameReason reason)
     {
         // stały delay wg kontraktu
@@ -165,11 +231,20 @@ public partial class EndGameScreen : Control
        CallDeferred(nameof(ShowGameOverDeferred));
     }
 
+    /// <summary>
+    /// Deferred callback to show the Game Over screen on the main thread.
+    /// </summary>
     private void ShowGameOverDeferred()
     {
         ShowGameOver(pendingBlueStats, pendingRedStats, pendingWinner, pendingReason);
     }
 
+    /// <summary>
+    /// Handles network packets related to game ending.
+    /// </summary>
+    /// <param name="packet">The received packet.</param>
+    /// <param name="fromPeer">The sender's ID.</param>
+    /// <returns>True if packet was handled, false otherwise.</returns>
     private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
     {
         if (packet.type != "game_ended") return false;
@@ -192,6 +267,13 @@ public partial class EndGameScreen : Control
         }
     }
 
+    /// <summary>
+    /// Displays the Game Over screen and fills the UI with statistics.
+    /// </summary>
+    /// <param name="blueStats">Statistics for blue team.</param>
+    /// <param name="redStats">Statistics for red team.</param>
+    /// <param name="winner">The winning team.</param>
+    /// <param name="reason">The reason for game over.</param>
     public void ShowGameOver(TeamGameStats blueStats, TeamGameStats redStats, MainGame.Team winner, EndGameReason reason)
     {
         Visible = true;
@@ -240,6 +322,13 @@ public partial class EndGameScreen : Control
         if (maxStreakLabel != null) maxStreakLabel.Text = bestStreak.ToString();
     }
 
+    /// <summary>
+    /// Updates a single statistic row (Label + ProgressBar).
+    /// </summary>
+    /// <param name="label">The label to display the value.</param>
+    /// <param name="bar">The progress bar.</param>
+    /// <param name="mainValue">The value of the statistic.</param>
+    /// <param name="otherValue">The opponent's value (for max scale).</param>
     private void UpdateStat(Label label, ProgressBar bar, int mainValue, int otherValue)
     {
         int maxValue = mainValue + otherValue;
@@ -257,6 +346,9 @@ public partial class EndGameScreen : Control
         }
     }
 
+    /// <summary>
+    /// Handles the "Return to Lobby" button press.
+    /// </summary>
     private void OnLobbyPressed()
     {
         if (eosManager != null && eosManager.isLobbyOwner)
@@ -269,6 +361,9 @@ public partial class EndGameScreen : Control
         GetTree().ChangeSceneToFile(lobbyScenePath);
     }
 
+    /// <summary>
+    /// Handles the "Return to Menu" button press.
+    /// </summary>
     private void OnMenuPressed()
     {
         GD.Print("MenuButton pressed");

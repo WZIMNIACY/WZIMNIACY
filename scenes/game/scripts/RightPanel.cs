@@ -10,12 +10,35 @@ using Epic.OnlineServices;
 using System;
 
 
+/// <summary>
+/// Manages the right-side game panel, responsible for displaying game history,
+/// handling hint generation and broadcasting, and managing the AI's turn actions.
+/// </summary>
 public partial class RightPanel : Node
 {
+	/// <summary>
+	/// Label displaying the currently active word or hint being processed.
+	/// </summary>
 	[Export] public Label currentWordLabel;
+    
+    /// <summary>
+    /// Container for the list of past game events and hints.
+    /// </summary>
     [Export] public VBoxContainer historyList;
+
+    /// <summary>
+    /// Scroll container for the history list.
+    /// </summary>
     [Export] public ScrollContainer historyScroll;
+
+    /// <summary>
+    /// Button to skip the current turn.
+    /// </summary>
     [Export] public Button skipButton;
+
+    /// <summary>
+    /// Reference to the CardManager for interacting with game cards.
+    /// </summary>
     [Export] private CardManager cardManager;
 
     private Color blueTeamColor = new Color("5AD2C8FF");
@@ -26,8 +49,18 @@ public partial class RightPanel : Node
     private MainGame mainGame;
 
     private Hint lastGeneratedHint;
+
+    /// <summary>
+    /// Gets the most recently generated AI hint.
+    /// </summary>
     public Hint LastGeneratedHint => lastGeneratedHint;
 
+    /// <summary>
+    /// Manually sets the last generated hint. 
+    /// Useful for reconstructing state when receiving a hint over the network without AI generation.
+    /// </summary>
+    /// <param name="word">The hint word.</param>
+    /// <param name="number">The number of associated cards.</param>
     public void SetLastGeneratedHint(string word, int number)
     {
         // Minimalny hint do reakcji: Word + Number wystarczy do budowy tekstu.
@@ -42,12 +75,20 @@ public partial class RightPanel : Node
     private Godot.Timer hintGenerationAnimationTimer;
 
     private CancellationTokenSource hintGeneratorCancellation;
+
+    /// <summary>
+    /// Payload structure for broadcasting hints over the network.
+    /// </summary>
     public sealed class HintNetworkPayload
     {
         public string Word { get; set; }
         public int Number { get; set; }
         public MainGame.Team TurnTeam { get; set; }
     }
+
+    /// <summary>
+    /// Represents the internal state of the hint generation animation.
+    /// </summary>
     public sealed class AnimationState
     {
         public bool IsAnimating { get; set; }
@@ -80,6 +121,9 @@ public partial class RightPanel : Node
         base._ExitTree();
     }
 
+    /// <summary>
+    /// Subscribes to network packet events from the P2P manager.
+    /// </summary>
     private void SubscribeToNetwork()
     {
         if (mainGame != null && mainGame.P2PNet != null)
@@ -93,6 +137,12 @@ public partial class RightPanel : Node
         }
     }
 
+    /// <summary>
+    /// Handles incoming network packets related to hints.
+    /// </summary>
+    /// <param name="packet">The received network packet.</param>
+    /// <param name="fromPeer">The ID of the peer who sent the packet.</param>
+    /// <returns>True if the packet was handled, false otherwise.</returns>
     private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
     {
         if (packet.type != "hint_given") return false;
@@ -116,6 +166,13 @@ public partial class RightPanel : Node
         }
     }
 
+    /// <summary>
+    /// Broadcasts a generated hint to all connected clients.
+    /// Only the host can perform this action.
+    /// </summary>
+    /// <param name="word">The hint word to broadcast.</param>
+    /// <param name="number">The number associated with the hint.</param>
+    /// <param name="team">The team for which the hint is intended.</param>
     public void BroadcastHint(string word, int number, MainGame.Team team)
     {
         if (!mainGame.isHost)
@@ -139,6 +196,9 @@ public partial class RightPanel : Node
         }
     }
 
+    /// <summary>
+    /// Moves the current displayed word to the history list and resets the display.
+    /// </summary>
 	public void CommitToHistory()
     {
 		if(currentWordLabel != null && currentWordLabel.Text != "" && !IsLabelDirty())
@@ -150,12 +210,23 @@ public partial class RightPanel : Node
         }
 	}
 
+    /// <summary>
+    /// Cancels any ongoing hint generation process.
+    /// </summary>
     public void CancelHintGeneration()
     {
         HintGenerationAnimationStop();
         hintGeneratorCancellation?.Cancel();
     }
 
+    /// <summary>
+    /// Generates a hint using the LLM and updates the UI.
+    /// Also handles AI card picking if it's an AI vs Human game.
+    /// </summary>
+    /// <param name="llm">The LLM interface to use for generation.</param>
+    /// <param name="deck">The current state of the card deck.</param>
+    /// <param name="currentTurn">The team whose turn it is.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task GenerateAndUpdateHint(ILLM llm, game.Deck deck, MainGame.Team currentTurn)
     {
         CancelHintGeneration();
@@ -197,6 +268,11 @@ public partial class RightPanel : Node
         }
     }
 
+    /// <summary>
+    /// Logic for the AI to pick cards based on the generated hint.
+    /// </summary>
+    /// <param name="word">The hint word.</param>
+    /// <param name="numberOfCards">The number of cards to pick.</param>
     private async void PickAiCards(string word, int numberOfCards)
     {
         int numberOfCardsLeft = numberOfCards;
@@ -231,6 +307,12 @@ public partial class RightPanel : Node
         mainGame.OnSkipTurnPressed();
     }
 
+    /// <summary>
+    /// Updates the display with a new hint.
+    /// </summary>
+    /// <param name="word">The hint word.</param>
+    /// <param name="number">The number of cards.</param>
+    /// <param name="team">The team to display the hint for.</param>
     public void UpdateHintDisplay(string word, int number, MainGame.Team team)
     {
         bool isBlue = (team == MainGame.Team.Blue);
@@ -238,12 +320,18 @@ public partial class RightPanel : Node
         UpdateHintDisplay(word, number, isBlue);
     }
 
+    /// <summary>
+    /// Updates the display with a new hint.
+    /// </summary>
+    /// <param name="word">The hint word.</param>
+    /// <param name="count">The number of cards.</param>
+    /// <param name="isBlueTeam">True if it is the Blue team's hint, false for Red team.</param>
 	public void UpdateHintDisplay(string word, int count, bool isBlueTeam)
     {
         MainGame.Team team = isBlueTeam ? MainGame.Team.Blue : MainGame.Team.Red;
         oldHints[team].Add(word);
 
-		CommitToHistory();
+        CommitToHistory();
 
 		if(currentWordLabel != null)
         {
@@ -255,6 +343,11 @@ public partial class RightPanel : Node
         CallDeferred(nameof(ScrollToBottom));
 	}
 
+    /// <summary>
+    /// Adds an entry to the visual history list.
+    /// </summary>
+    /// <param name="text">The text to add.</param>
+    /// <param name="color">The color of the text.</param>
 	private void AddToHistory(string text, Color color)
     {
         if (historyList == null) return;
@@ -271,6 +364,9 @@ public partial class RightPanel : Node
 		CallDeferred(nameof(ScrollToBottom));
     }
 
+    /// <summary>
+    /// Scrolls the history container to the bottom.
+    /// </summary>
 	private void ScrollToBottom()
     {
         if (historyScroll != null)
@@ -280,6 +376,9 @@ public partial class RightPanel : Node
         }
     }
 
+    /// <summary>
+    /// Disables the "Skip Turn" button.
+    /// </summary>
     public void DisableSkipButton()
     {
         if (skipButton != null)
@@ -289,6 +388,9 @@ public partial class RightPanel : Node
         }
     }
 
+    /// <summary>
+    /// Enables the "Skip Turn" button.
+    /// </summary>
     public void EnableSkipButton()
     {
         if (skipButton != null)
@@ -298,6 +400,9 @@ public partial class RightPanel : Node
         }
     }
 
+    /// <summary>
+    /// Starts the hint generation loading animation.
+    /// </summary>
     public void HintGenerationAnimationStart()
     {
         if (hintGenerationAnimationTimer.IsStopped())
@@ -308,6 +413,9 @@ public partial class RightPanel : Node
         }
     }
 
+    /// <summary>
+    /// Stops the hint generation loading animation.
+    /// </summary>
     private void HintGenerationAnimationStop()
     {
         hintGenerationAnimationTimer.Stop();
@@ -318,11 +426,18 @@ public partial class RightPanel : Node
         }
     }
 
+    /// <summary>
+    /// Checks if the label contains temporary animation text.
+    /// </summary>
+    /// <returns>True if the label text is temporary ("." or "-").</returns>
     private bool IsLabelDirty()
     {
         return currentWordLabel.Text.StartsWith(".") || currentWordLabel.Text == "-";
     }
 
+    /// <summary>
+    /// Updates the loading dots animation.
+    /// </summary>
     private void UpdateGenerationAnimation()
     {
         if (currentWordLabel.Text.Length >= 3)
@@ -334,6 +449,13 @@ public partial class RightPanel : Node
         currentWordLabel.Text += ".";
     }
 
+    /// <summary>
+    /// Internal helper to generate a hint (with retries if needed).
+    /// </summary>
+    /// <param name="llm">The LLM interface.</param>
+    /// <param name="deck">The current deck.</param>
+    /// <param name="currentTurn">The current team.</param>
+    /// <returns>A generated Hint object.</returns>
     private async Task<Hint> GenerateHint(ILLM llm, game.Deck deck, MainGame.Team currentTurn)
     {
         Hint hint = null;

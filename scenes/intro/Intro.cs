@@ -1,7 +1,13 @@
 using Godot;
 
+/// <summary>
+/// Handles the intro sequence playback and transitions to the main menu.
+/// </summary>
 public partial class Intro : Control
 {
+    /// <summary>
+    /// Reference to the VideoStreamPlayer node for playing the intro video.
+    /// </summary>
     private VideoStreamPlayer videoPlayer;
 
     public override void _Ready()
@@ -14,12 +20,19 @@ public partial class Intro : Control
         GD.Print("🎬 Playing intro video...");
     }
 
+    /// <summary>
+    /// Called when the video player finishes playing the video.
+    /// Logs the completion and transitions to the main menu.
+    /// </summary>
     private void OnVideoFinished()
     {
         GD.Print("✅ Intro finished, loading main menu...");
         CallDeferred(nameof(ChangeToMainMenu));
     }
 
+    /// <summary>
+    /// Changes the current scene to the main menu scene.
+    /// </summary>
     private void ChangeToMainMenu()
     {
         GetTree().ChangeSceneToFile("res://scenes/menu/main.tscn");
@@ -43,6 +56,10 @@ public partial class Intro : Control
         }
     }
 
+    /// <summary>
+    /// Skips the intro video sequence.
+    /// Logs the skip action and transitions to the main menu.
+    /// </summary>
     private void SkipIntro()
     {
         GD.Print("⏭️ Skipping intro...");

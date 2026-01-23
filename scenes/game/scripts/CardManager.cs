@@ -4,31 +4,73 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
+/// <summary>
+/// Manages the card grid, deck operations, and card interactions in the game.
+/// Handles card selection, confirmation, and synchronization between host and clients.
+/// </summary>
 public partial class CardManager : GridContainer
 {
+	/// <summary>
+	/// The total number of cards in the deck.
+	/// </summary>
 	public const int DECK_CARD_COUNT = 25;
 
+	/// <summary>
+	/// Emitted when the CardManager is ready and the game has started.
+	/// </summary>
 	[Signal] public delegate void CardManagerReadyEventHandler();
 
+	/// <summary>
+	/// The main game controller.
+	/// </summary>
 	[Export] private MainGame mainGame;
 
+	/// <summary>
+	/// Manager for Epic Online Services integration.
+	/// </summary>
 	private EOSManager eosManager;
+	
+	/// <summary>
+	/// Random number generator for deck shuffling.
+	/// </summary>
 	private Random rand;
 
+	/// <summary>
+	/// The current deck of cards in play.
+	/// </summary>
 	public game.Deck Deck { get; private set; }
+	
+	/// <summary>
+	/// Database of words and their vector representations used for generating the deck.
+	/// </summary>
 	private Dictionary<string, List<double>> namesVectorDb;
+	
+	/// <summary>
+	/// Counter for the number of cards taken from the deck.
+	/// </summary>
 	private int takenCards = 0;
 
+	/// <summary>Count of common (neutral) cards assigned.</summary>
 	private int commonCards = 0;
+	/// <summary>Count of blue team cards assigned.</summary>
 	private int blueCards = 0;
+	/// <summary>Count of red team cards assigned.</summary>
 	private int redCards = 0;
+	/// <summary>Count of assassin cards assigned.</summary>
 	private int assassinCards = 0;
 
+	/// <summary>
+	/// Representative types of cards in the game.
+	/// </summary>
 	public enum CardType
 	{
+		/// <summary>Red team card.</summary>
 		Red,
+		/// <summary>Blue team card.</summary>
 		Blue,
+		/// <summary>Assassin card (instant loss if revealed).</summary>
 		Assassin,
+		/// <summary>Common (neutral) card.</summary>
 		Common
 	}
 
@@ -82,11 +124,18 @@ public partial class CardManager : GridContainer
         }
 	}
 
+	/// <summary>
+	/// Called when the main game is ready.
+	/// Emits the <see cref="CardManagerReady"/> signal.
+	/// </summary>
 	private void OnGameReady()
 	{
 		EmitSignal(SignalName.CardManagerReady);
 	}
 
+	/// <summary>
+	/// Loads the word vector database and initializes the deck based on the starting team and seed.
+	/// </summary>
 	public void LoadDeck(){
 		string json = FileAccess.GetFileAsString("res://assets/WordVectorBase.json");
 		namesVectorDb = JsonSerializer.Deserialize<Dictionary<string, List<double>>>(json);
@@ -97,6 +146,11 @@ public partial class CardManager : GridContainer
 		Deck = game.Deck.CreateFromDictionary(namesVectorDb, cardTeam, rand);
 	}
 
+    /// <summary>
+    /// Retrieves the next available card from the deck.
+    /// </summary>
+    /// <returns>The next <see cref="game.Card"/> from the deck.</returns>
+    /// <exception cref="Exception">Thrown if requested more cards than <see cref="DECK_CARD_COUNT"/>.</exception>
     public game.Card TakeCard()
     {
         if (Deck == null)
@@ -114,11 +168,21 @@ public partial class CardManager : GridContainer
         return card;
     }
 
+    /// <summary>
+    /// Handles the selection of a card by a user.
+    /// Relays the event to the MainGame controller.
+    /// </summary>
+    /// <param name="card">The card that was selected.</param>
     private void OnCardSelected(AgentCard card)
     {
         mainGame.OnCardSelected(card);
     }
 
+    /// <summary>
+    /// Finds an <see cref="AgentCard"/> node by its unique ID.
+    /// </summary>
+    /// <param name="cardId">The ID of the card to find.</param>
+    /// <returns>The <see cref="AgentCard"/> if found, otherwise null.</returns>
     private AgentCard GetCardOfId(byte cardId)
     {
         foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
@@ -132,6 +196,12 @@ public partial class CardManager : GridContainer
         return null;
     }
 
+    /// <summary>
+    /// Modifies the selection state of a specific card for a player.
+    /// </summary>
+    /// <param name="cardId">The ID of the card to modify.</param>
+    /// <param name="playerIndex">The index of the player changing selection.</param>
+    /// <param name="unselect">True to remove selection, false to add it.</param>
     public void ModifySelection(byte cardId, int playerIndex, bool unselect)
     {
         AgentCard card = GetCardOfId(cardId);
@@ -141,6 +211,11 @@ public partial class CardManager : GridContainer
             card?.AddSelection(playerIndex);
     }
 
+    /// <summary>
+    /// Updates the selection state of all cards based on a provided dictionary.
+    /// Used for synchronizing selections from the host.
+    /// </summary>
+    /// <param name="cardsSelections">A dictionary mapping card IDs to their selection bitmasks.</param>
     public void ModifyAllSelections(Dictionary<byte, ushort> cardsSelections)
     {
         foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
@@ -157,6 +232,10 @@ public partial class CardManager : GridContainer
         }
     }
 
+    /// <summary>
+    /// Retrieves the current selection states of all cards.
+    /// </summary>
+    /// <returns>A dictionary mapping card IDs to their selection bitmasks, excluding cards with no selections.</returns>
     public Dictionary<byte, ushort> GetAllSelections()
     {
         Dictionary<byte, ushort> allSelections = new();
@@ -178,6 +257,10 @@ public partial class CardManager : GridContainer
         return allSelections;
     }
 
+	/// <summary>
+	/// Applies visual and logical changes when a card is revealed/confirmed.
+	/// </summary>
+	/// <param name="card">The card that was revealed.</param>
 	public void ApplyCardRevealed(AgentCard card)
 	{
 		if (card == null) return;
@@ -205,12 +288,21 @@ public partial class CardManager : GridContainer
 		}
 	}
 
+	/// <summary>
+	/// Handles card confirmation logic on the host side.
+	/// Applies the reveal locally and notifies the MainGame controller.
+	/// </summary>
+	/// <param name="card">The card being confirmed.</param>
 	public void ApplyCardConfirmedHost(AgentCard card)
 	{
 		ApplyCardRevealed(card);
 		mainGame.CardConfirm(card);
 	}
 
+	/// <summary>
+	/// Handles the event when a card is confirmed (clicked for reveal).
+	/// </summary>
+	/// <param name="card">The card that was clicked.</param>
 	private void OnCardConfirmed(AgentCard card)
 	{
 		GD.Print($"[CardManager] OnCardConfirmed fired for cardIndex={card?.GetIndex()} name={card?.Name} isHost={mainGame?.isHost}");
@@ -232,6 +324,11 @@ public partial class CardManager : GridContainer
 		mainGame.HostConfirmCardAndBroadcast(cardId, eosManager.localProductUserIdString);
 	}
 
+    /// <summary>
+    /// Handles card confirmation triggered by an AI agent.
+    /// </summary>
+    /// <param name="confirmedCard">The card data provided by the AI.</param>
+    /// <returns>The <see cref="CardType"/> of the confirmed card, or null if not found.</returns>
     public CardType? OnCardConfirmedByAI(game.Card confirmedCard)
     {
         foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))
@@ -247,6 +344,9 @@ public partial class CardManager : GridContainer
         return null;
     }
 
+	/// <summary>
+	/// Clears the selection state of all cards in the grid.
+	/// </summary>
 	public void ClearAllSelections()
 	{
 		foreach (AgentCard card in GetTree().GetNodesInGroup("cards"))

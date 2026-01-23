@@ -1,12 +1,35 @@
 using Godot;
+
+/// <summary>
+/// Manages the display of the player list for a specific team.
+/// </summary>
 public partial class PlayerListContainer : PanelContainer
 {
+	/// <summary>
+	/// The VBoxContainer that holds the player list items.
+	/// </summary>
 	[Export] VBoxContainer playerListVBox;
+
+	/// <summary>
+	/// The base font used for player names.
+	/// </summary>
 	[Export] Font baseFont;
+
+	/// <summary>
+	/// The bold font used for the local player's name to highlight it.
+	/// </summary>
 	[Export] Font boldFont;
+
+	/// <summary>
+	/// Reference to the MainGame instance.
+	/// </summary>
 	private MainGame mainGame;
 
+	/// <summary>
+	/// The team associated with this player list.
+	/// </summary>
 	[Export] public MainGame.Team team;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
@@ -23,6 +46,10 @@ public partial class PlayerListContainer : PanelContainer
 		base._Process(delta);
 	}
 
+	/// <summary>
+	/// Populates the player list VBox with players from the assigned team.
+	/// Updates the UI to show player icons and names, highlighting the local player.
+	/// </summary>
 	public void SetPlayerListVBox(){
 		int index = 0;
 		foreach(var member in mainGame.PlayersByIndex)
