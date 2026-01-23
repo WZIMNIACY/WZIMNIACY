@@ -1,33 +1,60 @@
 // GameSessionData.cs przechowuje lokalne dane dotyczące sesji gry tworzonej przez hosta
 // Dane te są synchronizowane pomiędzy hostem i klientami poprzez atrybuty lobby (EOS)
 
-// Stan sesji gry na poziomie logicznym
+/// <summary>
+/// Represents the logical state of a game session.
+/// </summary>
 public enum GameSessionState
 {
-    None,       // brak aktywnej sesji
-    Starting,   // sesja uruchamiana (przejście z lobby do gry)
-    InGame      // gra w toku
+    /// <summary>
+    /// No active session.
+    /// </summary>
+    None,
+    /// <summary>
+    /// Session is starting (transition from lobby to game).
+    /// </summary>
+    Starting,
+    /// <summary>
+    /// Game is in progress.
+    /// </summary>
+    InGame
 }
 
-// Lokalny opis sesji gry (host + klienci)
+/// <summary>
+/// Stores local data regarding a game session created by the host.
+/// Data is synchronized between host and clients via lobby attributes (EOS).
+/// </summary>
 public class GameSessionData
 {
-    // Krótki identyfikator sesji gry (debug / logi / reconnect)
+    /// <summary>
+    /// Short identifier for the game session (used for debug, logs, reconnect).
+    /// </summary>
     public string SessionId { get; set; } = "";
 
-    // Identyfikator lobby, w ramach którego uruchomiono sesję
+    /// <summary>
+    /// Identifier of the lobby where the session was started.
+    /// </summary>
     public string LobbyId { get; set; } = "";
 
-    // ProductUserId hosta, który rozpoczął sesję
+    /// <summary>
+    /// ProductUserId of the host who started the session.
+    /// </summary>
     public string HostUserId { get; set; } = "";
 
-    // Seed do deterministycznej inicjalizacji rozgrywki (np. generowanie planszy)
+    /// <summary>
+    /// Seed for deterministic gameplay initialization (e.g. board generation).
+    /// </summary>
     public ulong Seed { get; set; } = 0;
 
-    // Aktualny stan sesji gry synchronizowany przez atrybuty lobby
+    /// <summary>
+    /// Current state of the game session synchronized via lobby attributes.
+    /// </summary>
     public GameSessionState State { get; set; } = GameSessionState.None;
 
-    // Sprawdza czy sesja zawiera komplet minimalnych danych
+    /// <summary>
+    /// Checks if the session contains the complete set of minimal data required.
+    /// </summary>
+    /// <returns>True if all required fields are set; otherwise, false.</returns>
     public bool IsValid()
     {
         return !string.IsNullOrEmpty(SessionId)

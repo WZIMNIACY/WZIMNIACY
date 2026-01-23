@@ -11,27 +11,96 @@ using System.Threading.Tasks;
 
 public partial class MainGame : Control
 {
+    /// <summary>
+    /// Signal emitted when the game is fully ready and initialized.
+    /// </summary>
     [Signal] public delegate void GameReadyEventHandler();
+
+    /// <summary>
+    /// Signal emitted when a new turn starts.
+    /// </summary>
     [Signal] public delegate void NewTurnStartEventHandler();
 
+    /// <summary>
+    /// Reference to the end game screen.
+    /// </summary>
     [Export] public EndGameScreen endGameScreen;
+
+    /// <summary>
+    /// Reference to the main menu panel.
+    /// </summary>
     [Export] Panel menuPanel;
+
+    /// <summary>
+    /// Reference to the blue team's score container.
+    /// </summary>
     [Export] ScoreContainer scoreContainerBlue;
+
+    /// <summary>
+    /// Reference to the red team's score container.
+    /// </summary>
     [Export] ScoreContainer scoreContainerRed;
+
+    /// <summary>
+    /// Reference to the blue team's player list.
+    /// </summary>
     [Export] PlayerListContainer teamListBlue;
+
+    /// <summary>
+    /// Reference to the red team's player list.
+    /// </summary>
     [Export] PlayerListContainer teamListRed;
+
+    /// <summary>
+    /// Reference to the right panel containing game info and controls.
+    /// </summary>
     [Export] public RightPanel gameRightPanel;
+
+    /// <summary>
+    /// Reference to the captain's input panel.
+    /// </summary>
     [Export] public CaptainInput gameInputPanel;
+
+    /// <summary>
+    /// Label displaying the current turn number.
+    /// </summary>
     [Export] Label turnLabel;
+
+    /// <summary>
+    /// Reference to the settings screen control.
+    /// </summary>
     [Export] Control settingsScene;
+
+    /// <summary>
+    /// Reference to the help screen control.
+    /// </summary>
     [Export] Control helpScene;
+
+    /// <summary>
+    /// Reference to the card manager which handles the game board.
+    /// </summary>
     [Export] CardManager cardManager;
+
+    /// <summary>
+    /// Reference to the loading screen.
+    /// </summary>
     [Export] LoadingScreen loadingScreen;
+
+    /// <summary>
+    /// Reference to the reaction overlay for displaying emotions/messages.
+    /// </summary>
     [Export] public ReactionOverlay reactionOverlay;
 
     private bool isGameStarted = false;
+    /// <summary>
+    /// Indicates if the game has finished.
+    /// </summary>
     public bool isGameFinished {get; private set;} = false;
     private readonly Dictionary<int, P2PNetworkManager.GamePlayer> playersByIndex = new();
+    
+    /// <summary>
+    /// Dictionary of players indexed by their unique game index.
+    /// </summary>
     public Dictionary<int, P2PNetworkManager.GamePlayer> PlayersByIndex => playersByIndex;
 
     private Godot.Timer sendSelectionsTimer;
@@ -39,19 +108,33 @@ public partial class MainGame : Control
     private EOSManager eosManager;
 
     private ILLM llm;
+    
+    /// <summary>
+    /// The AI player instance if playing with AI.
+    /// </summary>
     public AIPlayer.LLMPlayer llmPlayer { get; private set; }
 
     // Określa czy lokalny gracz jest hostem (właścicielem lobby EOS) - wartość ustawiana dynamicznie na podstawie EOSManager.IsLobbyOwner
+    /// <summary>
+    /// Indicates if the local player is the host (EOS Lobby Owner).
+    /// </summary>
     public bool isHost = false;
 
     private Team playerTeam;
 
     private int pointsBlue;
+    /// <summary>
+    /// Current score for the Blue team.
+    /// </summary>
     public int PointsBlue
     {
         get => pointsBlue;
     }
     private int pointsRed;
+    
+    /// <summary>
+    /// Current score for the Red team.
+    /// </summary>
     public int PointsRed
     {
         get => pointsRed;
@@ -66,14 +149,35 @@ public partial class MainGame : Control
     private int blueMaxStreak = 0;
     private int redMaxStreak = 0;
 
+    /// <summary>
+    /// Maximum streak for the Blue team.
+    /// </summary>
     public int BlueMaxStreak => blueMaxStreak;
+    /// <summary>
+    /// Maximum streak for the Red team.
+    /// </summary>
     public int RedMaxStreak => redMaxStreak;
 
+    /// <summary>
+    /// Number of neutral cards found by Blue team.
+    /// </summary>
     public int BlueNeutralFound => blueNeutralFound;
+    /// <summary>
+    /// Number of neutral cards found by Red team.
+    /// </summary>
     public int RedNeutralFound => redNeutralFound;
+    /// <summary>
+    /// Number of opponent cards found by Blue team.
+    /// </summary>
     public int BlueOpponentFound => blueOpponentFound;
+    /// <summary>
+    /// Number of opponent cards found by Red team.
+    /// </summary>
     public int RedOpponentFound => redOpponentFound;
 
+    /// <summary>
+    /// Enum representing the teams in the game.
+    /// </summary>
     public enum Team
     {
         Blue,
@@ -278,6 +382,12 @@ public partial class MainGame : Control
     }
 
     // Handler pakietów z sieci (zgodnie z propozycją kolegi)
+    /// <summary>
+    /// Handles incoming network packets from peers.
+    /// </summary>
+    /// <param name="packet">The network message packet.</param>
+    /// <param name="fromPeer">The ID of the peer who sent the packet.</param>
+    /// <returns>True if the packet was handled, false otherwise.</returns>
     private bool HandlePackets(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
     {
         // Przykład: "card_selected" ma sens tylko gdy jesteśmy hostem (host rozstrzyga)
@@ -547,6 +657,12 @@ public partial class MainGame : Control
         return false; // nie obsłużyliśmy tego pakietu
     }
 
+    /// <summary>
+    /// Handles the "game_start" packet to initialize the game state on clients.
+    /// </summary>
+    /// <param name="packet">The network message packet.</param>
+    /// <param name="fromPeer">The ID of the peer who sent the packet.</param>
+    /// <returns>True if the packet was handled, false otherwise.</returns>
     private bool HandleGameStartPacket(P2PNetworkManager.NetMessage packet, ProductUserId fromPeer)
     {
         if (packet.type != "game_start")
@@ -590,6 +706,10 @@ public partial class MainGame : Control
         return true;
     }
 
+    /// <summary>
+    /// Applies the game start payload to initialize the game locally.
+    /// </summary>
+    /// <param name="payload">The game start payload containing player and session info.</param>
     private void ApplyGameStart(P2PNetworkManager.GameStartPayload payload)
     {
         if (isGameStarted)
@@ -733,6 +853,11 @@ public partial class MainGame : Control
         sendSelectionsTimer.Start();
     }
 
+    /// <summary>
+    /// Builds the GameStartPayload using data from the current EOS lobby.
+    /// Collects all members, assigns indices, and sets initial game parameters.
+    /// </summary>
+    /// <returns>A fully populated <see cref="P2PNetworkManager.GameStartPayload"/>.</returns>
     private P2PNetworkManager.GameStartPayload BuildGameStartPayloadFromLobby()
     {
         // Kolejność graczy: host (index 0) + reszta według lobby (albo sort fallback)
@@ -792,6 +917,11 @@ public partial class MainGame : Control
 
     }
 
+    /// <summary>
+    /// Retrieves the display name of a player from the lobby member cache.
+    /// </summary>
+    /// <param name="puid"> The unique product user ID of the player.</param>
+    /// <returns>The display name if found, otherwise a default fallback name.</returns>
     private string GetDisplayNameFromLobby(string puid)
     {
         if (eosManager == null || string.IsNullOrEmpty(puid))
@@ -830,6 +960,12 @@ public partial class MainGame : Control
         return $"Player_{puid.Substring(Math.Max(0, puid.Length - 4))}";
     }
 
+    /// <summary>
+    /// Finds the team assigned to a player ID based on the initial game start data.
+    /// Used to validate actions like turn skipping against the authoritative game state.
+    /// </summary>
+    /// <param name="puid">The player's unique product user ID.</param>
+    /// <returns>The team the player belongs to, or <see cref="Team.None"/> if not found.</returns>
     private Team GetTeamForPuidFromGameStart(string puid)
     {
         if (string.IsNullOrEmpty(puid)) return Team.None;
@@ -845,11 +981,21 @@ public partial class MainGame : Control
         return Team.None;
     }
 
+    /// <summary>
+    /// Checks if the game is in a state where interaction is allowed.
+    /// </summary>
+    /// <returns>True if the game is started and interactions are permitted.</returns>
     private bool CanInteractWithGame()
     {
         return isGameStarted;
     }
 
+    /// <summary>
+    /// Attempts to extract the reaction text from a raw JSON response (or fallback text).
+    /// </summary>
+    /// <param name="raw">The raw string response from the LLM.</param>
+    /// <param name="text">The extracted reaction text.</param>
+    /// <returns>True if extraction was successful and text is not empty.</returns>
     private static bool TryExtractReactionText(string raw, out string text)
     {
         text = null;
@@ -899,6 +1045,11 @@ public partial class MainGame : Control
         return !string.IsNullOrWhiteSpace(text);
     }
 
+    /// <summary>
+    /// Displays a reaction bubble on the UI.
+    /// </summary>
+    /// <param name="text">The text to display.</param>
+    /// <param name="seconds">Duration in seconds to show the bubble.</param>
     private void ShowReactionBubble(string text, float seconds = 2.5f)
     {
         if (reactionOverlay == null)
@@ -910,6 +1061,9 @@ public partial class MainGame : Control
         reactionOverlay.ShowReaction(text, seconds);
     }
 
+    /// <summary>
+    /// Starts the captain phase by setting up the input panel.
+    /// </summary>
     private void StartCaptainPhase()
     {
         if (gameInputPanel != null)
@@ -918,6 +1072,12 @@ public partial class MainGame : Control
         }
     }
 
+    /// <summary>
+    /// Callback when a captain submits a hint.
+    /// Updates game state and broadcasts the hint.
+    /// </summary>
+    /// <param name="word">The hint word.</param>
+    /// <param name="number">The number of associated cards.</param>
     private void OnCaptainHintReceived(string word, int number)
     {
         GD.Print($"{word} [{number}]");
@@ -932,6 +1092,10 @@ public partial class MainGame : Control
         }
     }
 
+    /// <summary>
+    /// Handler for the skip turn button press.
+    /// Initiates the skip turn logic via host or client RPC.
+    /// </summary>
     public void OnSkipTurnPressed()
     {
         if (!CanInteractWithGame()) return;
@@ -945,6 +1109,11 @@ public partial class MainGame : Control
             OnSkipTurnPressedClient();
     }
 
+    /// <summary>
+    /// Host-side logic for handling a skip turn request.
+    /// Updates stats, changes turn, and broadcasts the change.
+    /// </summary>
+    /// <param name="skippedBy">The PUID of the player skipping the turn.</param>
     public void OnSkipTurnPressedHost(string skippedBy)
     {
         UpdateMaxStreak();
@@ -957,6 +1126,10 @@ public partial class MainGame : Control
         GD.Print($"[MainGame] Skip turn processed by host. skippedBy={skippedBy}");
     }
 
+    /// <summary>
+    /// Client-side logic for requesting a skip turn.
+    /// Sends an RPC to the host.
+    /// </summary>
     public void OnSkipTurnPressedClient()
     {
         if (p2pNet == null) return;
@@ -970,6 +1143,10 @@ public partial class MainGame : Control
         GD.Print($"[MainGame] SendRpcToHost(skip_turn_pressed) ok={ok}");
     }
 
+    /// <summary>
+    /// Broadcasts a turn change update to all clients.
+    /// Used by the host to synchronize the turn counter and current team.
+    /// </summary>
     private void BroadcastTurnChanged()
     {
         if (p2pNet == null) return;
@@ -985,6 +1162,12 @@ public partial class MainGame : Control
         GD.Print($"[MainGame] SendRpcToAllClients(turn_changed) sent={sent} currentTurn={currentTurn} turnCounter={turnCounter}");
     }
 
+    /// <summary>
+    /// Broadcasts a reaction message to all clients.
+    /// Also displays it locally for the host.
+    /// </summary>
+    /// <param name="text">The reaction text.</param>
+    /// <param name="durationMs">Duration in milliseconds.</param>
     private void BroadcastReaction(string text, uint durationMs = ReactionDurationMs)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -1008,6 +1191,13 @@ public partial class MainGame : Control
         GD.Print($"[MainGame] SendRpcToAllClients(reaction) sent={sent}");
     }
 
+    /// <summary>
+    /// Asynchronously attempts to build a reaction text using the LLM.
+    /// </summary>
+    /// <param name="hint">The current hint context.</param>
+    /// <param name="pickedCard">The card that triggered the reaction.</param>
+    /// <param name="turnAtPick">The team whose turn it was during the pick.</param>
+    /// <returns>The raw reaction string (JSON or text) from the LLM, or null on failure.</returns>
     private async Task<string> TryBuildReactionTextAsync(Hint hint, Card pickedCard, Team turnAtPick)
     {
         if (llm == null)
@@ -1045,6 +1235,13 @@ public partial class MainGame : Control
         }
     }
 
+    /// <summary>
+    /// Orchestrates the process of generating a reaction and broadcasting it.
+    /// Handles exceptions and UI state checks.
+    /// </summary>
+    /// <param name="hintSnapshot">Snapshot of the hint data.</param>
+    /// <param name="pickedCardSnapshot">Snapshot of the picked card.</param>
+    /// <param name="turnSnapshot">Snapshot of the turn state.</param>
     private async Task GenerateAndBroadcastReactionAsync(Hint hintSnapshot, Card pickedCardSnapshot, Team turnSnapshot)
     {
         try
@@ -1079,6 +1276,12 @@ public partial class MainGame : Control
     }
 
     // Wspólna ścieżka: host potwierdza kartę i rozsyła efekty do klientów
+    /// <summary>
+    /// Host-side logic to confirm a card selection and broadcast the result to all clients.
+    /// This is the source of truth for card reveals.
+    /// </summary>
+    /// <param name="cardId">The ID of the card being confirmed.</param>
+    /// <param name="confirmedBy">The PUID of the player who confirmed the card.</param>
     public void HostConfirmCardAndBroadcast(int cardId, string confirmedBy)
     {
         GD.Print($"[MainGame] HostConfirmCardAndBroadcast ENTER cardId={cardId} by={confirmedBy}");
@@ -1177,6 +1380,11 @@ public partial class MainGame : Control
 
     }
 
+    /// <summary>
+    /// Client-side callback when card confirmation is requested.
+    /// Sends an RPC to the host.
+    /// </summary>
+    /// <param name="cardId">The ID of the card to confirm.</param>
     public void OnCardConfirmPressedClient(int cardId)
     {
         GD.Print($"[MainGame] OnCardConfirmPressedClient fired cardId={cardId}");
@@ -1195,6 +1403,10 @@ public partial class MainGame : Control
     }
 
 
+    /// <summary>
+    /// Handles the start of a new turn.
+    /// Resets turn-specific state and triggers hint generation for the captain.
+    /// </summary>
     private async void OnNewTurnStart()
     {
         GD.Print($"Początek tury {(currentTurn == Team.Blue ? "BLUE" : "RED")}");
@@ -1232,6 +1444,9 @@ public partial class MainGame : Control
         base._Process(delta);
     }
 
+    /// <summary>
+    /// UI callback for the Menu button. Shows the menu panel.
+    /// </summary>
     public void OnMenuButtonPressed()
     {
         if (!CanInteractWithGame()) return;
@@ -1240,12 +1455,19 @@ public partial class MainGame : Control
         menuPanel.Visible = true;
     }
 
+    /// <summary>
+    /// UI callback for the Menu background. Hides the menu.
+    /// </summary>
     public void OnMenuBackgroundButtonDown()
     {
         GD.Print("MenuBackgroundButton pressed...");
         menuPanel.Visible = false;
     }
 
+    /// <summary>
+    /// UI callback for the Quit button.
+    /// Leaves the lobby and returns to the main menu.
+    /// </summary>
     public void OnQuitButtonPressed()
     {
         GD.Print("QuitButton pressed...");
@@ -1264,24 +1486,36 @@ public partial class MainGame : Control
         GD.Print("PauseButton pressed...");
     }
 
+    /// <summary>
+    /// UI callback for the Settings button. Shows the settings screen.
+    /// </summary>
     public void OnSettingsButtonPressed()
     {
         GD.Print("SettingsButton pressed...");
         settingsScene.Visible = true;
     }
 
+    /// <summary>
+    /// UI callback for the Help button. Shows the help screen.
+    /// </summary>
     public void OnHelpButtonPressed()
     {
         GD.Print("HelpButton pressed...");
         helpScene.Visible = true;
     }
 
+    /// <summary>
+    /// UI callback for the Resume button. Hides the menu.
+    /// </summary>
     public void OnResumeButtonPressed()
     {
         GD.Print("ResumeButton pressed...");
         menuPanel.Visible = false;
     }
 
+    /// <summary>
+    /// Updates the points display on the UI.
+    /// </summary>
     private void UpdatePointsDisplay()
     {
         string textBlue = "Karty niebieskich: "; // temp value, czekam na lepsza propozycje od UI teamu
@@ -1290,12 +1524,19 @@ public partial class MainGame : Control
         scoreContainerRed.ChangeScoreText(textRed + pointsRed.ToString());
     }
 
+    /// <summary>
+    /// Updates the turn counter display on the UI.
+    /// </summary>
     private void UpdateTurnDisplay()
     {
         string text = "Aktualna\ntura: ";
         turnLabel.Text = text + turnCounter.ToString();
     }
 
+    /// <summary>
+    /// Removes a point from the Blue team.
+    /// Updates scores, streaks, and checks for game end conditions.
+    /// </summary>
     public void RemovePointBlue()
     {
         GD.Print("Point removed from team blue...");
@@ -1318,6 +1559,10 @@ public partial class MainGame : Control
         }
     }
 
+    /// <summary>
+    /// Removes a point from the Red team.
+    /// Updates scores, streaks, and checks for game end conditions.
+    /// </summary>
     public void RemovePointRed()
     {
         GD.Print("Point removed from team red...");
@@ -1340,6 +1585,10 @@ public partial class MainGame : Control
         }
     }
 
+    /// <summary>
+    /// Advances the game to the next turn.
+    /// Swaps the current team and emits the <see cref="NewTurnStart"/> signal.
+    /// </summary>
     public void TurnChange()
     {
         gameRightPanel.CancelHintGeneration();
@@ -1353,6 +1602,9 @@ public partial class MainGame : Control
         EmitSignal(SignalName.NewTurnStart);
     }
 
+    /// <summary>
+    /// Explicitly sets the turn to the Blue team.
+    /// </summary>
     public void SetTurnBlue()
     {
         GD.Print("Turn blue...");
@@ -1368,6 +1620,9 @@ public partial class MainGame : Control
         teamListRed.SelfModulate = new Color(1f, 1f, 1f, 1f);
     }
 
+    /// <summary>
+    /// Explicitly sets the turn to the Red team.
+    /// </summary>
     public void SetTurnRed()
     {
         GD.Print("Turn red...");
@@ -1383,6 +1638,11 @@ public partial class MainGame : Control
         teamListRed.SelfModulate = new Color(2.8f, 2.8f, 2.8f, 1f);
     }
 
+    /// <summary>
+    /// Called when a card is selected (clicked) by a player.
+    /// Handles selection logic and delegates to host/client specific handlers.
+    /// </summary>
+    /// <param name="card">The card that was selected.</param>
     public void OnCardSelected(AgentCard card)
     {
         byte cardId = card.Id!.Value;
@@ -1404,11 +1664,23 @@ public partial class MainGame : Control
             OnCardSelectedClient(cardId, playerIndex, unselect);
     }
 
+    /// <summary>
+    /// Handles the "Host" version of card selection (updating local state).
+    /// </summary>
+    /// <param name="cardId">The selected card ID.</param>
+    /// <param name="playerIndex">The selecting player's index.</param>
+    /// <param name="unselect">If true, unselects the card.</param>
     public void OnCardSelectedHost(byte cardId, int playerIndex, bool unselect)
     {
         cardManager.ModifySelection(cardId, playerIndex, unselect);
     }
 
+    /// <summary>
+    /// Handles the "Client" version of card selection (sending RPC to host).
+    /// </summary>
+    /// <param name="cardId">The selected card ID.</param>
+    /// <param name="playerIndex">The selecting player's index.</param>
+    /// <param name="unselect">If true, unselects the card.</param>
     public void OnCardSelectedClient(byte cardId, int playerIndex, bool unselect)
     {
         if (!CanInteractWithGame()) return;
@@ -1425,6 +1697,9 @@ public partial class MainGame : Control
         GD.Print($"[MainGame] SendRpcToHost(card_selected) ok={ok}");
     }
 
+    /// <summary>
+    /// Periodically sends the current card selection state to all clients.
+    /// </summary>
     public void SendSelectionsToClients()
     {
         if (!CanInteractWithGame()) return;
@@ -1439,6 +1714,11 @@ public partial class MainGame : Control
         //GD.Print($"[MainGame] SendRpcToAllClients(selected_cards) RPCsSent={RPCsSent}");
     }
 
+    /// <summary>
+    /// Processes card identification logic when a card is confirmed (revealed).
+    /// Updates points, turn state, and triggers game end if necessary.
+    /// </summary>
+    /// <param name="card">The card being confirmed.</param>
     public void CardConfirm(AgentCard card)
     {
         if (!CanInteractWithGame()) return;
@@ -1504,6 +1784,11 @@ public partial class MainGame : Control
         }
     }
 
+    /// <summary>
+    /// Ends the game and displays the game over screen.
+    /// Only the host calls this method to act as the source of truth.
+    /// </summary>
+    /// <param name="winner">The winning team.</param>
     public void EndGame(Team winner)
     {
         if (!isHost) return;
@@ -1522,6 +1807,11 @@ public partial class MainGame : Control
         }
     }
 
+    /// <summary>
+    /// Converts a Product User ID string to a game player index.
+    /// </summary>
+    /// <param name="puid">The PUID string to convert.</param>
+    /// <returns>The player index, or -1 if not found.</returns>
     public int PuidToIndex(string puid)
     {
         foreach (var player in playersByIndex)
@@ -1533,12 +1823,20 @@ public partial class MainGame : Control
         return -1;
     }
 
+    /// <summary>
+    /// Gets the game player index of the local user.
+    /// </summary>
+    /// <returns>The local player's index.</returns>
     public int GetLocalPlayerIndex()
     {
         string localPuid = eosManager?.localProductUserIdString;
         return PuidToIndex(localPuid);
     }
 
+    /// <summary>
+    /// Handles the event when the host leaves the lobby.
+    /// Shows a popup and exits the game.
+    /// </summary>
     private void OnHostLeave()
     {
         GD.Print("[MainGame] Host has left the game.");

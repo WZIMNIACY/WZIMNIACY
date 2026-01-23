@@ -1,5 +1,12 @@
 using Godot;
 
+/// <summary>
+/// A custom button component that handles GUI input events to explicitly control signal emission.
+/// </summary>
+/// <remarks>
+/// This class ensures that the <see cref="BaseButton.Pressed"/> signal is generated when clicked,
+/// even in scenarios where the node's input configuration might otherwise prevent it (e.g., when set to Pass).
+/// </remarks>
 public partial class ConfirmButton : Button
 {
     public override void _GuiInput(InputEvent @event)

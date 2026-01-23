@@ -1,14 +1,44 @@
 using Godot;
 
+/// <summary>
+/// Manages the loading screen visibility and behavior, including a rotating potato animation
+/// and a failsafe quit button.
+/// </summary>
 public partial class LoadingScreen : Control
 {
+    /// <summary>
+    /// Path to the rotating potato sprite node.
+    /// </summary>
     [Export] NodePath potatoPath;
+
+    /// <summary>
+    /// Path to the button that returns to the menu.
+    /// </summary>
     [Export] NodePath quitToMenuButtonPath;
+
+    /// <summary>
+    /// Path to the MainGame node.
+    /// </summary>
     [Export] NodePath mainGamePath;
+
+    /// <summary>
+    /// Reference to the rotating potato sprite.
+    /// </summary>
     Sprite2D potato;
+
+    /// <summary>
+    /// Reference to the quit button.
+    /// </summary>
     Button quitToMenuButton;
+
+    /// <summary>
+    /// Reference to the MainGame instance.
+    /// </summary>
     MainGame mainGame;
 
+    /// <summary>
+    /// Timer that triggers the visibility of the quit button after a delay.
+    /// </summary>
     private Godot.Timer showQuitButtonTimer;
 
     public override void _Ready()
@@ -34,6 +64,9 @@ public partial class LoadingScreen : Control
         potato.RotationDegrees += 270f * (float)delta;
     }
 
+    /// <summary>
+    /// Displays the loading screen, starts the failsafe timer, and blocks mouse input.
+    /// </summary>
     public void ShowLoading()
 	{
         showQuitButtonTimer.Start();
@@ -42,6 +75,9 @@ public partial class LoadingScreen : Control
 		MouseFilter = MouseFilterEnum.Stop;
 	}
 
+    /// <summary>
+    /// Hides the loading screen, stops the failsafe timer, and allows mouse input to pass through.
+    /// </summary>
 	public void HideLoading()
 	{
         showQuitButtonTimer.Stop();
@@ -50,6 +86,9 @@ public partial class LoadingScreen : Control
         MouseFilter = MouseFilterEnum.Ignore;
 	}
 
+    /// <summary>
+    /// Handles the event when the quit button is pressed, delegating to the MainGame.
+    /// </summary>
     public void OnQuitButtonPressed()
     {
         mainGame.OnQuitButtonPressed();
