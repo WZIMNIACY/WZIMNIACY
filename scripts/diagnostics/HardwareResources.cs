@@ -6,22 +6,40 @@ using System.Threading.Tasks;
 
 namespace Diagnostics
 {
-    // Status wykrywania VRAM
+    /// <summary>
+    /// Status wykrywania pamięci VRAM na urządzeniu.
+    /// </summary>
     public enum VRAMStatus
     {
-        NotDetected,        // Jeszcze nie wykrywano
-        Detected,           // Wykryto rzeczywistą wartość
-        SharedMemory,       // Pamięć współdzielona
-        Error              // Błąd wykrywania
+        /// <summary>Nie wykonano jeszcze detekcji.</summary>
+        NotDetected,
+        /// <summary>Wykryto konkretną wartość VRAM.</summary>
+        Detected,
+        /// <summary>GPU korzysta z pamięci współdzielonej.</summary>
+        SharedMemory,
+        /// <summary>Wystąpił błąd podczas detekcji.</summary>
+        Error
     }
 
+    /// <summary>
+    /// Narzędzia do odczytu parametrów sprzętowych (CPU, RAM, VRAM) oraz walidacji pod wymagania AI.
+    /// </summary>
+    /// <remarks>
+    /// Statyczna klasa używana w wątku głównym; detekcja VRAM uruchamiana w tle nie jest synchronizowana pod kątem bezpieczeństwa wątków.
+    /// </remarks>
     public static class HardwareResources
     {
         // Informacje o VRAM
+        /// <summary>
+        /// Model przechowujący wynik detekcji VRAM (wartość, status, komunikat).
+        /// </summary>
         private class VRAMInfo
         {
+            /// <summary>Wartość VRAM w megabajtach.</summary>
             public float valueMB { get; set; }
+            /// <summary>Status detekcji VRAM.</summary>
             public VRAMStatus status { get; set; }
+            /// <summary>Komunikat pomocniczy, gdy brak dokładnej wartości.</summary>
             public string message { get; set; }
 
             public VRAMInfo()
@@ -33,27 +51,41 @@ namespace Diagnostics
         }
 
         // Zalecane wymagania sprzętowe
+    /// <summary>Minimalna liczba rdzeni CPU dla trybu AI.</summary>
         private const int MinCPUCores = 8;
+    /// <summary>Minimalna ilość pamięci RAM w MB dla trybu AI.</summary>
         private const double MinMemoryMB = 24576;
+    /// <summary>Minimalna ilość VRAM w MB dla trybu AI.</summary>
         private const float MinVRAMMB = 16384;
 
         // Cache dla VRAM 
+    /// <summary>Ostatni wynik detekcji VRAM przechowywany w pamięci.</summary>
         private static VRAMInfo cachedVRAM = null;
+    /// <summary>Flaga informująca, że detekcja VRAM jest w toku.</summary>
         private static bool isVRAMDetectionRunning = false;
 
-        public static int GetMinCPUCores
-        {
-            get { return MinCPUCores; }
-        }
-        public static double GetMinMemoryMB
-        {
-            get { return MinMemoryMB; }
-        }
-        public static float GetMinVRAMMB
-        {
-            get { return MinVRAMMB; }
-        }
+        /// <summary>
+        /// Minimalna liczba rdzeni CPU rekomendowana do trybu AI.
+        /// </summary>
+        /// <value>Liczba logicznych rdzeni; stała rekomendacja.</value>
+        public static int GetMinCPUCores => MinCPUCores;
 
+        /// <summary>
+        /// Minimalna ilość RAM (MB) rekomendowana do trybu AI.
+        /// </summary>
+        /// <value>Wartość w megabajtach; stała rekomendacja.</value>
+        public static double GetMinMemoryMB => MinMemoryMB;
+
+        /// <summary>
+        /// Minimalna ilość VRAM (MB) rekomendowana do trybu AI.
+        /// </summary>
+        /// <value>Wartość w megabajtach; stała rekomendacja.</value>
+        public static float GetMinVRAMMB => MinVRAMMB;
+
+        /// <summary>
+        /// Zwraca status ostatniej detekcji VRAM (z cache).
+        /// </summary>
+        /// <value>Aktualny status (NotDetected/Detected/SharedMemory/Error) z pamięci podręcznej.</value>
         public static VRAMStatus VRAMDetectionStatus
         {
             get
@@ -64,7 +96,10 @@ namespace Diagnostics
             }
         }
 
-        // Pobieranie VRAM w tle
+        /// <summary>
+        /// Uruchamia asynchroniczną detekcję VRAM w tle, jeśli nie jest już uruchomiona.
+        /// </summary>
+        /// <seealso cref="GetGPUInfo"/>
         public static void StartVRAMDetection()
         {
             if (isVRAMDetectionRunning || cachedVRAM != null)
@@ -81,6 +116,12 @@ namespace Diagnostics
             });
         }
 
+        /// <summary>
+        /// Zwraca sformatowane informacje o CPU, RAM i VRAM (z cache VRAM jeśli dostępny).
+        /// </summary>
+        /// <returns>Opis sprzętu w formie wieloliniowego stringa.</returns>
+        /// <seealso cref="GetCPUInfo"/>
+        /// <seealso cref="GetMemoryInfo"/>
         public static string GetHardwareInfo()
         {
             int cpuInfo = GetCPUInfo();
@@ -111,6 +152,13 @@ namespace Diagnostics
             return $"• CPU: {cpuInfo} rdzeni\n• RAM: {memoryInfo / 1024} GB ({memoryInfo} MB)\n• VRAM: Nieznany status";
         }
 
+        /// <summary>
+        /// Sprawdza, czy bieżąca maszyna spełnia minimalne wymagania dla trybu AI (CPU, RAM, VRAM).
+        /// </summary>
+        /// <returns>True jeśli spełnione są wymagania minimalne.</returns>
+        /// <seealso cref="StartVRAMDetection"/>
+        /// <seealso cref="GetCPUInfo"/>
+        /// <seealso cref="GetMemoryInfo"/>
         public static bool IfAICapable()
         {
             int cpuCores = GetCPUInfo();
@@ -149,18 +197,30 @@ namespace Diagnostics
             return cpuCores >= MinCPUCores && totalMemoryMB >= MinMemoryMB;
         }
 
+        /// <summary>
+        /// Zwraca liczbę logicznych rdzeni procesora.
+        /// </summary>
+        /// <returns>Liczba rdzeni CPU.</returns>
         private static int GetCPUInfo()
         {
             int cpuCores = Environment.ProcessorCount;
             return cpuCores;
         }
 
+        /// <summary>
+        /// Proxy do detekcji VRAM (dla czytelności nazewnictwa GPU).
+        /// </summary>
+        /// <returns>Struktura VRAMInfo z wynikami detekcji.</returns>
         private static VRAMInfo GetGPUInfo()
         {
             return GetVRAMInfo();
         }
 
-        // Jak ktoś nie ma sterowników to i tak nic nie zdziałamy
+        /// <summary>
+        /// Wykrywa ilość VRAM na podstawie platformy (Windows/Linux/macOS) i dostępnych narzędzi CLI.
+        /// </summary>
+        /// <remarks>Gdy brak sterowników/CLI, zwraca status Error lub SharedMemory.</remarks>
+        /// <returns>Struktura VRAMInfo z wartością MB i statusem.</returns>
         private static VRAMInfo GetVRAMInfo()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -184,6 +244,10 @@ namespace Diagnostics
             };
         }
 
+        /// <summary>
+        /// Detekcja VRAM w systemie Windows (nvidia-smi, rocm-smi, xpu-smi, wmic fallback).
+        /// </summary>
+        /// <returns>Informacje o VRAM lub status błędu/pamięci współdzielonej.</returns>
         private static VRAMInfo GetWindowsVRAM()
         {
             // Metoda 1: NVIDIA-SMI
@@ -269,6 +333,10 @@ namespace Diagnostics
             };
         }
 
+        /// <summary>
+        /// Detekcja VRAM w systemach Linux (nvidia-smi, rocm-smi, radeontop, xpu-smi, glxinfo, lspci).
+        /// </summary>
+        /// <returns>Informacje o VRAM lub status błędu/pamięci współdzielonej.</returns>
         private static VRAMInfo GetLinuxVRAM()
         {
             // NVIDIA
@@ -416,6 +484,10 @@ namespace Diagnostics
             };
         }
 
+        /// <summary>
+        /// Detekcja VRAM w systemie macOS (system_profiler; dla Apple Silicon zwraca SharedMemory).
+        /// </summary>
+        /// <returns>Informacje o VRAM lub status pamięci współdzielonej.</returns>
         private static VRAMInfo GetMacOSVRAM()
         {
             // macOS System Profiler
@@ -448,6 +520,12 @@ namespace Diagnostics
             };
         }
 
+        /// <summary>
+        /// Uruchamia polecenie w tle i zwraca standard output; wymusza lokalizację en_US.
+        /// </summary>
+        /// <param name="command">Polecenie do wykonania.</param>
+        /// <param name="args">Argumenty przekazywane do polecenia.</param>
+        /// <returns>Standard output lub pusty string gdy wystąpi błąd/exit code != 0.</returns>
         private static string RunCommand(string command, string args)
         {
             try
@@ -487,6 +565,10 @@ namespace Diagnostics
             }
         }
 
+        /// <summary>
+        /// Zwraca całkowitą dostępną pamięć (RAM) w MB na podstawie GC.
+        /// </summary>
+        /// <returns>Ilość pamięci w megabajtach.</returns>
         private static double GetMemoryInfo()
         {
             var memoryInfo = GC.GetGCMemoryInfo();
