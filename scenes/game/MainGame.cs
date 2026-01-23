@@ -262,7 +262,7 @@ public partial class MainGame : Control
 
     private Task reactionTask;
     private bool isShuttingDown = false;
-    private const int ReactionDurationMs = 2500;
+    private const int ReactionDurationMs = 4000;
 
     private readonly HashSet<int> confirmedCardIds = new();
 
