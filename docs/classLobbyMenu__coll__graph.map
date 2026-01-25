@@ -1,0 +1,4 @@
+<map id="LobbyMenu" name="LobbyMenu">
+<area shape="rect" id="node1" title="Główny ekran lobby odpowiedzialny za zarządzanie listą graczy, drużynami, trybem gry,..." alt="" coords="5,80,103,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="19,5,89,32"/>
+</map>

@@ -1,0 +1,4 @@
+<map id="CardManager" name="CardManager">
+<area shape="rect" id="node1" title="Manages the card grid, deck operations, and card interactions in the game. Handles card selection,..." alt="" coords="7,80,116,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,117,32"/>
+</map>

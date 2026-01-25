@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" title=" " alt="" coords="5,81,125,108"/>
+<area shape="rect" id="node2" href="$classAgentCard.html" title=" " alt="" coords="203,5,293,32"/>
+<area shape="rect" id="node3" href="$classCustomTooltip.html" title="Prosty tooltip z opóźnionym wyświetlaniem, podążający za kursorem." alt="" coords="191,56,305,83"/>
+<area shape="rect" id="node4" href="$classPlayerListContainer.html" title="Manages the display of the player list for a specific team." alt="" coords="173,107,323,133"/>
+<area shape="rect" id="node5" href="$classScoreContainer.html" title="Controls the display of a score label and a status diode." alt="" coords="187,157,309,184"/>
+</map>

@@ -1,0 +1,12 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" title=" " alt="" coords="5,208,61,235"/>
+<area shape="rect" id="node2" href="$classEOSManager.html" title=" " alt="" coords="149,5,254,32"/>
+<area shape="rect" id="node3" href="$classEscapeBackHandler.html" title="Obsługuje cofanie się do poprzedniej sceny za pomocą klawisza ESC. Nie działa gdy jakiś input jest ak..." alt="" coords="126,56,277,83"/>
+<area shape="rect" id="node4" href="$classLobbyLeaveConfirmation.html" title="Obsługuje wyświetlanie okna potwierdzenia przy opuszczaniu lobby i wywołuje EOSManager...." alt="" coords="109,107,293,133"/>
+<area shape="rect" id="node5" href="$classLobbySearchMenu.html" title="Ekran wyszukiwania i dołączania do lobby po CustomLobbyId: obsługuje wklejanie/Enter,..." alt="" coords="131,157,272,184"/>
+<area shape="rect" id="node6" href="$classMainMenu.html" title="Manages the main menu of the game, handling navigation, UI interactions, and overlay menus." alt="" coords="156,208,247,235"/>
+<area shape="rect" id="node7" href="$classP2PNetworkManager.html" title="Manages Peer&#45;to&#45;Peer networking using Epic Online Services (EOS). Handles handshake,..." alt="" coords="122,259,281,285"/>
+<area shape="rect" id="node8" href="$classPasteDetector.html" title="Wykrywa wklejanie tekstu w polu LineEdit na podstawie skrótu Ctrl/Cmd+V oraz zmian w polu; wywołuje z..." alt="" coords="145,309,258,336"/>
+<area shape="rect" id="node9" href="$classRightPanel.html" title="Manages the right&#45;side game panel, responsible for displaying game history, handling hint generation ..." alt="" coords="156,360,247,387"/>
+<area shape="rect" id="node10" href="$classSettingsManager.html" title="Manages application settings including audio, video, and window configuration. serialized to a config..." alt="" coords="135,411,267,437"/>
+</map>

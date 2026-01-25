@@ -1,0 +1,4 @@
+<map id="RightPanel" name="RightPanel">
+<area shape="rect" id="node1" title="Manages the right&#45;side game panel, responsible for displaying game history, handling hint generation ..." alt="" coords="5,80,96,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="23,5,79,32"/>
+</map>

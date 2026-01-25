@@ -1,0 +1,4 @@
+<map id="CaptainInput" name="CaptainInput">
+<area shape="rect" id="node1" title="Manages the input interface for the Captain, allowing them to provide a hint word and a number." alt="" coords="5,80,111,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="23,5,93,32"/>
+</map>

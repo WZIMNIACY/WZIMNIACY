@@ -1,0 +1,4 @@
+<map id="LoadingScreen" name="LoadingScreen">
+<area shape="rect" id="node1" title="Manages the loading screen visibility and behavior, including a rotating potato animation and a fails..." alt="" coords="5,80,123,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="29,5,99,32"/>
+</map>
