@@ -1,0 +1,4 @@
+<map id="PasteDetector" name="PasteDetector">
+<area shape="rect" id="node1" title="Wykrywa wklejanie tekstu w polu LineEdit na podstawie skrótu Ctrl/Cmd+V oraz zmian w polu; wywołuje z..." alt="" coords="5,80,119,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="34,5,90,32"/>
+</map>

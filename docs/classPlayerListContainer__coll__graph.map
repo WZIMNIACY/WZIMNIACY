@@ -1,0 +1,11 @@
+<map id="PlayerListContainer" name="PlayerListContainer">
+<area shape="rect" id="node1" title="Manages the display of the player list for a specific team." alt="" coords="46,260,195,287"/>
+<area shape="rect" id="node2" title=" " alt="" coords="39,171,159,197"/>
+<area shape="rect" id="node3" href="$classMainGame.html" title=" " alt="" coords="183,171,276,197"/>
+<area shape="rect" id="node4" title=" " alt="" coords="98,5,167,32"/>
+<area shape="rect" id="node7" href="$classEndGameScreen.html" title="Manages the End Game screen, displaying results, statistics, and navigation options...." alt="" coords="24,81,153,108"/>
+<area shape="rect" id="node8" href="$classCaptainInput.html" title="Manages the input interface for the Captain, allowing them to provide a hint word and a number." alt="" coords="177,81,282,108"/>
+<area shape="rect" id="node9" href="$classReactionOverlay.html" title="Controls the reaction overlay UI, displaying a bubble and text message above a character or object." alt="" coords="306,81,436,108"/>
+<area shape="rect" id="node5" href="$classRightPanel.html" title="Manages the right&#45;side game panel, responsible for displaying game history, handling hint generation ..." alt="" coords="464,81,555,108"/>
+<area shape="rect" id="node6" title=" " alt="" coords="482,5,538,32"/>
+</map>

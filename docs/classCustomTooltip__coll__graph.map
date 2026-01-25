@@ -1,0 +1,4 @@
+<map id="CustomTooltip" name="CustomTooltip">
+<area shape="rect" id="node1" title="Prosty tooltip z opóźnionym wyświetlaniem, podążający za kursorem." alt="" coords="8,80,123,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,125,32"/>
+</map>

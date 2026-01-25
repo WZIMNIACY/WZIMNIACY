@@ -1,0 +1,4 @@
+<map id="SettingsManager" name="SettingsManager">
+<area shape="rect" id="node1" title="Manages application settings including audio, video, and window configuration. serialized to a config..." alt="" coords="5,80,137,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="43,5,99,32"/>
+</map>
